@@ -33,41 +33,6 @@ namespace Call_of_Duty_FastFile_Editor.IO
             return positions;
         }
 
-        /*public static string ExtractFullFileName(byte[] data, int patternPosition)
-        {
-            StringBuilder fileName = new StringBuilder();
-
-            int startPosition = patternPosition;
-            while (startPosition >= 4 && data[startPosition - 4] == 0xFF && data[startPosition - 3] == 0xFF && data[startPosition - 2] == 0xFF && data[startPosition - 1] == 0xFF)
-            {
-                startPosition -= 4;
-            }
-
-            while (startPosition > 0 && data[startPosition - 1] != 0x00)
-            {
-                startPosition--;
-            }
-
-            for (int i = startPosition; i < data.Length; i++)
-            {
-                char c = (char)data[i];
-                if (c == '\0')
-                {
-                    break;
-                }
-                fileName.Append(c);
-            }
-
-            string fileNameStr = fileName.ToString();
-            int invalidSequenceIndex = fileNameStr.IndexOf("ÿÿÿÿ");
-            if (invalidSequenceIndex != -1)
-            {
-                fileNameStr = fileNameStr.Substring(invalidSequenceIndex + 4);
-            }
-
-            return fileNameStr.ToString();
-        }*/
-
         public static int FindPattern(byte[] data, int startPosition, byte[] pattern)
         {
             for (int i = startPosition; i <= data.Length - pattern.Length; i++)

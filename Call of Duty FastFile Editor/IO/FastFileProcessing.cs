@@ -47,39 +47,65 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
         }
 
-        public static List<FileEntryNode> LocateGscFileEntries(string filePath)
+        public static List<FileEntryNode> ExtractFileEntriesWithSizeAndName(string filePath)
         {
             List<FileEntryNode> fileEntryNodes = new List<FileEntryNode>();
             byte[] fileData = File.ReadAllBytes(filePath);
 
-            // Read the entire file content as a string for regex matching
-            string input = Encoding.Default.GetString(fileData);
-
             // Define the byte patterns to search for
-            string[] patterns = new string[]
+            byte[][] patterns = new byte[][]
             {
-                "\\x2E\\x63\\x66\\x67\\x00", // .cfg
-                "\\x2E\\x67\\x73\\x63\\x00", // .gsc
-                "\\x2E\\x61\\x74\\x72\\x00", // .atr
-                "\\x2E\\x63\\x73\\x63\\x00", // .csc
-                "\\x2E\\x72\\x6D\\x62\\x00", // .rmb
-                "\\x2E\\x61\\x72\\x65\\x6E\\x61\\x00", // .arena
-                "\\x2E\\x76\\x69\\x73\\x69\\x6F\\x6E\\x00" // .vision
+                new byte[] { 0x2E, 0x63, 0x66, 0x67, 0x00 }, // .cfg
+                new byte[] { 0x2E, 0x67, 0x73, 0x63, 0x00 }, // .gsc
+                new byte[] { 0x2E, 0x61, 0x74, 0x72, 0x00 }, // .atr
+                new byte[] { 0x2E, 0x63, 0x73, 0x63, 0x00 }, // .csc
+                new byte[] { 0x2E, 0x72, 0x6D, 0x62, 0x00 }, // .rmb
+                new byte[] { 0x2E, 0x61, 0x72, 0x65, 0x6E, 0x61, 0x00 }, // .arena
+                new byte[] { 0x2E, 0x76, 0x69, 0x73, 0x69, 0x6F, 0x6E, 0x00 } // .vision
             };
 
             using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(fileData), Encoding.Default))
             {
-                foreach (string pattern in patterns)
+                foreach (var pattern in patterns)
                 {
-                    foreach (Match match in Regex.Matches(input, pattern, RegexOptions.IgnoreCase))
+                    for (int i = 0; i <= fileData.Length - pattern.Length; i++)
                     {
-                        int patternIndex = match.Index;
+                        // Check if the pattern matches exactly at this position
+                        bool match = true;
+                        for (int j = 0; j < pattern.Length; j++)
+                        {
+                            if (fileData[i + j] != pattern[j])
+                            {
+                                match = false;
+                                break;
+                            }
+                        }
+
+                        if (!match)
+                        {
+                            continue;
+                        }
+
+                        int patternIndex = i;
+
+                        // Debugging information: show the matched bytes
+                        byte[] matchedBytes = new byte[pattern.Length];
+                        Array.Copy(fileData, patternIndex, matchedBytes, 0, pattern.Length);
+                        string matchedBytesHex = BitConverter.ToString(matchedBytes).Replace("-", " ");
+                        //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nMatched Bytes: {matchedBytesHex}", "Pattern Match Debug Info");
 
                         // Move backwards to find the FF FF FF FF sequence
                         int ffffPosition = patternIndex - 1;
                         while (ffffPosition >= 4 && !(fileData[ffffPosition] == 0xFF && fileData[ffffPosition - 1] == 0xFF && fileData[ffffPosition - 2] == 0xFF && fileData[ffffPosition - 3] == 0xFF))
                         {
                             ffffPosition--;
+                        }
+
+                        // Ensure the sequence is valid (not followed by \x00 and not part of a different structure)
+                        if (ffffPosition < 4 || fileData[ffffPosition + 1] == 0x00)
+                        {
+                            //MessageBox.Show($"Skipping invalid FF FF FF FF sequence at {ffffPosition:X}", "Invalid Sequence Debug Info");
+                            continue;
                         }
 
                         // The size is stored right before the FF FF FF FF sequence
@@ -93,7 +119,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                             int fileNameStart = ffffPosition + 1;
                             string fileName = ExtractFullFileName(fileData, fileNameStart);
 
-                            if (!string.IsNullOrEmpty(fileName))
+                            if (!string.IsNullOrEmpty(fileName) && !fileName.Contains("\x00"))
                             {
                                 TreeNode treeNode = new TreeNode(fileName)
                                 {
@@ -102,8 +128,16 @@ namespace Call_of_Duty_FastFile_Editor.IO
                                 fileEntryNodes.Add(new FileEntryNode { Node = treeNode, Position = patternIndex, MaxSize = maxSize, StartOfGscHeader = sizePosition });
 
                                 // Debugging message box
-                                //MessageBox.Show($"File Name: {fileName}\nPattern Index: {patternIndex:X}\nSize Position: {sizePosition:X}\nMax Size: {maxSize}\nHeader Start: {sizePosition:X}", "Debug Info");
+                                //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFile Name: {fileName}\nSize Position: {sizePosition:X}\nMax Size: {maxSize}\nHeader Start: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
                             }
+                            else
+                            {
+                                //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFile Name Start: {fileNameStart:X}\nFile Name Invalid or Contains Null", "ExtractFileEntriesWithSizeAndName Debug Info");
+                            }
+                        }
+                        else
+                        {
+                            //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFFFF Position: {ffffPosition:X}\nSize Position Invalid: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
                         }
                     }
                 }
@@ -129,7 +163,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
 
             // Debugging message box
-            //MessageBox.Show($"Extracted File Name: {fileName}\nFile Name Start: {fileNameStart:X}", "Debug Info");
+            //MessageBox.Show($"Extracted File Name: {fileName}\nFile Name Start: {fileNameStart:X}", "ExtractFullFileName Debug Info");
 
             return fileName.ToString();
         }

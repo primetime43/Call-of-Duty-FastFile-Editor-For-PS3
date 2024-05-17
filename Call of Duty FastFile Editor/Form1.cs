@@ -39,7 +39,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (header.IsValid)
             {
                 FastFileProcessing.DecompressFastFile(ffFilePath, zoneFilePath);
-                fileEntryNodes = FastFileProcessing.LocateGscFileEntries(zoneFilePath);
+                fileEntryNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
                 filesTreeView.Nodes.AddRange(fileEntryNodes.Select(node => node.Node).ToArray());
             }
 
