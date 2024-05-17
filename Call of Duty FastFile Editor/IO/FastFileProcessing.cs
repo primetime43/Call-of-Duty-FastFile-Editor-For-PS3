@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
-namespace Call_of_Duty_FastFile_Viewer.IO
+namespace Call_of_Duty_FastFile_Editor.IO
 {
     public class FileEntryNode
     {
         public TreeNode Node { get; set; }
         public int Position { get; set; }
+        public int MaxSize { get; set; }
+        public int StartOfGscHeader { get; set; }
     }
 
     public static class FastFileProcessing
@@ -48,31 +52,59 @@ namespace Call_of_Duty_FastFile_Viewer.IO
             List<FileEntryNode> fileEntryNodes = new List<FileEntryNode>();
             byte[] fileData = File.ReadAllBytes(filePath);
 
+            // Read the entire file content as a string for regex matching
+            string input = Encoding.Default.GetString(fileData);
+
             // Define the byte patterns to search for
-            byte[][] patterns = new byte[][]
+            string[] patterns = new string[]
             {
-                new byte[] { 0x2E, 0x63, 0x66, 0x67, 0x00 }, // .cfg
-                new byte[] { 0x2E, 0x67, 0x73, 0x63, 0x00 }, // .gsc
-                new byte[] { 0x2E, 0x61, 0x74, 0x72, 0x00 }, // .atr
-                new byte[] { 0x2E, 0x63, 0x73, 0x63, 0x00 }, // .csc
-                new byte[] { 0x2E, 0x72, 0x6D, 0x62, 0x00 }, // .rmb
-                new byte[] { 0x2E, 0x61, 0x72, 0x65, 0x6E, 0x61, 0x00 }, // .arena
-                new byte[] { 0x2E, 0x76, 0x69, 0x73, 0x69, 0x6F, 0x6E, 0x00 } // .vision
+                "\\x2E\\x63\\x66\\x67\\x00", // .cfg
+                "\\x2E\\x67\\x73\\x63\\x00", // .gsc
+                "\\x2E\\x61\\x74\\x72\\x00", // .atr
+                "\\x2E\\x63\\x73\\x63\\x00", // .csc
+                "\\x2E\\x72\\x6D\\x62\\x00", // .rmb
+                "\\x2E\\x61\\x72\\x65\\x6E\\x61\\x00", // .arena
+                "\\x2E\\x76\\x69\\x73\\x69\\x6F\\x6E\\x00" // .vision
             };
 
-            foreach (byte[] pattern in patterns)
+            using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(fileData), Encoding.Default))
             {
-                List<int> positions = FilePatternFinder.FindBytePattern(fileData, pattern);
-                foreach (int position in positions)
+                foreach (string pattern in patterns)
                 {
-                    string fileName = FilePatternFinder.ExtractFullFileName(fileData, position);
-                    if (!string.IsNullOrEmpty(fileName))
+                    foreach (Match match in Regex.Matches(input, pattern, RegexOptions.IgnoreCase))
                     {
-                        TreeNode treeNode = new TreeNode(fileName)
+                        int patternIndex = match.Index;
+
+                        // Move backwards to find the FF FF FF FF sequence
+                        int ffffPosition = patternIndex - 1;
+                        while (ffffPosition >= 4 && !(fileData[ffffPosition] == 0xFF && fileData[ffffPosition - 1] == 0xFF && fileData[ffffPosition - 2] == 0xFF && fileData[ffffPosition - 3] == 0xFF))
                         {
-                            Tag = position
-                        };
-                        fileEntryNodes.Add(new FileEntryNode { Node = treeNode, Position = position });
+                            ffffPosition--;
+                        }
+
+                        // The size is stored right before the FF FF FF FF sequence
+                        int sizePosition = ffffPosition - 7;
+                        if (sizePosition >= 0)
+                        {
+                            binaryReader.BaseStream.Position = sizePosition;
+                            int maxSize = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
+
+                            // The file name starts right after the FF FF FF FF sequence
+                            int fileNameStart = ffffPosition + 1;
+                            string fileName = ExtractFullFileName(fileData, fileNameStart);
+
+                            if (!string.IsNullOrEmpty(fileName))
+                            {
+                                TreeNode treeNode = new TreeNode(fileName)
+                                {
+                                    Tag = patternIndex
+                                };
+                                fileEntryNodes.Add(new FileEntryNode { Node = treeNode, Position = patternIndex, MaxSize = maxSize, StartOfGscHeader = sizePosition });
+
+                                // Debugging message box
+                                //MessageBox.Show($"File Name: {fileName}\nPattern Index: {patternIndex:X}\nSize Position: {sizePosition:X}\nMax Size: {maxSize}\nHeader Start: {sizePosition:X}", "Debug Info");
+                            }
+                        }
                     }
                 }
             }
@@ -81,34 +113,47 @@ namespace Call_of_Duty_FastFile_Viewer.IO
             return fileEntryNodes;
         }
 
-        public static string ReadFileContentAfterName(string filePath, int startPosition)
+        public static string ExtractFullFileName(byte[] data, int fileNameStart)
+        {
+            StringBuilder fileName = new StringBuilder();
+
+            // Read the file name from fileNameStart until the null terminator
+            for (int i = fileNameStart; i < data.Length; i++)
+            {
+                char c = (char)data[i];
+                if (c == '\0')
+                {
+                    break;
+                }
+                fileName.Append(c);
+            }
+
+            // Debugging message box
+            //MessageBox.Show($"Extracted File Name: {fileName}\nFile Name Start: {fileNameStart:X}", "Debug Info");
+
+            return fileName.ToString();
+        }
+
+        public static string ReadFileContentAfterName(string filePath, int startPosition, int maxSize)
         {
             byte[] fileData = File.ReadAllBytes(filePath);
-            int contentStartPosition = startPosition;
 
-            // Move to the position after the name
+            // Move to the position after the name's null terminator
+            int contentStartPosition = startPosition;
             while (contentStartPosition < fileData.Length && fileData[contentStartPosition] != 0x00)
             {
                 contentStartPosition++;
             }
-
             // Skip the null terminator
             contentStartPosition++;
 
-            // Define the end pattern
-            byte[] endPattern = new byte[] { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00 };
-
-            // Find the end position
-            int contentEndPosition = FilePatternFinder.FindPattern(fileData, contentStartPosition, endPattern);
-
-            // Calculate the length of the content
-            int contentLength = contentEndPosition - contentStartPosition;
-            if (contentLength < 0)
+            // Calculate content length up to max size
+            int contentLength = maxSize;
+            if (contentStartPosition + contentLength > fileData.Length)
             {
-                contentLength = 0;
+                contentLength = fileData.Length - contentStartPosition;
             }
 
-            // Read the content after the name up to the end position
             byte[] contentBytes = new byte[contentLength];
             Array.Copy(fileData, contentStartPosition, contentBytes, 0, contentLength);
 

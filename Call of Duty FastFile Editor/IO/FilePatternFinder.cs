@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Call_of_Duty_FastFile_Viewer.IO
+namespace Call_of_Duty_FastFile_Editor.IO
 {
     public static class FilePatternFinder
     {
@@ -33,7 +33,7 @@ namespace Call_of_Duty_FastFile_Viewer.IO
             return positions;
         }
 
-        public static string ExtractFullFileName(byte[] data, int patternPosition)
+        /*public static string ExtractFullFileName(byte[] data, int patternPosition)
         {
             StringBuilder fileName = new StringBuilder();
 
@@ -66,7 +66,7 @@ namespace Call_of_Duty_FastFile_Viewer.IO
             }
 
             return fileNameStr.ToString();
-        }
+        }*/
 
         public static int FindPattern(byte[] data, int startPosition, byte[] pattern)
         {

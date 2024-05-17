@@ -45,7 +45,7 @@
             filesTreeView.HideSelection = false;
             filesTreeView.Location = new Point(0, 0);
             filesTreeView.Name = "filesTreeView";
-            filesTreeView.Size = new Size(236, 803);
+            filesTreeView.Size = new Size(342, 777);
             filesTreeView.TabIndex = 0;
             filesTreeView.AfterSelect += filesTreeView_AfterSelect;
             // 
@@ -79,7 +79,7 @@
             fastColoredTextBox1.Paddings = new Padding(0);
             fastColoredTextBox1.SelectionColor = Color.FromArgb(60, 0, 0, 255);
             fastColoredTextBox1.ServiceColors = (FastColoredTextBoxNS.ServiceColors)resources.GetObject("fastColoredTextBox1.ServiceColors");
-            fastColoredTextBox1.Size = new Size(1210, 803);
+            fastColoredTextBox1.Size = new Size(1104, 777);
             fastColoredTextBox1.TabIndex = 0;
             fastColoredTextBox1.Zoom = 100;
             // 
@@ -119,8 +119,8 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(fastColoredTextBox1);
-            splitContainer1.Size = new Size(1450, 803);
-            splitContainer1.SplitterDistance = 236;
+            splitContainer1.Size = new Size(1450, 777);
+            splitContainer1.SplitterDistance = 342;
             splitContainer1.TabIndex = 0;
             // 
             // statusStrip1
@@ -150,14 +150,15 @@
             selectedItemStatusLabel.Name = "selectedItemStatusLabel";
             selectedItemStatusLabel.Size = new Size(140, 21);
             selectedItemStatusLabel.Text = "Selected Item Here";
+            selectedItemStatusLabel.Visible = false;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1450, 827);
-            Controls.Add(statusStrip1);
             Controls.Add(splitContainer1);
+            Controls.Add(statusStrip1);
             Controls.Add(menuStrip1);
             MainMenuStrip = menuStrip1;
             Name = "Form1";

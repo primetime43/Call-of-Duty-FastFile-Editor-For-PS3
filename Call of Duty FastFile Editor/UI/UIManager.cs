@@ -1,6 +1,6 @@
 ﻿using FastColoredTextBoxNS;
 
-namespace Call_of_Duty_FastFile_Viewer.UI
+namespace Call_of_Duty_FastFile_Editor.UI
 {
     public static class UIManager
     {
@@ -20,6 +20,14 @@ namespace Call_of_Duty_FastFile_Viewer.UI
                 statusLabel.Text = fileName;
                 statusLabel.Visible = true;
             }
+        }
+
+        public static void UpdateStatusStrip(ToolStripStatusLabel maxSizeLabel, ToolStripStatusLabel currentSizeLabel, int maxSize, int currentSize)
+        {
+            //maxSizeLabel.Text = $"Max MaxSize: {maxSize}";
+            //currentSizeLabel.Text = $"Current MaxSize: {currentSize}";
+
+            MessageBox.Show($"Max MaxSize: {maxSize}\nCurrent MaxSize: {currentSize}");
         }
 
         public static void SetTreeNodeColors(TreeView treeView)

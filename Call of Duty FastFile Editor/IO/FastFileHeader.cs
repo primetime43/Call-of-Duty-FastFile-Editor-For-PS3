@@ -4,7 +4,7 @@ using System.Net;
 using System.Text;
 using System.Windows.Forms;
 
-namespace Call_of_Duty_FastFile_Viewer.IO
+namespace Call_of_Duty_FastFile_Editor.IO
 {
     public class FastFileHeader
     {

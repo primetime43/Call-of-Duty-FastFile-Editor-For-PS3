@@ -1,6 +1,6 @@
 ﻿using Ionic.Zlib;
 
-namespace Call_of_Duty_FastFile_Viewer.IO
+namespace Call_of_Duty_FastFile_Editor.IO
 {
     public static class FastFileDecompressor
     {
