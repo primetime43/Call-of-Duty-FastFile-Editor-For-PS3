@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="DotNetZip" Version="1.16.0" />
-    <PackageReference Include="FastColoredTextBox.Net5" Version="2.16.26" />
+    <PackageReference Include="ICSharpCode.TextEditor" Version="3.2.1.6466" />
   </ItemGroup>
 
   <ItemGroup>

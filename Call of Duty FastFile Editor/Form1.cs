@@ -8,7 +8,6 @@ namespace Call_of_Duty_FastFile_Editor
         public Form1()
         {
             InitializeComponent();
-            UIManager.InitializeFastColoredTextBoxSyntaxHighlighting(fastColoredTextBox1);
         }
 
         private string ffFilePath;
@@ -54,8 +53,23 @@ namespace Call_of_Duty_FastFile_Editor
                 var selectedNode = fileEntryNodes.FirstOrDefault(node => node.Position == position);
                 int maxSize = selectedNode?.MaxSize ?? 0;
                 string fileContent = FastFileProcessing.ReadFileContentAfterName(zoneFilePath, position, maxSize);
-                fastColoredTextBox1.Text = fileContent;
+
+                textEditorControl1.TextChanged -= textEditorControl1_TextChanged; // Unsubscribe to prevent multiple triggers
+                textEditorControl1.Text = fileContent;
+                textEditorControl1.TextChanged += textEditorControl1_TextChanged; // Resubscribe
+
                 UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
+                UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, fileContent.Length);
+            }
+        }
+
+        private void textEditorControl1_TextChanged(object sender, EventArgs e)
+        {
+            if (filesTreeView.SelectedNode?.Tag is int position)
+            {
+                var selectedNode = fileEntryNodes.FirstOrDefault(node => node.Position == position);
+                int maxSize = selectedNode?.MaxSize ?? 0;
+                UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
             }
         }
     }

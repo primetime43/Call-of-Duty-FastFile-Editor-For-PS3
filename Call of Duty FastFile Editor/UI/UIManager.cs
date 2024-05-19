@@ -1,6 +1,4 @@
-﻿using FastColoredTextBoxNS;
-
-namespace Call_of_Duty_FastFile_Editor.UI
+﻿namespace Call_of_Duty_FastFile_Editor.UI
 {
     public static class UIManager
     {
@@ -24,10 +22,11 @@ namespace Call_of_Duty_FastFile_Editor.UI
 
         public static void UpdateStatusStrip(ToolStripStatusLabel maxSizeLabel, ToolStripStatusLabel currentSizeLabel, int maxSize, int currentSize)
         {
-            //maxSizeLabel.Text = $"Max MaxSize: {maxSize}";
-            //currentSizeLabel.Text = $"Current MaxSize: {currentSize}";
-
-            MessageBox.Show($"Max MaxSize: {maxSize}\nCurrent MaxSize: {currentSize}");
+            maxSizeLabel.Text = $"Max Size: {maxSize}";
+            currentSizeLabel.Text = $"Current Size: {currentSize}";
+            currentSizeLabel.ForeColor = currentSize > maxSize ? Color.Red : Color.Black;
+            maxSizeLabel.Visible = true;
+            currentSizeLabel.Visible = true;
         }
 
         public static void SetTreeNodeColors(TreeView treeView)
@@ -59,29 +58,6 @@ namespace Call_of_Duty_FastFile_Editor.UI
                     node.ForeColor = Color.Red;
                 }
             }
-        }
-
-        public static void InitializeFastColoredTextBoxSyntaxHighlighting(FastColoredTextBox fastColoredTextBox)
-        {
-            TextStyle commentStyle = new TextStyle(Brushes.Green, null, FontStyle.Italic);
-            TextStyle keywordStyle = new TextStyle(Brushes.Blue, null, FontStyle.Bold);
-            TextStyle stringStyle = new TextStyle(Brushes.Brown, null, FontStyle.Regular);
-
-            fastColoredTextBox.TextChanged += (sender, args) =>
-            {
-                var range = fastColoredTextBox.Range;
-
-                range.ClearStyle(commentStyle, keywordStyle, stringStyle);
-
-                range.SetStyle(commentStyle, @"//.*|/\*[\s\S]*?\*/");
-                range.SetStyle(stringStyle, @"""(\\.|[^""\\])*""|'(\\.|[^'\\])*'");
-
-                string[] keywords = { "if", "else", "while", "for", "return", "function", "level", "self", "thread" };
-                foreach (var keyword in keywords)
-                {
-                    range.SetStyle(keywordStyle, $@"\b{keyword}\b");
-                }
-            };
         }
     }
 }

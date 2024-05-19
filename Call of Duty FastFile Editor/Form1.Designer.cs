@@ -1,4 +1,6 @@
-﻿namespace Call_of_Duty_FastFile_Editor
+﻿using ICSharpCode.TextEditor;
+
+namespace Call_of_Duty_FastFile_Editor
 {
     partial class Form1
     {
@@ -17,10 +19,7 @@
 
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             filesTreeView = new TreeView();
-            fastColoredTextBox1 = new FastColoredTextBoxNS.FastColoredTextBox();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
@@ -29,7 +28,9 @@
             loadedFileNameStatusLabel = new ToolStripStatusLabel();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             selectedItemStatusLabel = new ToolStripStatusLabel();
-            ((System.ComponentModel.ISupportInitialize)fastColoredTextBox1).BeginInit();
+            selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
+            selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
+            textEditorControl1 = new TextEditorControl();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -49,46 +50,13 @@
             filesTreeView.TabIndex = 0;
             filesTreeView.AfterSelect += filesTreeView_AfterSelect;
             // 
-            // fastColoredTextBox1
-            // 
-            fastColoredTextBox1.AutoCompleteBracketsList = new char[]
-    {
-    '(',
-    ')',
-    '{',
-    '}',
-    '[',
-    ']',
-    '"',
-    '"',
-    '\'',
-    '\''
-    };
-            fastColoredTextBox1.AutoIndentCharsPatterns = "^\\s*[\\w\\.]+(\\s\\w+)?\\s*(?<range>=)\\s*(?<range>[^;=]+);\r\n^\\s*(case|default)\\s*[^:]*(?<range>:)\\s*(?<range>[^;]+);";
-            fastColoredTextBox1.AutoScrollMinSize = new Size(29, 16);
-            fastColoredTextBox1.BackBrush = null;
-            fastColoredTextBox1.CharHeight = 16;
-            fastColoredTextBox1.CharWidth = 9;
-            fastColoredTextBox1.DisabledColor = Color.FromArgb(100, 180, 180, 180);
-            fastColoredTextBox1.Dock = DockStyle.Fill;
-            fastColoredTextBox1.Font = new Font("Courier New", 11.25F);
-            fastColoredTextBox1.Hotkeys = resources.GetString("fastColoredTextBox1.Hotkeys");
-            fastColoredTextBox1.IsReplaceMode = false;
-            fastColoredTextBox1.Location = new Point(0, 0);
-            fastColoredTextBox1.Name = "fastColoredTextBox1";
-            fastColoredTextBox1.Paddings = new Padding(0);
-            fastColoredTextBox1.SelectionColor = Color.FromArgb(60, 0, 0, 255);
-            fastColoredTextBox1.ServiceColors = (FastColoredTextBoxNS.ServiceColors)resources.GetObject("fastColoredTextBox1.ServiceColors");
-            fastColoredTextBox1.Size = new Size(1104, 777);
-            fastColoredTextBox1.TabIndex = 0;
-            fastColoredTextBox1.Zoom = 100;
-            // 
             // menuStrip1
             // 
+            menuStrip1.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(1450, 24);
+            menuStrip1.Size = new Size(1450, 28);
             menuStrip1.TabIndex = 1;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -96,20 +64,20 @@
             // 
             fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openFastFileToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new Size(37, 20);
+            fileToolStripMenuItem.Size = new Size(44, 24);
             fileToolStripMenuItem.Text = "File";
             // 
             // openFastFileToolStripMenuItem
             // 
             openFastFileToolStripMenuItem.Name = "openFastFileToolStripMenuItem";
-            openFastFileToolStripMenuItem.Size = new Size(148, 22);
+            openFastFileToolStripMenuItem.Size = new Size(170, 24);
             openFastFileToolStripMenuItem.Text = "Open Fast File";
             openFastFileToolStripMenuItem.Click += openFastFileToolStripMenuItem_Click;
             // 
             // splitContainer1
             // 
             splitContainer1.Dock = DockStyle.Fill;
-            splitContainer1.Location = new Point(0, 24);
+            splitContainer1.Location = new Point(0, 28);
             splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -118,7 +86,7 @@
             // 
             // splitContainer1.Panel2
             // 
-            splitContainer1.Panel2.Controls.Add(fastColoredTextBox1);
+            splitContainer1.Panel2.Controls.Add(textEditorControl1);
             splitContainer1.Size = new Size(1450, 777);
             splitContainer1.SplitterDistance = 342;
             splitContainer1.TabIndex = 0;
@@ -126,10 +94,10 @@
             // statusStrip1
             // 
             statusStrip1.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            statusStrip1.Items.AddRange(new ToolStripItem[] { loadedFileNameStatusLabel, toolStripStatusLabel1, selectedItemStatusLabel });
-            statusStrip1.Location = new Point(0, 801);
+            statusStrip1.Items.AddRange(new ToolStripItem[] { loadedFileNameStatusLabel, toolStripStatusLabel1, selectedItemStatusLabel, selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel });
+            statusStrip1.Location = new Point(0, 805);
             statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1450, 26);
+            statusStrip1.Size = new Size(1450, 22);
             statusStrip1.TabIndex = 2;
             // 
             // loadedFileNameStatusLabel
@@ -142,7 +110,7 @@
             // toolStripStatusLabel1
             // 
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            toolStripStatusLabel1.Size = new Size(0, 21);
+            toolStripStatusLabel1.Size = new Size(0, 17);
             // 
             // selectedItemStatusLabel
             // 
@@ -151,6 +119,33 @@
             selectedItemStatusLabel.Size = new Size(140, 21);
             selectedItemStatusLabel.Text = "Selected Item Here";
             selectedItemStatusLabel.Visible = false;
+            // 
+            // selectedFileMaxSizeStatusLabel
+            // 
+            selectedFileMaxSizeStatusLabel.Margin = new Padding(100, 3, 0, 2);
+            selectedFileMaxSizeStatusLabel.Name = "selectedFileMaxSizeStatusLabel";
+            selectedFileMaxSizeStatusLabel.Size = new Size(161, 21);
+            selectedFileMaxSizeStatusLabel.Text = "Selected File Max Size";
+            selectedFileMaxSizeStatusLabel.Visible = false;
+            // 
+            // selectedFileCurrentSizeStatusLabel
+            // 
+            selectedFileCurrentSizeStatusLabel.Margin = new Padding(50, 3, 0, 2);
+            selectedFileCurrentSizeStatusLabel.Name = "selectedFileCurrentSizeStatusLabel";
+            selectedFileCurrentSizeStatusLabel.Size = new Size(185, 21);
+            selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
+            selectedFileCurrentSizeStatusLabel.Visible = false;
+            // 
+            // textEditorControl1
+            // 
+            textEditorControl1.Dock = DockStyle.Fill;
+            textEditorControl1.IsReadOnly = false;
+            textEditorControl1.Location = new Point(0, 0);
+            textEditorControl1.Name = "textEditorControl1";
+            textEditorControl1.Size = new Size(1104, 777);
+            textEditorControl1.TabIndex = 0;
+            textEditorControl1.SetHighlighting("C#");
+            textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             // 
             // Form1
             // 
@@ -163,7 +158,6 @@
             MainMenuStrip = menuStrip1;
             Name = "Form1";
             Text = "Call of Duty Fast File Editor";
-            ((System.ComponentModel.ISupportInitialize)fastColoredTextBox1).EndInit();
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             splitContainer1.Panel1.ResumeLayout(false);
@@ -179,7 +173,6 @@
         #endregion
 
         private TreeView filesTreeView;
-        private FastColoredTextBoxNS.FastColoredTextBox fastColoredTextBox1;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem openFastFileToolStripMenuItem;
@@ -188,5 +181,8 @@
         private ToolStripStatusLabel loadedFileNameStatusLabel;
         private ToolStripStatusLabel selectedItemStatusLabel;
         private ToolStripStatusLabel toolStripStatusLabel1;
+        private ToolStripStatusLabel selectedFileMaxSizeStatusLabel;
+        private ToolStripStatusLabel selectedFileCurrentSizeStatusLabel;
+        private TextEditorControl textEditorControl1;
     }
 }
