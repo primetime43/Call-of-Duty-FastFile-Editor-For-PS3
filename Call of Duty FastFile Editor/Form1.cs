@@ -8,10 +8,22 @@ namespace Call_of_Duty_FastFile_Editor
         public Form1()
         {
             InitializeComponent();
+            textEditorControl1.SetHighlighting("C#");
         }
 
+        /// <summary>
+        /// Path to the selected Fast File. (contains the full path + file name + extension)
+        /// </summary>
         private string ffFilePath;
+
+        /// <summary>
+        /// Path to the decompressed zone file corresponding to the selected Fast File.
+        /// </summary>
         private string zoneFilePath;
+
+        /// <summary>
+        /// List of file entry nodes extracted from the zone file.
+        /// </summary>
         private List<FileEntryNode> fileEntryNodes;
 
         private void openFastFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -71,6 +83,13 @@ namespace Call_of_Duty_FastFile_Editor
                 int maxSize = selectedNode?.MaxSize ?? 0;
                 UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
             }
+        }
+
+        private void saveFastFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            FastFileSaving.SaveFastFile(zoneFilePath, ffFilePath);
+            MessageBox.Show("Fast File saved to:\n\n" + ffFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            Application.Restart();
         }
     }
 }

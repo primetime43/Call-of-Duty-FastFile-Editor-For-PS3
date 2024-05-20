@@ -23,14 +23,20 @@ namespace Call_of_Duty_FastFile_Editor
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
+            saveFastFileToolStripMenuItem = new ToolStripMenuItem();
+            saveFastFileAsToolStripMenuItem = new ToolStripMenuItem();
+            exitToolStripMenuItem = new ToolStripMenuItem();
+            editToolStripMenuItem = new ToolStripMenuItem();
+            toolsToolStripMenuItem = new ToolStripMenuItem();
+            aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
+            textEditorControl1 = new TextEditorControl();
             statusStrip1 = new StatusStrip();
             loadedFileNameStatusLabel = new ToolStripStatusLabel();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             selectedItemStatusLabel = new ToolStripStatusLabel();
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
-            textEditorControl1 = new TextEditorControl();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -53,7 +59,7 @@ namespace Call_of_Duty_FastFile_Editor
             // menuStrip1
             // 
             menuStrip1.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, toolsToolStripMenuItem, aboutToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(1450, 28);
@@ -62,7 +68,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openFastFileToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openFastFileToolStripMenuItem, saveFastFileToolStripMenuItem, saveFastFileAsToolStripMenuItem, exitToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new Size(44, 24);
             fileToolStripMenuItem.Text = "File";
@@ -70,9 +76,46 @@ namespace Call_of_Duty_FastFile_Editor
             // openFastFileToolStripMenuItem
             // 
             openFastFileToolStripMenuItem.Name = "openFastFileToolStripMenuItem";
-            openFastFileToolStripMenuItem.Size = new Size(170, 24);
+            openFastFileToolStripMenuItem.Size = new Size(192, 24);
             openFastFileToolStripMenuItem.Text = "Open Fast File";
             openFastFileToolStripMenuItem.Click += openFastFileToolStripMenuItem_Click;
+            // 
+            // saveFastFileToolStripMenuItem
+            // 
+            saveFastFileToolStripMenuItem.Name = "saveFastFileToolStripMenuItem";
+            saveFastFileToolStripMenuItem.Size = new Size(192, 24);
+            saveFastFileToolStripMenuItem.Text = "Save Fast File";
+            saveFastFileToolStripMenuItem.Click += saveFastFileToolStripMenuItem_Click;
+            // 
+            // saveFastFileAsToolStripMenuItem
+            // 
+            saveFastFileAsToolStripMenuItem.Name = "saveFastFileAsToolStripMenuItem";
+            saveFastFileAsToolStripMenuItem.Size = new Size(192, 24);
+            saveFastFileAsToolStripMenuItem.Text = "Save Fast File as...";
+            // 
+            // exitToolStripMenuItem
+            // 
+            exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+            exitToolStripMenuItem.Size = new Size(192, 24);
+            exitToolStripMenuItem.Text = "Exit";
+            // 
+            // editToolStripMenuItem
+            // 
+            editToolStripMenuItem.Name = "editToolStripMenuItem";
+            editToolStripMenuItem.Size = new Size(47, 24);
+            editToolStripMenuItem.Text = "Edit";
+            // 
+            // toolsToolStripMenuItem
+            // 
+            toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
+            toolsToolStripMenuItem.Size = new Size(56, 24);
+            toolsToolStripMenuItem.Text = "Tools";
+            // 
+            // aboutToolStripMenuItem
+            // 
+            aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
+            aboutToolStripMenuItem.Size = new Size(62, 24);
+            aboutToolStripMenuItem.Text = "About";
             // 
             // splitContainer1
             // 
@@ -90,6 +133,16 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.Size = new Size(1450, 777);
             splitContainer1.SplitterDistance = 342;
             splitContainer1.TabIndex = 0;
+            // 
+            // textEditorControl1
+            // 
+            textEditorControl1.Dock = DockStyle.Fill;
+            textEditorControl1.IsReadOnly = false;
+            textEditorControl1.Location = new Point(0, 0);
+            textEditorControl1.Name = "textEditorControl1";
+            textEditorControl1.Size = new Size(1104, 777);
+            textEditorControl1.TabIndex = 0;
+            textEditorControl1.TextChanged += textEditorControl1_TextChanged;
             // 
             // statusStrip1
             // 
@@ -136,17 +189,6 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
             // 
-            // textEditorControl1
-            // 
-            textEditorControl1.Dock = DockStyle.Fill;
-            textEditorControl1.IsReadOnly = false;
-            textEditorControl1.Location = new Point(0, 0);
-            textEditorControl1.Name = "textEditorControl1";
-            textEditorControl1.Size = new Size(1104, 777);
-            textEditorControl1.TabIndex = 0;
-            textEditorControl1.SetHighlighting("C#");
-            textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
-            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -184,5 +226,11 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripStatusLabel selectedFileMaxSizeStatusLabel;
         private ToolStripStatusLabel selectedFileCurrentSizeStatusLabel;
         private TextEditorControl textEditorControl1;
+        private ToolStripMenuItem saveFastFileToolStripMenuItem;
+        private ToolStripMenuItem saveFastFileAsToolStripMenuItem;
+        private ToolStripMenuItem exitToolStripMenuItem;
+        private ToolStripMenuItem editToolStripMenuItem;
+        private ToolStripMenuItem toolsToolStripMenuItem;
+        private ToolStripMenuItem aboutToolStripMenuItem;
     }
 }
