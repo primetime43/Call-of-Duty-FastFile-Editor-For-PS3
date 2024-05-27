@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ionic.Zlib;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -44,6 +45,49 @@ namespace Call_of_Duty_FastFile_Editor.IO
                         throw;
                     }
                 }
+            }
+        }
+
+        public static void RecompressFastFile(string inputFilePath, string outputFilePath)
+        {
+            byte[] header = new byte[8] { 73, 87, 102, 102, 117, 49, 48, 48 }; // IWffu100 header
+            bool isCOD5 = true; // Adjust based on your file type
+
+            using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open), Encoding.Default))
+            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create), Encoding.Default))
+            {
+                // Write header to the new file
+                binaryWriter.Write(header);
+
+                if (isCOD5)
+                {
+                    binaryWriter.Write(new byte[4] { 0, 0, 1, 131 });
+                }
+
+                // Set the reader position to skip the header already written
+                binaryReader.BaseStream.Position = 12L; // Skip the original header
+
+                int chunkSize = 65536;
+                while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length)
+                {
+                    // Read a chunk
+                    byte[] chunk = binaryReader.ReadBytes(chunkSize);
+
+                    // Compress the chunk
+                    byte[] compressedChunk = FastFileCompressor.CompressFF(chunk);
+
+                    // Write the length of the compressed chunk (2 bytes)
+                    int compressedLength = compressedChunk.Length;
+                    byte[] lengthBytes = BitConverter.GetBytes(compressedLength);
+                    Array.Reverse(lengthBytes); // Make sure the length is in correct byte order
+                    binaryWriter.Write(lengthBytes, 2, 2); // Write only the last 2 bytes
+
+                    // Write the compressed chunk
+                    binaryWriter.Write(compressedChunk);
+                }
+
+                // Write the final 2-byte sequence
+                binaryWriter.Write(new byte[2] { 0, 1 });
             }
         }
 

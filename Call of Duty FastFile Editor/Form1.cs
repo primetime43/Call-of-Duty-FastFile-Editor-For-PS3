@@ -1,6 +1,5 @@
 using Call_of_Duty_FastFile_Editor.IO;
 using Call_of_Duty_FastFile_Editor.UI;
-
 namespace Call_of_Duty_FastFile_Editor
 {
     public partial class Form1 : Form
@@ -87,9 +86,39 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void saveFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            FastFileSaving.SaveFastFile(zoneFilePath, ffFilePath);
+            FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath);
             MessageBox.Show("Fast File saved to:\n\n" + ffFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             Application.Restart();
+        }
+
+        private void saveFastFileAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Filter = "Fast Files (*.ff)|*.ff|All Files (*.*)|*.*";
+                saveFileDialog.Title = "Save Fast File As";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string newFilePath = saveFileDialog.FileName;
+                    FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath);
+                    MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                    Application.Restart();
+                }
+            }
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (File.Exists(zoneFilePath))
+            {
+                File.Delete(zoneFilePath);
+            }
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Close();
         }
     }
 }

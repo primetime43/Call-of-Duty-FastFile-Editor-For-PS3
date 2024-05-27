@@ -92,12 +92,14 @@ namespace Call_of_Duty_FastFile_Editor
             saveFastFileAsToolStripMenuItem.Name = "saveFastFileAsToolStripMenuItem";
             saveFastFileAsToolStripMenuItem.Size = new Size(192, 24);
             saveFastFileAsToolStripMenuItem.Text = "Save Fast File as...";
+            saveFastFileAsToolStripMenuItem.Click += saveFastFileAsToolStripMenuItem_Click;
             // 
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
             exitToolStripMenuItem.Size = new Size(192, 24);
             exitToolStripMenuItem.Text = "Exit";
+            exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
             // 
             // editToolStripMenuItem
             // 
@@ -200,6 +202,7 @@ namespace Call_of_Duty_FastFile_Editor
             MainMenuStrip = menuStrip1;
             Name = "Form1";
             Text = "Call of Duty Fast File Editor";
+            FormClosed += Form1_FormClosed;
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             splitContainer1.Panel1.ResumeLayout(false);
