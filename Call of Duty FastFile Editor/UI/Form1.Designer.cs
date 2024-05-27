@@ -27,6 +27,13 @@ namespace Call_of_Duty_FastFile_Editor
             saveFastFileAsToolStripMenuItem = new ToolStripMenuItem();
             exitToolStripMenuItem = new ToolStripMenuItem();
             editToolStripMenuItem = new ToolStripMenuItem();
+            saveRawFileToolStripMenuItem = new ToolStripMenuItem();
+            renameRawFileToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            beautifyCodeToolStripMenuItem = new ToolStripMenuItem();
+            compressCodeToolStripMenuItem = new ToolStripMenuItem();
+            removeCommentsToolStripMenuItem = new ToolStripMenuItem();
+            checkSyntaxToolStripMenuItem = new ToolStripMenuItem();
             toolsToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
@@ -103,9 +110,56 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // editToolStripMenuItem
             // 
+            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { saveRawFileToolStripMenuItem, renameRawFileToolStripMenuItem, toolStripSeparator1, beautifyCodeToolStripMenuItem, compressCodeToolStripMenuItem, removeCommentsToolStripMenuItem, checkSyntaxToolStripMenuItem });
             editToolStripMenuItem.Name = "editToolStripMenuItem";
             editToolStripMenuItem.Size = new Size(47, 24);
             editToolStripMenuItem.Text = "Edit";
+            // 
+            // saveRawFileToolStripMenuItem
+            // 
+            saveRawFileToolStripMenuItem.Enabled = false;
+            saveRawFileToolStripMenuItem.Name = "saveRawFileToolStripMenuItem";
+            saveRawFileToolStripMenuItem.Size = new Size(207, 24);
+            saveRawFileToolStripMenuItem.Text = "Save Raw File";
+            saveRawFileToolStripMenuItem.ToolTipText = "This will save the modified file extracted from the ff";
+            saveRawFileToolStripMenuItem.Click += saveRawFileToolStripMenuItem_Click;
+            // 
+            // renameRawFileToolStripMenuItem
+            // 
+            renameRawFileToolStripMenuItem.Enabled = false;
+            renameRawFileToolStripMenuItem.Name = "renameRawFileToolStripMenuItem";
+            renameRawFileToolStripMenuItem.Size = new Size(207, 24);
+            renameRawFileToolStripMenuItem.Text = "Rename Raw File";
+            // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(204, 6);
+            // 
+            // beautifyCodeToolStripMenuItem
+            // 
+            beautifyCodeToolStripMenuItem.Name = "beautifyCodeToolStripMenuItem";
+            beautifyCodeToolStripMenuItem.Size = new Size(207, 24);
+            beautifyCodeToolStripMenuItem.Text = "Beautify Code";
+            // 
+            // compressCodeToolStripMenuItem
+            // 
+            compressCodeToolStripMenuItem.Name = "compressCodeToolStripMenuItem";
+            compressCodeToolStripMenuItem.Size = new Size(207, 24);
+            compressCodeToolStripMenuItem.Text = "Compress Code";
+            // 
+            // removeCommentsToolStripMenuItem
+            // 
+            removeCommentsToolStripMenuItem.Name = "removeCommentsToolStripMenuItem";
+            removeCommentsToolStripMenuItem.Size = new Size(207, 24);
+            removeCommentsToolStripMenuItem.Text = "Remove Comments";
+            removeCommentsToolStripMenuItem.Click += removeCommentsToolStripMenuItem_Click;
+            // 
+            // checkSyntaxToolStripMenuItem
+            // 
+            checkSyntaxToolStripMenuItem.Name = "checkSyntaxToolStripMenuItem";
+            checkSyntaxToolStripMenuItem.Size = new Size(207, 24);
+            checkSyntaxToolStripMenuItem.Text = "Check Syntax";
             // 
             // toolsToolStripMenuItem
             // 
@@ -235,5 +289,12 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem editToolStripMenuItem;
         private ToolStripMenuItem toolsToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
+        private ToolStripMenuItem saveRawFileToolStripMenuItem;
+        private ToolStripMenuItem renameRawFileToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripMenuItem beautifyCodeToolStripMenuItem;
+        private ToolStripMenuItem compressCodeToolStripMenuItem;
+        private ToolStripMenuItem removeCommentsToolStripMenuItem;
+        private ToolStripMenuItem checkSyntaxToolStripMenuItem;
     }
 }

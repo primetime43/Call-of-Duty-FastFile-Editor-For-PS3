@@ -1,5 +1,7 @@
+using Call_of_Duty_FastFile_Editor.CodeOperations;
 using Call_of_Duty_FastFile_Editor.IO;
 using Call_of_Duty_FastFile_Editor.UI;
+using System.Text.RegularExpressions;
 namespace Call_of_Duty_FastFile_Editor
 {
     public partial class Form1 : Form
@@ -54,6 +56,10 @@ namespace Call_of_Duty_FastFile_Editor
             }
 
             UIManager.SetTreeNodeColors(filesTreeView);
+
+            // move this to the UIManager eventually
+            saveRawFileToolStripMenuItem.Enabled = true;
+            renameRawFileToolStripMenuItem.Enabled = true;
         }
 
         private void filesTreeView_AfterSelect(object sender, TreeViewEventArgs e)
@@ -119,6 +125,18 @@ namespace Call_of_Duty_FastFile_Editor
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void saveRawFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void removeCommentsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
+            textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
+            textEditorControl1.Text = Regex.Replace(textEditorControl1.Text, "(\\r\\n){2,}", "\r\n\r\n");
         }
     }
 }
