@@ -1,11 +1,6 @@
 ﻿using Ionic.Zlib;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Windows.Forms;
 
 namespace Call_of_Duty_FastFile_Editor.IO
 {
@@ -48,13 +43,13 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
         }
 
-        public static void RecompressFastFile(string inputFilePath, string outputFilePath)
+        public static void RecompressFastFile(string ffFilePath, string zoneFilePath)
         {
             byte[] header = new byte[8] { 73, 87, 102, 102, 117, 49, 48, 48 }; // IWffu100 header
             bool isCOD5 = true; // Adjust based on your file type
 
-            using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open), Encoding.Default))
-            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create), Encoding.Default))
+            using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open), Encoding.Default))
+            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create), Encoding.Default))
             {
                 // Write header to the new file
                 binaryWriter.Write(header);
@@ -65,6 +60,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 }
 
                 // Set the reader position to skip the header already written
+                //binaryReader.BaseStream.Position = 0; // Start from the beginning of the zone file
                 binaryReader.BaseStream.Position = 12L; // Skip the original header
 
                 int chunkSize = 65536;

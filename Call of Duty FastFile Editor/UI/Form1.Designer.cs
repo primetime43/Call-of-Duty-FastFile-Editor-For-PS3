@@ -19,6 +19,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void InitializeComponent()
         {
+            textEditorControl1 = new TextEditorControl();
             filesTreeView = new TreeView();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
@@ -27,6 +28,9 @@ namespace Call_of_Duty_FastFile_Editor
             saveFastFileAsToolStripMenuItem = new ToolStripMenuItem();
             exitToolStripMenuItem = new ToolStripMenuItem();
             editToolStripMenuItem = new ToolStripMenuItem();
+            undoToolStripMenuItem = new ToolStripMenuItem();
+            redoToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
             saveRawFileToolStripMenuItem = new ToolStripMenuItem();
             renameRawFileToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
@@ -37,13 +41,13 @@ namespace Call_of_Duty_FastFile_Editor
             toolsToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
-            textEditorControl1 = new TextEditorControl();
             statusStrip1 = new StatusStrip();
             loadedFileNameStatusLabel = new ToolStripStatusLabel();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             selectedItemStatusLabel = new ToolStripStatusLabel();
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
+            saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -51,6 +55,16 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.SuspendLayout();
             statusStrip1.SuspendLayout();
             SuspendLayout();
+            // 
+            // textEditorControl1
+            // 
+            textEditorControl1.Dock = DockStyle.Fill;
+            textEditorControl1.IsReadOnly = false;
+            textEditorControl1.Location = new Point(0, 0);
+            textEditorControl1.Name = "textEditorControl1";
+            textEditorControl1.Size = new Size(1104, 777);
+            textEditorControl1.TabIndex = 0;
+            textEditorControl1.TextChanged += textEditorControl1_TextChanged;
             // 
             // filesTreeView
             // 
@@ -110,10 +124,31 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // editToolStripMenuItem
             // 
-            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { saveRawFileToolStripMenuItem, renameRawFileToolStripMenuItem, toolStripSeparator1, beautifyCodeToolStripMenuItem, compressCodeToolStripMenuItem, removeCommentsToolStripMenuItem, checkSyntaxToolStripMenuItem });
+            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { undoToolStripMenuItem, redoToolStripMenuItem, toolStripSeparator2, saveRawFileToolStripMenuItem, renameRawFileToolStripMenuItem, toolStripSeparator1, beautifyCodeToolStripMenuItem, compressCodeToolStripMenuItem, removeCommentsToolStripMenuItem, checkSyntaxToolStripMenuItem });
             editToolStripMenuItem.Name = "editToolStripMenuItem";
             editToolStripMenuItem.Size = new Size(47, 24);
             editToolStripMenuItem.Text = "Edit";
+            // 
+            // undoToolStripMenuItem
+            // 
+            undoToolStripMenuItem.Enabled = false;
+            undoToolStripMenuItem.Name = "undoToolStripMenuItem";
+            undoToolStripMenuItem.Size = new Size(207, 24);
+            undoToolStripMenuItem.Text = "Undo";
+            undoToolStripMenuItem.Click += undoToolStripMenuItem_Click;
+            // 
+            // redoToolStripMenuItem
+            // 
+            redoToolStripMenuItem.Enabled = false;
+            redoToolStripMenuItem.Name = "redoToolStripMenuItem";
+            redoToolStripMenuItem.Size = new Size(207, 24);
+            redoToolStripMenuItem.Text = "Redo";
+            redoToolStripMenuItem.Click += redoToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator2
+            // 
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(204, 6);
             // 
             // saveRawFileToolStripMenuItem
             // 
@@ -163,6 +198,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { saveFileToPCToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
@@ -189,16 +225,6 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.Size = new Size(1450, 777);
             splitContainer1.SplitterDistance = 342;
             splitContainer1.TabIndex = 0;
-            // 
-            // textEditorControl1
-            // 
-            textEditorControl1.Dock = DockStyle.Fill;
-            textEditorControl1.IsReadOnly = false;
-            textEditorControl1.Location = new Point(0, 0);
-            textEditorControl1.Name = "textEditorControl1";
-            textEditorControl1.Size = new Size(1104, 777);
-            textEditorControl1.TabIndex = 0;
-            textEditorControl1.TextChanged += textEditorControl1_TextChanged;
             // 
             // statusStrip1
             // 
@@ -244,6 +270,13 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Size = new Size(185, 21);
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
+            // 
+            // saveFileToPCToolStripMenuItem
+            // 
+            saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
+            saveFileToPCToolStripMenuItem.Size = new Size(180, 24);
+            saveFileToPCToolStripMenuItem.Text = "Save File To PC";
+            saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
             // 
             // Form1
             // 
@@ -296,5 +329,9 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem compressCodeToolStripMenuItem;
         private ToolStripMenuItem removeCommentsToolStripMenuItem;
         private ToolStripMenuItem checkSyntaxToolStripMenuItem;
+        private ToolStripMenuItem undoToolStripMenuItem;
+        private ToolStripMenuItem redoToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator2;
+        private ToolStripMenuItem saveFileToPCToolStripMenuItem;
     }
 }
