@@ -264,7 +264,21 @@ namespace Call_of_Duty_FastFile_Editor.IO
             byte[] contentBytes = new byte[contentLength];
             Array.Copy(fileData, contentStartPosition, contentBytes, 0, contentLength);
 
-            return Encoding.Default.GetString(contentBytes);
+            return RemoveZeroPadding(contentBytes);
         }
+
+        private static string RemoveZeroPadding(byte[] content)
+        {
+            // Remove zero padding (0x00) from the content
+            int i = content.Length - 1;
+            while (i >= 0 && content[i] == 0x00)
+            {
+                i--;
+            }
+
+            // Convert the remaining content to a string
+            return Encoding.Default.GetString(content, 0, i + 1);
+        }
+
     }
 }

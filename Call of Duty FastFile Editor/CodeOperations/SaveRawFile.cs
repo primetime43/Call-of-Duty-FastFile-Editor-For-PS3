@@ -42,7 +42,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite), Encoding.Default))
             {
                 binaryReader.BaseStream.Position = fileEntryNode.PatternIndexPosition;
-                originalSize = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
+                originalSize = fileEntryNode.MaxSize;
             }
 
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite), Encoding.Default))
@@ -62,17 +62,14 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                 binaryWriter.BaseStream.Position = updatePosition;
                 binaryWriter.Write(updatedBytes);
 
-
                 // Pad with zeros if the new data is shorter than the original data
-                // Need to get padding working
-                /*if (updatedSize < originalSize)
+                if (updatedSize < originalSize)
                 {
                     long paddingPosition = updatePosition + updatedSize;
-                    long paddingSize = originalSize - updatedSize;
-                    MessageBox.Show($"Padding with zeros from {paddingPosition} to {paddingPosition + paddingSize}");
-                    binaryWriter.BaseStream.PatternIndexPosition = paddingPosition;
+                    int paddingSize = originalSize - updatedSize;
+                    binaryWriter.BaseStream.Position = paddingPosition;
                     binaryWriter.Write(new byte[paddingSize]);
-                }*/
+                }
 
                 MessageBox.Show("Raw File Saved To Zone.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             }

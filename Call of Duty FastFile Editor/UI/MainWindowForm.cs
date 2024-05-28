@@ -83,7 +83,7 @@ namespace Call_of_Duty_FastFile_Editor
                 textEditorControl1.TextChanged += textEditorControl1_TextChanged; // Resubscribe
 
                 UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
-                UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, fileContent.Length);
+                UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
             }
         }
 
