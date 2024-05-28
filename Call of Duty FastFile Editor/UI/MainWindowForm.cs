@@ -200,8 +200,7 @@ namespace Call_of_Duty_FastFile_Editor
                     // Additional logic for handling the selected file node
                     if (selectedFileNode != null)
                     {
-                        MessageBox.Show($"Selected file node: {fileName}, StartOfFileHeader: {selectedFileNode.StartOfFileHeader} (dec), {selectedFileNode.StartOfFileHeader:X} (hex)");
-                        MessageBox.Show($"StartOfFileHeader: {selectedFileNode.CodeStartPosition} (dec), {selectedFileNode.CodeStartPosition:X} (hex)");
+                        new FileStructureInfoForm(selectedFileNode).Show();
                     }
                     else
                     {

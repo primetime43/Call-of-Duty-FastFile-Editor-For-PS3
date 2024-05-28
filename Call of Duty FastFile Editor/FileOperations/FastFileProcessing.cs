@@ -29,6 +29,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
             get => StartOfFileHeader + 8 + Node.Text.Length + 1;
             set => _codeStartPosition = value; // Allow setting it manually if needed
         }
+
+        /// <summary>
+        /// Gets or sets the file name.
+        /// </summary>
+        public string FileName { get; set; }
     }
 
     public static class FastFileProcessing
@@ -184,7 +189,14 @@ namespace Call_of_Duty_FastFile_Editor.IO
                                 {
                                     Tag = patternIndex
                                 };
-                                fileEntryNodes.Add(new FileEntryNode { Node = treeNode, PatternIndexPosition = patternIndex, MaxSize = maxSize, StartOfFileHeader = sizePosition });
+                                fileEntryNodes.Add(new FileEntryNode
+                                {
+                                    Node = treeNode,
+                                    PatternIndexPosition = patternIndex,
+                                    MaxSize = maxSize,
+                                    StartOfFileHeader = sizePosition,
+                                    FileName = fileName
+                                });
 
                                 // Debugging message box
                                 //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFile Name: {fileName}\nSize PatternIndexPosition: {sizePosition:X}\nMax Size: {maxSize}\nHeader Start: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
