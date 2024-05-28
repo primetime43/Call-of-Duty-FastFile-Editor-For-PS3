@@ -7,10 +7,10 @@ using System.Text;
 
 namespace Call_of_Duty_FastFile_Editor
 {
-    public partial class Form1 : Form
+    public partial class MainWindowForm : Form
     {
         private UndoRedo _undoRedoManager;
-        public Form1()
+        public MainWindowForm()
         {
             InitializeComponent();
             textEditorControl1.SetHighlighting("C#");
@@ -74,7 +74,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (e.Node.Tag is int position)
             {
                 string fileName = e.Node.Text; // Get the selected file name
-                var selectedNode = fileEntryNodes.FirstOrDefault(node => node.Position == position);
+                var selectedNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                 int maxSize = selectedNode?.MaxSize ?? 0;
                 string fileContent = FastFileProcessing.ReadFileContentAfterName(zoneFilePath, position, maxSize);
 
@@ -91,7 +91,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             if (filesTreeView.SelectedNode?.Tag is int position)
             {
-                var selectedNode = fileEntryNodes.FirstOrDefault(node => node.Position == position);
+                var selectedNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                 int maxSize = selectedNode?.MaxSize ?? 0;
                 UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
 
@@ -185,6 +185,37 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 textEditorControl1.SaveFile(saveFileDialog.FileName);
                 MessageBox.Show("File " + Path.GetFileName(saveFileDialog.FileName) + " saved to:\n" + saveFileDialog.FileName, "File Saved.", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            }
+        }
+
+        private void fileStructureInfoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesTreeView.SelectedNode != null)
+            {
+                if (filesTreeView.SelectedNode.Tag is int position)
+                {
+                    string fileName = filesTreeView.SelectedNode.Text; // Get the selected file name
+                    var selectedFileNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+
+                    // Additional logic for handling the selected file node
+                    if (selectedFileNode != null)
+                    {
+                        MessageBox.Show($"Selected file node: {fileName}, StartOfFileHeader: {selectedFileNode.StartOfFileHeader} (dec), {selectedFileNode.StartOfFileHeader:X} (hex)");
+                        MessageBox.Show($"StartOfFileHeader: {selectedFileNode.CodeStartPosition} (dec), {selectedFileNode.CodeStartPosition:X} (hex)");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Selected file node not found in file entry nodes.");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Selected node does not have a valid position.");
+                }
+            }
+            else
+            {
+                MessageBox.Show("No node is selected.");
             }
         }
     }

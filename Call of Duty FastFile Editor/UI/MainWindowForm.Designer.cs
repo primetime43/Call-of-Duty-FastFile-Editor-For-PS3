@@ -2,7 +2,7 @@
 
 namespace Call_of_Duty_FastFile_Editor
 {
-    partial class Form1
+    partial class MainWindowForm
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -39,6 +39,8 @@ namespace Call_of_Duty_FastFile_Editor
             removeCommentsToolStripMenuItem = new ToolStripMenuItem();
             checkSyntaxToolStripMenuItem = new ToolStripMenuItem();
             toolsToolStripMenuItem = new ToolStripMenuItem();
+            saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
+            fileStructureInfoToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             statusStrip1 = new StatusStrip();
@@ -47,7 +49,6 @@ namespace Call_of_Duty_FastFile_Editor
             selectedItemStatusLabel = new ToolStripStatusLabel();
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
-            saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -198,10 +199,24 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { saveFileToPCToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { fileStructureInfoToolStripMenuItem, saveFileToPCToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
+            // 
+            // saveFileToPCToolStripMenuItem
+            // 
+            saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
+            saveFileToPCToolStripMenuItem.Size = new Size(194, 24);
+            saveFileToPCToolStripMenuItem.Text = "Save File To PC";
+            saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
+            // 
+            // fileStructureInfoToolStripMenuItem
+            // 
+            fileStructureInfoToolStripMenuItem.Name = "fileStructureInfoToolStripMenuItem";
+            fileStructureInfoToolStripMenuItem.Size = new Size(194, 24);
+            fileStructureInfoToolStripMenuItem.Text = "File Structure Info";
+            fileStructureInfoToolStripMenuItem.Click += fileStructureInfoToolStripMenuItem_Click;
             // 
             // aboutToolStripMenuItem
             // 
@@ -271,13 +286,6 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
             // 
-            // saveFileToPCToolStripMenuItem
-            // 
-            saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
-            saveFileToPCToolStripMenuItem.Size = new Size(180, 24);
-            saveFileToPCToolStripMenuItem.Text = "Save File To PC";
-            saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
-            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -333,5 +341,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem redoToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem saveFileToPCToolStripMenuItem;
+        private ToolStripMenuItem fileStructureInfoToolStripMenuItem;
     }
 }

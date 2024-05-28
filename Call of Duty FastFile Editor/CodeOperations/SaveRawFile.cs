@@ -15,7 +15,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
             {
                 if (filesTreeView.SelectedNode?.Tag is int position)
                 {
-                    var fileEntryNode = fileEntryNodes.FirstOrDefault(node => node.Position == position);
+                    var fileEntryNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                     if (fileEntryNode != null)
                     {
                         SaveFileNode(zoneFilePath, fileEntryNode, updatedText);
@@ -41,14 +41,15 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
             int originalSize;
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite), Encoding.Default))
             {
-                binaryReader.BaseStream.Position = fileEntryNode.Position;
+                binaryReader.BaseStream.Position = fileEntryNode.PatternIndexPosition;
                 originalSize = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
             }
 
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite), Encoding.Default))
             {
                 // Calculate the position to write the updated content
-                binaryWriter.BaseStream.Position = fileEntryNode.Position + 8 + fileEntryNode.Node.Text.Length + 1;
+                long updatePosition = fileEntryNode.StartOfFileHeader + 8 + fileEntryNode.Node.Text.Length + 1;
+                //MessageBox.Show($"Updating at position: {updatePosition}");
                 byte[] updatedBytes = Encoding.ASCII.GetBytes(updatedText);
                 int updatedSize = updatedBytes.Length;
 
@@ -58,13 +59,20 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                     return;
                 }
 
+                binaryWriter.BaseStream.Position = updatePosition;
                 binaryWriter.Write(updatedBytes);
 
+
                 // Pad with zeros if the new data is shorter than the original data
-                if (updatedSize < originalSize)
+                // Need to get padding working
+                /*if (updatedSize < originalSize)
                 {
-                    binaryWriter.Write(new byte[originalSize - updatedSize]);
-                }
+                    long paddingPosition = updatePosition + updatedSize;
+                    long paddingSize = originalSize - updatedSize;
+                    MessageBox.Show($"Padding with zeros from {paddingPosition} to {paddingPosition + paddingSize}");
+                    binaryWriter.BaseStream.PatternIndexPosition = paddingPosition;
+                    binaryWriter.Write(new byte[paddingSize]);
+                }*/
 
                 MessageBox.Show("Raw File Saved To Zone.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             }

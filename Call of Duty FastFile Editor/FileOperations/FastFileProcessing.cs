@@ -7,9 +7,28 @@ namespace Call_of_Duty_FastFile_Editor.IO
     public class FileEntryNode
     {
         public TreeNode Node { get; set; }
-        public int Position { get; set; }
+
+        /// <summary>
+        /// This is where one of the patterns was found in the file from <see cref="FastFileProcessing.ExtractFileEntriesWithSizeAndName(string)"/>
+        /// </summary>
+        public int PatternIndexPosition { get; set; }
         public int MaxSize { get; set; }
-        public int StartOfGscHeader { get; set; }
+        /// <summary>
+        /// Gets the position where the file header starts. 
+        /// This is also where the size of the file is located.
+        /// </summary>
+        public int StartOfFileHeader { get; set; }
+
+        private int _codeStartPosition;
+
+        /// <summary>
+        /// Gets the position where the code starts, calculated as StartOfFileHeader + 8 + Node.Text.Length + 1.
+        /// </summary>
+        public int CodeStartPosition
+        {
+            get => StartOfFileHeader + 8 + Node.Text.Length + 1;
+            set => _codeStartPosition = value; // Allow setting it manually if needed
+        }
     }
 
     public static class FastFileProcessing
@@ -60,7 +79,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 }
 
                 // Set the reader position to skip the header already written
-                //binaryReader.BaseStream.Position = 0; // Start from the beginning of the zone file
+                //binaryReader.BaseStream.PatternIndexPosition = 0; // Start from the beginning of the zone file
                 binaryReader.BaseStream.Position = 12L; // Skip the original header
 
                 int chunkSize = 65536;
@@ -165,10 +184,10 @@ namespace Call_of_Duty_FastFile_Editor.IO
                                 {
                                     Tag = patternIndex
                                 };
-                                fileEntryNodes.Add(new FileEntryNode { Node = treeNode, Position = patternIndex, MaxSize = maxSize, StartOfGscHeader = sizePosition });
+                                fileEntryNodes.Add(new FileEntryNode { Node = treeNode, PatternIndexPosition = patternIndex, MaxSize = maxSize, StartOfFileHeader = sizePosition });
 
                                 // Debugging message box
-                                //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFile Name: {fileName}\nSize Position: {sizePosition:X}\nMax Size: {maxSize}\nHeader Start: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
+                                //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFile Name: {fileName}\nSize PatternIndexPosition: {sizePosition:X}\nMax Size: {maxSize}\nHeader Start: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
                             }
                             else
                             {
@@ -177,13 +196,13 @@ namespace Call_of_Duty_FastFile_Editor.IO
                         }
                         else
                         {
-                            //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFFFF Position: {ffffPosition:X}\nSize Position Invalid: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
+                            //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFFFF PatternIndexPosition: {ffffPosition:X}\nSize PatternIndexPosition Invalid: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
                         }
                     }
                 }
             }
 
-            fileEntryNodes.Sort((a, b) => a.Position.CompareTo(b.Position));
+            fileEntryNodes.Sort((a, b) => a.PatternIndexPosition.CompareTo(b.PatternIndexPosition));
             return fileEntryNodes;
         }
 
