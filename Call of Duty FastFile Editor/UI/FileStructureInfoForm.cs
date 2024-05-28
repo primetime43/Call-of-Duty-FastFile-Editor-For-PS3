@@ -2,6 +2,7 @@
 
 namespace Call_of_Duty_FastFile_Editor.UI
 {
+    // NOTE: 0D 0A is a line break in hex
     public partial class FileStructureInfoForm : Form
     {
         private FileEntryNode _selectedFileNode;
@@ -28,7 +29,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
             startOfFileHeaderPositionTextBox.Text = _selectedFileNode.StartOfFileHeader.ToString("D");
             fileSizePositionTextBox.Text = _selectedFileNode.StartOfFileHeader.ToString("D");
             maxFileSizeTextBox.Text = _selectedFileNode.MaxSize.ToString("D");
-            endOfFIlePositionTextBox.Text = (_selectedFileNode.StartOfFileHeader + _selectedFileNode.MaxSize).ToString("D");
+            endOfFIlePositionTextBox.Text = _selectedFileNode.CodeEndPosition.ToString("D");
         }
 
         private void decimalRadioButton_CheckedChanged(object sender, EventArgs e)
@@ -39,7 +40,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
                 startOfFileHeaderPositionTextBox.Text = _selectedFileNode.StartOfFileHeader.ToString("D");
                 fileSizePositionTextBox.Text = _selectedFileNode.StartOfFileHeader.ToString("D");
                 maxFileSizeTextBox.Text = _selectedFileNode.MaxSize.ToString("D");
-                endOfFIlePositionTextBox.Text = (_selectedFileNode.StartOfFileHeader + _selectedFileNode.MaxSize).ToString("D");
+                endOfFIlePositionTextBox.Text = _selectedFileNode.CodeEndPosition.ToString("D");
             }
         }
 
@@ -51,7 +52,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
                 startOfFileHeaderPositionTextBox.Text = _selectedFileNode.StartOfFileHeader.ToString("X");
                 fileSizePositionTextBox.Text = _selectedFileNode.StartOfFileHeader.ToString("X");
                 maxFileSizeTextBox.Text = _selectedFileNode.MaxSize.ToString("X");
-                endOfFIlePositionTextBox.Text = (_selectedFileNode.StartOfFileHeader + _selectedFileNode.MaxSize).ToString("X");
+                endOfFIlePositionTextBox.Text = _selectedFileNode.CodeEndPosition.ToString("X");
             }
         }
     }

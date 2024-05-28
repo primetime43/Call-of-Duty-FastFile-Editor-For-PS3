@@ -34,6 +34,8 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// Gets or sets the file name.
         /// </summary>
         public string FileName { get; set; }
+
+        public int CodeEndPosition => CodeStartPosition + MaxSize;
     }
 
     public static class FastFileProcessing
