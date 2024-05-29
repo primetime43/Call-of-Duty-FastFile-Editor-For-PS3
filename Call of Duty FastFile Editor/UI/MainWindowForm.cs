@@ -4,19 +4,21 @@ using Call_of_Duty_FastFile_Editor.UI;
 using System.Text.RegularExpressions;
 using System.Net;
 using System.Text;
+using System.Reflection;
+using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 
 namespace Call_of_Duty_FastFile_Editor
 {
     public partial class MainWindowForm : Form
     {
-        private UndoRedo _undoRedoManager;
+        private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         public MainWindowForm()
         {
             InitializeComponent();
             textEditorControl1.SetHighlighting("C#");
-            //_undoRedoManager = new UndoRedo();
 
-            //TrackChange();
+            DirectoryInfo directoryInfo = new DirectoryInfo(_originalFastFilesPath);
+            directoryInfo.Attributes |= FileAttributes.Hidden;
         }
 
         /// <summary>
@@ -130,9 +132,20 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
+            // Deleting the zone file of the opened ff file
             if (File.Exists(zoneFilePath))
             {
                 File.Delete(zoneFilePath);
+            }
+
+            // Deleting the Original Fast Files directory
+            if (Directory.Exists(_originalFastFilesPath))
+            {
+                try
+                {
+                    Directory.Delete(_originalFastFilesPath, true);
+                }
+                catch { }
             }
         }
 
@@ -151,29 +164,6 @@ namespace Call_of_Duty_FastFile_Editor
             textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
             textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
             textEditorControl1.Text = Regex.Replace(textEditorControl1.Text, "(\\r\\n){2,}", "\r\n\r\n");
-        }
-
-        private void UndoRedoManager_UndoRedoStackChanged(object sender, EventArgs e)
-        {
-            undoToolStripMenuItem.Enabled = _undoRedoManager.CanUndo;
-            redoToolStripMenuItem.Enabled = _undoRedoManager.CanRedo;
-        }
-
-        private void undoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            /*textEditorControl1.ResetText();
-            textEditorControl1.Text = _undoRedoManager.Undo(textEditorControl1.Text);*/
-        }
-
-        private void redoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            /*textEditorControl1.ResetText();
-            textEditorControl1.Text = _undoRedoManager.Redo(textEditorControl1.Text);*/
-        }
-
-        private void TrackChange()
-        {
-            _undoRedoManager.TrackChange(textEditorControl1.Text);
         }
 
         private void saveFileToPCToolStripMenuItem_Click(object sender, EventArgs e)
@@ -243,5 +233,21 @@ namespace Call_of_Duty_FastFile_Editor
                              "GitHub: https://github.com/primetime43";
             MessageBox.Show(message, "About Call of Duty Fast File Editor");
         }
+
+        private void defaultffToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DownloadManager.DownloadFile("default.ff", Path.Combine("Original Fast Files", "COD5"));
+        }
+
+        private void patchmpffToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD5"));
+        }
+
+        private void nazizombiefactorypatchffToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DownloadManager.DownloadFile("nazi_zombie_factory_patch.ff", Path.Combine("Original Fast Files", "COD5"));
+        }
+
     }
 }
