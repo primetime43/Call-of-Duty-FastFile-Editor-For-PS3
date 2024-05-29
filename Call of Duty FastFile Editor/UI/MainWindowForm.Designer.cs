@@ -192,7 +192,7 @@ namespace Call_of_Duty_FastFile_Editor
             checkSyntaxToolStripMenuItem.Name = "checkSyntaxToolStripMenuItem";
             checkSyntaxToolStripMenuItem.Size = new Size(207, 24);
             checkSyntaxToolStripMenuItem.Text = "Check Syntax";
-            checkSyntaxToolStripMenuItem.Click += this.checkSyntaxToolStripMenuItem_Click;
+            checkSyntaxToolStripMenuItem.Click += checkSyntaxToolStripMenuItem_Click;
             // 
             // toolsToolStripMenuItem
             // 
@@ -220,6 +220,7 @@ namespace Call_of_Duty_FastFile_Editor
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
             aboutToolStripMenuItem.Size = new Size(62, 24);
             aboutToolStripMenuItem.Text = "About";
+            aboutToolStripMenuItem.Click += this.aboutToolStripMenuItem_Click;
             // 
             // splitContainer1
             // 

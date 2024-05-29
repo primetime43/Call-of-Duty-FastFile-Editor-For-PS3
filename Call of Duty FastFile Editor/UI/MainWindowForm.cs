@@ -231,5 +231,17 @@ namespace Call_of_Duty_FastFile_Editor
         {
             SyntaxChecker.CheckSyntax(textEditorControl1.Text);
         }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string message = "Call of Duty Fast File Editor\n\n" +
+                             "Developed by primetime43\n\n" +
+                             "Special thanks to:\n" +
+                             "- BuC-ShoTz\n" +
+                             "- aerosoul94\n" +
+                             "- EliteMossy\n\n" +
+                             "GitHub: https://github.com/primetime43";
+            MessageBox.Show(message, "About Call of Duty Fast File Editor");
+        }
     }
 }
