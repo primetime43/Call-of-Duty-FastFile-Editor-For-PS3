@@ -39,8 +39,8 @@ namespace Call_of_Duty_FastFile_Editor
             removeCommentsToolStripMenuItem = new ToolStripMenuItem();
             checkSyntaxToolStripMenuItem = new ToolStripMenuItem();
             toolsToolStripMenuItem = new ToolStripMenuItem();
-            saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
             fileStructureInfoToolStripMenuItem = new ToolStripMenuItem();
+            saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             statusStrip1 = new StatusStrip();
@@ -183,6 +183,7 @@ namespace Call_of_Duty_FastFile_Editor
             compressCodeToolStripMenuItem.Name = "compressCodeToolStripMenuItem";
             compressCodeToolStripMenuItem.Size = new Size(207, 24);
             compressCodeToolStripMenuItem.Text = "Compress Code";
+            compressCodeToolStripMenuItem.Click += this.compressCodeToolStripMenuItem_Click;
             // 
             // removeCommentsToolStripMenuItem
             // 
@@ -204,19 +205,19 @@ namespace Call_of_Duty_FastFile_Editor
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
             // 
-            // saveFileToPCToolStripMenuItem
-            // 
-            saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
-            saveFileToPCToolStripMenuItem.Size = new Size(194, 24);
-            saveFileToPCToolStripMenuItem.Text = "Save File To PC";
-            saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
-            // 
             // fileStructureInfoToolStripMenuItem
             // 
             fileStructureInfoToolStripMenuItem.Name = "fileStructureInfoToolStripMenuItem";
             fileStructureInfoToolStripMenuItem.Size = new Size(194, 24);
             fileStructureInfoToolStripMenuItem.Text = "File Structure Info";
             fileStructureInfoToolStripMenuItem.Click += fileStructureInfoToolStripMenuItem_Click;
+            // 
+            // saveFileToPCToolStripMenuItem
+            // 
+            saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
+            saveFileToPCToolStripMenuItem.Size = new Size(194, 24);
+            saveFileToPCToolStripMenuItem.Text = "Save File To PC";
+            saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
             // 
             // aboutToolStripMenuItem
             // 
@@ -286,7 +287,7 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
             // 
-            // Form1
+            // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -295,7 +296,7 @@ namespace Call_of_Duty_FastFile_Editor
             Controls.Add(statusStrip1);
             Controls.Add(menuStrip1);
             MainMenuStrip = menuStrip1;
-            Name = "Form1";
+            Name = "MainWindowForm";
             Text = "Call of Duty Fast File Editor";
             FormClosed += Form1_FormClosed;
             menuStrip1.ResumeLayout(false);

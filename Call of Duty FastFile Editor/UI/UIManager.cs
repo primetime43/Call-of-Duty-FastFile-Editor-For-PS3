@@ -22,8 +22,8 @@
 
         public static void UpdateStatusStrip(ToolStripStatusLabel maxSizeLabel, ToolStripStatusLabel currentSizeLabel, int maxSize, int currentSize)
         {
-            maxSizeLabel.Text = $"Max Size: {maxSize}";
-            currentSizeLabel.Text = $"Current Size: {currentSize}";
+            maxSizeLabel.Text = $"Max Size: {maxSize} (dec)";
+            currentSizeLabel.Text = $"Current Size: {currentSize} (dec)";
             currentSizeLabel.ForeColor = currentSize > maxSize ? Color.Red : Color.Black;
             maxSizeLabel.Visible = true;
             currentSizeLabel.Visible = true;

@@ -217,5 +217,12 @@ namespace Call_of_Duty_FastFile_Editor
                 MessageBox.Show("No node is selected.");
             }
         }
+
+        private void compressCodeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
+            textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
+            textEditorControl1.Text = CodeCompressor.CompressCode(textEditorControl1.Text);
+        }
     }
 }
