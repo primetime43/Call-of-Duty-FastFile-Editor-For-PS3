@@ -103,6 +103,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // saveFastFileToolStripMenuItem
             // 
+            saveFastFileToolStripMenuItem.Enabled = false;
             saveFastFileToolStripMenuItem.Name = "saveFastFileToolStripMenuItem";
             saveFastFileToolStripMenuItem.Size = new Size(192, 24);
             saveFastFileToolStripMenuItem.Text = "Save Fast File";
@@ -110,6 +111,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // saveFastFileAsToolStripMenuItem
             // 
+            saveFastFileAsToolStripMenuItem.Enabled = false;
             saveFastFileAsToolStripMenuItem.Name = "saveFastFileAsToolStripMenuItem";
             saveFastFileAsToolStripMenuItem.Size = new Size(192, 24);
             saveFastFileAsToolStripMenuItem.Text = "Save Fast File as...";
@@ -190,6 +192,7 @@ namespace Call_of_Duty_FastFile_Editor
             checkSyntaxToolStripMenuItem.Name = "checkSyntaxToolStripMenuItem";
             checkSyntaxToolStripMenuItem.Size = new Size(207, 24);
             checkSyntaxToolStripMenuItem.Text = "Check Syntax";
+            checkSyntaxToolStripMenuItem.Click += this.checkSyntaxToolStripMenuItem_Click;
             // 
             // toolsToolStripMenuItem
             // 

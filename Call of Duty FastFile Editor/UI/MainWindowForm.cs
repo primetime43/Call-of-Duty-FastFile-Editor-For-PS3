@@ -67,6 +67,8 @@ namespace Call_of_Duty_FastFile_Editor
             // move this to the UIManager eventually
             saveRawFileToolStripMenuItem.Enabled = true;
             renameRawFileToolStripMenuItem.Enabled = true;
+            saveFastFileToolStripMenuItem.Enabled = true;
+            saveFastFileAsToolStripMenuItem.Enabled = true;
         }
 
         private void filesTreeView_AfterSelect(object sender, TreeViewEventArgs e)
@@ -223,6 +225,11 @@ namespace Call_of_Duty_FastFile_Editor
             textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
             textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
             textEditorControl1.Text = CodeCompressor.CompressCode(textEditorControl1.Text);
+        }
+
+        private void checkSyntaxToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SyntaxChecker.CheckSyntax(textEditorControl1.Text);
         }
     }
 }
