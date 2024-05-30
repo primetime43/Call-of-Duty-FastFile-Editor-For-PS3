@@ -38,8 +38,6 @@ namespace Call_of_Duty_FastFile_Editor
             fileStructureInfoToolStripMenuItem = new ToolStripMenuItem();
             saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
             originalFastFilesToolStripMenuItem = new ToolStripMenuItem();
-            modernWarfareToolStripMenuItem = new ToolStripMenuItem();
-            patchmpffToolStripMenuItem = new ToolStripMenuItem();
             worldAtWarToolStripMenuItem = new ToolStripMenuItem();
             defaultffToolStripMenuItem = new ToolStripMenuItem();
             patchmpffToolStripMenuItem1 = new ToolStripMenuItem();
@@ -47,6 +45,8 @@ namespace Call_of_Duty_FastFile_Editor
             patchffZombieVerruckToolStripMenuItem = new ToolStripMenuItem();
             nazizombiesumpfpatchffToolStripMenuItem = new ToolStripMenuItem();
             nazizombiefactorypatchffToolStripMenuItem = new ToolStripMenuItem();
+            modernWarfareToolStripMenuItem = new ToolStripMenuItem();
+            patchmpffToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             statusStrip1 = new StatusStrip();
@@ -78,9 +78,9 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.Dock = DockStyle.Fill;
             filesTreeView.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
             filesTreeView.HideSelection = false;
-            filesTreeView.Location = new Point(0, 0);
+            filesTreeView.Location = new Point(8, 0);
             filesTreeView.Name = "filesTreeView";
-            filesTreeView.Size = new Size(342, 777);
+            filesTreeView.Size = new Size(334, 777);
             filesTreeView.TabIndex = 0;
             filesTreeView.AfterSelect += filesTreeView_AfterSelect;
             // 
@@ -208,19 +208,6 @@ namespace Call_of_Duty_FastFile_Editor
             originalFastFilesToolStripMenuItem.Size = new Size(194, 24);
             originalFastFilesToolStripMenuItem.Text = "Original Fast Files";
             // 
-            // modernWarfareToolStripMenuItem
-            // 
-            modernWarfareToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { patchmpffToolStripMenuItem });
-            modernWarfareToolStripMenuItem.Name = "modernWarfareToolStripMenuItem";
-            modernWarfareToolStripMenuItem.Size = new Size(186, 24);
-            modernWarfareToolStripMenuItem.Text = "Modern Warfare";
-            // 
-            // patchmpffToolStripMenuItem
-            // 
-            patchmpffToolStripMenuItem.Name = "patchmpffToolStripMenuItem";
-            patchmpffToolStripMenuItem.Size = new Size(156, 24);
-            patchmpffToolStripMenuItem.Text = "patch_mp.ff";
-            // 
             // worldAtWarToolStripMenuItem
             // 
             worldAtWarToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { defaultffToolStripMenuItem, patchmpffToolStripMenuItem1, patchffNachtDerUntotenToolStripMenuItem, patchffZombieVerruckToolStripMenuItem, nazizombiesumpfpatchffToolStripMenuItem, nazizombiefactorypatchffToolStripMenuItem });
@@ -270,6 +257,19 @@ namespace Call_of_Duty_FastFile_Editor
             nazizombiefactorypatchffToolStripMenuItem.Text = "nazi_zombie_factory_patch.ff";
             nazizombiefactorypatchffToolStripMenuItem.Click += nazizombiefactorypatchffToolStripMenuItem_Click;
             // 
+            // modernWarfareToolStripMenuItem
+            // 
+            modernWarfareToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { patchmpffToolStripMenuItem });
+            modernWarfareToolStripMenuItem.Name = "modernWarfareToolStripMenuItem";
+            modernWarfareToolStripMenuItem.Size = new Size(186, 24);
+            modernWarfareToolStripMenuItem.Text = "Modern Warfare";
+            // 
+            // patchmpffToolStripMenuItem
+            // 
+            patchmpffToolStripMenuItem.Name = "patchmpffToolStripMenuItem";
+            patchmpffToolStripMenuItem.Size = new Size(156, 24);
+            patchmpffToolStripMenuItem.Text = "patch_mp.ff";
+            // 
             // aboutToolStripMenuItem
             // 
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
@@ -286,6 +286,7 @@ namespace Call_of_Duty_FastFile_Editor
             // splitContainer1.Panel1
             // 
             splitContainer1.Panel1.Controls.Add(filesTreeView);
+            splitContainer1.Panel1.Padding = new Padding(8, 0, 0, 0);
             // 
             // splitContainer1.Panel2
             // 
