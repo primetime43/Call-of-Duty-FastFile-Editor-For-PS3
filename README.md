@@ -1,7 +1,7 @@
 # PS3 Call of Duty FastFile Editor for COD4 (Modern Warfare) & COD5 (World at War)
 
 # Overview
-The PS3 Call of Duty FastFile Editor is a tool for editing Fast Files (.ff) used in Call of Duty 4: Modern Warfare and Call of Duty 5: World at War. This editor allows users to decompress, recompress, and modify the contents of Fast Files, providing advanced functionality for game modding and customization.
+The PS3 Call of Duty FastFile Editor is a tool for editing Fast Files (.ff) used in Call of Duty 4: Modern Warfare and Call of Duty 5: World at War. This editor allows users to decompress, recompress, and modify the contents of Fast Files, allowing functionality for game modding and customization.
 
 # Features
 - Decompression and Recompression: Easily decompress and recompress Fast Files for COD4 and COD5.
