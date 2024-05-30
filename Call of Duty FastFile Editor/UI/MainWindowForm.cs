@@ -224,8 +224,11 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string message = "Call of Duty Fast File Editor\n\n" +
+            string message = "Call of Duty Fast File Editor for PS3\n\n" +
                              "Developed by primetime43\n\n" +
+                             "Supported Games\n" +
+                             "- COD4 (Modern Warfare)\n" +
+                             "- COD5 (World at War)\n\n" +
                              "Special thanks to:\n" +
                              "- BuC-ShoTz\n" +
                              "- aerosoul94\n" +

@@ -351,7 +351,7 @@ namespace Call_of_Duty_FastFile_Editor
             Controls.Add(menuStrip1);
             MainMenuStrip = menuStrip1;
             Name = "MainWindowForm";
-            Text = "Call of Duty Fast File Editor";
+            Text = "Call of Duty Fast File Editor for PS3";
             FormClosed += Form1_FormClosed;
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
