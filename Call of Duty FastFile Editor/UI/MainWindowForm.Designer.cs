@@ -267,8 +267,9 @@ namespace Call_of_Duty_FastFile_Editor
             // patchmpffToolStripMenuItem
             // 
             patchmpffToolStripMenuItem.Name = "patchmpffToolStripMenuItem";
-            patchmpffToolStripMenuItem.Size = new Size(156, 24);
+            patchmpffToolStripMenuItem.Size = new Size(180, 24);
             patchmpffToolStripMenuItem.Text = "patch_mp.ff";
+            patchmpffToolStripMenuItem.Click += patchmpffToolStripMenuItem_Click;
             // 
             // aboutToolStripMenuItem
             // 

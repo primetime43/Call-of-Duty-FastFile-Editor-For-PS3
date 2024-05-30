@@ -36,6 +36,11 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private List<FileEntryNode> fileEntryNodes;
 
+        /// <summary>
+        /// Header information of the opened Fast File.
+        /// </summary>
+        private FastFileHeader _header;
+
         private void openFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -56,8 +61,8 @@ namespace Call_of_Duty_FastFile_Editor
 
             UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, ffFilePath);
 
-            var header = new FastFileHeader(ffFilePath);
-            if (header.IsValid)
+            _header = new FastFileHeader(ffFilePath);
+            if (_header.IsValid)
             {
                 FastFileProcessing.DecompressFastFile(ffFilePath, zoneFilePath);
                 fileEntryNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
@@ -98,16 +103,12 @@ namespace Call_of_Duty_FastFile_Editor
                 var selectedNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                 int maxSize = selectedNode?.MaxSize ?? 0;
                 UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
-
-                // Track changes for undo/redo functionality
-                //TrackChange();
             }
         }
 
         private void saveFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, fileEntryNodes);
-            FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath);
+            FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, _header);
             MessageBox.Show("Fast File saved to:\n\n" + ffFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             Application.Restart();
         }
@@ -122,8 +123,7 @@ namespace Call_of_Duty_FastFile_Editor
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     string newFilePath = saveFileDialog.FileName;
-                    //FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath, fileEntryNodes);
-                    FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath);
+                    FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath, _header);
                     MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                     Application.Restart();
                 }
@@ -249,5 +249,9 @@ namespace Call_of_Duty_FastFile_Editor
             DownloadManager.DownloadFile("nazi_zombie_factory_patch.ff", Path.Combine("Original Fast Files", "COD5"));
         }
 
+        private void patchmpffToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD4"));
+        }
     }
 }

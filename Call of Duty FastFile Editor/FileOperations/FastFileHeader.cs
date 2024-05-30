@@ -11,6 +11,8 @@ namespace Call_of_Duty_FastFile_Editor.IO
         public string FileType { get; private set; }
         public int FileLength { get; private set; }
         public bool IsValid { get; private set; }
+        public bool IsCod4File { get; private set; }
+        public bool IsCod5File { get; private set; }
 
         public FastFileHeader(string filePath)
         {
@@ -22,29 +24,40 @@ namespace Call_of_Duty_FastFile_Editor.IO
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(filePath, FileMode.Open), Encoding.Default))
             {
                 // Read the first 8 characters to determine the file type
-                char[] value = binaryReader.ReadChars(8);
-                FileType = new string(value);
+                char[] headerChars = binaryReader.ReadChars(8);
+                FileType = new string(headerChars); //header string 
 
                 // Read the next 4 bytes as an integer and convert from network byte order (big-endian) to host byte order (little-endian)
-                int num = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
+                int gameVersion = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
 
                 // Read the next 2 bytes as a short integer and convert from network byte order (big-endian) to host byte order (little-endian)
-                int num2 = IPAddress.NetworkToHostOrder(binaryReader.ReadInt16());
+                int identifier = IPAddress.NetworkToHostOrder(binaryReader.ReadInt16());
 
                 // Get the length of the file
                 FileLength = Convert.ToInt32(new FileInfo(filePath).Length);
 
                 // Validate the header based on specific criteria
                 IsValid = false;
-                if (num2 == 30938)
+                if (identifier == 30938)
                 {
                     IsValid = false;
                 }
                 else if (FileType != "Iwffu100")
                 {
-                    if (num == 1 || num == 387)
+                    // 1 = CoD4, 387 = CoD5
+                    switch (gameVersion)
                     {
-                        IsValid = true;
+                        case 1:
+                            IsCod4File = true;
+                            IsValid = true;
+                            break;
+                        case 387:
+                            IsCod5File = true;
+                            IsValid = true;
+                            break;
+                        default:
+                            IsValid = false;
+                            break;
                     }
                 }
 

@@ -69,10 +69,9 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
         }
 
-        public static void RecompressFastFile(string ffFilePath, string zoneFilePath)
+        public static void RecompressFastFile(string ffFilePath, string zoneFilePath, FastFileHeader headerInfo)
         {
             byte[] header = new byte[8] { 73, 87, 102, 102, 117, 49, 48, 48 }; // IWffu100 header
-            bool isCOD5 = true; // Adjust based on your file type
 
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create), Encoding.Default))
@@ -80,9 +79,13 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 // Write header to the new file
                 binaryWriter.Write(header);
 
-                if (isCOD5)
+                if (headerInfo.IsCod5File)
                 {
                     binaryWriter.Write(new byte[4] { 0, 0, 1, 131 });
+                }
+                else if (headerInfo.IsCod4File)
+                {
+                    binaryWriter.Write(new byte[4] { 0, 0, 0, 1 });
                 }
 
                 // Set the reader position to skip the header already written
