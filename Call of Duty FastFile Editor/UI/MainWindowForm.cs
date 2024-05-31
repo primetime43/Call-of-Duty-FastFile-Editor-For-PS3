@@ -2,15 +2,13 @@ using Call_of_Duty_FastFile_Editor.CodeOperations;
 using Call_of_Duty_FastFile_Editor.IO;
 using Call_of_Duty_FastFile_Editor.UI;
 using System.Text.RegularExpressions;
-using System.Net;
-using System.Text;
-using System.Reflection;
 using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 
 namespace Call_of_Duty_FastFile_Editor
 {
     public partial class MainWindowForm : Form
     {
+        private string _programVersion = "v1.0.0";
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
         private bool _hasUnsavedChanges = false;
@@ -21,6 +19,7 @@ namespace Call_of_Duty_FastFile_Editor
 
             DirectoryInfo directoryInfo = new DirectoryInfo(_originalFastFilesPath);
             directoryInfo.Attributes |= FileAttributes.Hidden;
+            this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion}";
         }
 
         /// <summary>
@@ -257,7 +256,8 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string message = "Call of Duty Fast File Editor for PS3\n\n" +
+            string message = "Call of Duty Fast File Editor for PS3\n" +
+                             "Version: " + _programVersion + "\n\n" +
                              "Developed by primetime43\n\n" +
                              "Supported Games\n" +
                              "- COD4 (Modern Warfare)\n" +
