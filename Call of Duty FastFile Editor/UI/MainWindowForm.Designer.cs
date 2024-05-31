@@ -82,6 +82,7 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.Name = "filesTreeView";
             filesTreeView.Size = new Size(334, 777);
             filesTreeView.TabIndex = 0;
+            filesTreeView.BeforeSelect += filesTreeView_BeforeSelect;
             filesTreeView.AfterSelect += filesTreeView_AfterSelect;
             // 
             // menuStrip1

@@ -71,7 +71,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                     binaryWriter.Write(new byte[paddingSize]);
                 }
 
-                MessageBox.Show("Raw File Saved To Zone.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                MessageBox.Show($"Raw File '{fileEntryNode.FileName}' Saved To Zone.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             }
         }
     }

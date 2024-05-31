@@ -12,6 +12,8 @@ namespace Call_of_Duty_FastFile_Editor
     public partial class MainWindowForm : Form
     {
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
+        private TreeNode _previousSelectedNode;
+        private bool _hasUnsavedChanges = false;
         public MainWindowForm()
         {
             InitializeComponent();
@@ -78,6 +80,32 @@ namespace Call_of_Duty_FastFile_Editor
             saveFastFileAsToolStripMenuItem.Enabled = true;
         }
 
+        private void filesTreeView_BeforeSelect(object sender, TreeViewCancelEventArgs e)
+        {
+            if (_hasUnsavedChanges)
+            {
+                DialogResult result = MessageBox.Show("You have unsaved changes. Do you want to save before switching?", "Unsaved Changes", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (result == DialogResult.Yes)
+                {
+                    if (_previousSelectedNode != null)
+                    {
+                        var previousSelectedNodeData = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == (int)_previousSelectedNode.Tag);
+                        if (previousSelectedNodeData != null)
+                        {
+                            SaveRawFile.Save(filesTreeView, zoneFilePath, fileEntryNodes, textEditorControl1.Text);
+                        }
+                    }
+                    _hasUnsavedChanges = false;
+                }
+                else if (result == DialogResult.Cancel)
+                {
+                    e.Cancel = true; // Cancel the selection change
+                    return;
+                }
+            }
+            _previousSelectedNode = filesTreeView.SelectedNode; // Save the current node before changing
+        }
+
         private void filesTreeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (e.Node.Tag is int position)
@@ -93,6 +121,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                 UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
                 UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
+                _hasUnsavedChanges = false; // Reset the flag after loading new content
             }
         }
 
@@ -103,6 +132,7 @@ namespace Call_of_Duty_FastFile_Editor
                 var selectedNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                 int maxSize = selectedNode?.MaxSize ?? 0;
                 UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
+                _hasUnsavedChanges = true;
             }
         }
 
@@ -110,6 +140,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, _header);
             MessageBox.Show("Fast File saved to:\n\n" + ffFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            _hasUnsavedChanges = false; // Reset the flag after saving
             Application.Restart();
         }
 
@@ -125,6 +156,7 @@ namespace Call_of_Duty_FastFile_Editor
                     string newFilePath = saveFileDialog.FileName;
                     FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath, _header);
                     MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                    _hasUnsavedChanges = false; // Reset the flag after saving
                     Application.Restart();
                 }
             }
@@ -157,6 +189,7 @@ namespace Call_of_Duty_FastFile_Editor
         private void saveRawFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SaveRawFile.Save(filesTreeView, zoneFilePath, fileEntryNodes, textEditorControl1.Text);
+            _hasUnsavedChanges = false; // Reset the flag after saving
         }
 
         private void removeCommentsToolStripMenuItem_Click(object sender, EventArgs e)
