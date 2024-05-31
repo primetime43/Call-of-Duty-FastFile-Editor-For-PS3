@@ -55,6 +55,7 @@ namespace Call_of_Duty_FastFile_Editor
             selectedItemStatusLabel = new ToolStripStatusLabel();
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
+            checkForUpdateToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -183,7 +184,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { fileStructureInfoToolStripMenuItem, saveFileToPCToolStripMenuItem, originalFastFilesToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { fileStructureInfoToolStripMenuItem, saveFileToPCToolStripMenuItem, originalFastFilesToolStripMenuItem, checkForUpdateToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
@@ -191,14 +192,14 @@ namespace Call_of_Duty_FastFile_Editor
             // fileStructureInfoToolStripMenuItem
             // 
             fileStructureInfoToolStripMenuItem.Name = "fileStructureInfoToolStripMenuItem";
-            fileStructureInfoToolStripMenuItem.Size = new Size(194, 24);
+            fileStructureInfoToolStripMenuItem.Size = new Size(195, 24);
             fileStructureInfoToolStripMenuItem.Text = "File Structure Info";
             fileStructureInfoToolStripMenuItem.Click += fileStructureInfoToolStripMenuItem_Click;
             // 
             // saveFileToPCToolStripMenuItem
             // 
             saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
-            saveFileToPCToolStripMenuItem.Size = new Size(194, 24);
+            saveFileToPCToolStripMenuItem.Size = new Size(195, 24);
             saveFileToPCToolStripMenuItem.Text = "Save File To PC";
             saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
             // 
@@ -206,7 +207,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             originalFastFilesToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { worldAtWarToolStripMenuItem, modernWarfareToolStripMenuItem });
             originalFastFilesToolStripMenuItem.Name = "originalFastFilesToolStripMenuItem";
-            originalFastFilesToolStripMenuItem.Size = new Size(194, 24);
+            originalFastFilesToolStripMenuItem.Size = new Size(195, 24);
             originalFastFilesToolStripMenuItem.Text = "Original Fast Files";
             // 
             // worldAtWarToolStripMenuItem
@@ -342,6 +343,13 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
             // 
+            // checkForUpdateToolStripMenuItem
+            // 
+            checkForUpdateToolStripMenuItem.Name = "checkForUpdateToolStripMenuItem";
+            checkForUpdateToolStripMenuItem.Size = new Size(195, 24);
+            checkForUpdateToolStripMenuItem.Text = "Check For Update";
+            checkForUpdateToolStripMenuItem.Click += checkForUpdateToolStripMenuItem_Click;
+            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -403,5 +411,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem patchffZombieVerruckToolStripMenuItem;
         private ToolStripMenuItem nazizombiesumpfpatchffToolStripMenuItem;
         private ToolStripMenuItem nazizombiefactorypatchffToolStripMenuItem;
+        private ToolStripMenuItem checkForUpdateToolStripMenuItem;
     }
 }

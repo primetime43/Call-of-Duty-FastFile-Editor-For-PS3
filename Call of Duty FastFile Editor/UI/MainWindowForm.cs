@@ -3,6 +3,8 @@ using Call_of_Duty_FastFile_Editor.IO;
 using Call_of_Duty_FastFile_Editor.UI;
 using System.Text.RegularExpressions;
 using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
+using System.Diagnostics;
+using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -288,6 +290,55 @@ namespace Call_of_Duty_FastFile_Editor
         private void patchmpffToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD4"));
+        }
+
+        private void checkForUpdateToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            checkForUpdate();
+        }
+
+        private async void checkForUpdate()
+        {
+            var release = await ReleaseChecker.CheckForNewRelease("primetime43", "Call-of-Duty-FastFile-Editor-For-PS3");
+
+            if (release != null)
+            {
+                int latestReleaseInt = ReleaseChecker.convertVersionToInt(release.tag_name);
+                int localProgramVersionInt = ReleaseChecker.convertVersionToInt(_programVersion);
+
+                if (latestReleaseInt > localProgramVersionInt)
+                {
+                    DialogResult result = MessageBox.Show("Current version: " + _programVersion + "\nNew release available: " + release.name + " (" + release.tag_name + ")\nDo you want to download it?", "New Release", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        try
+                        {
+                            var startInfo = new ProcessStartInfo
+                            {
+                                FileName = ReleaseChecker.releaseURL,
+                                UseShellExecute = true
+                            };
+
+                            Process.Start(startInfo);
+                        }
+                        catch (System.ComponentModel.Win32Exception ex)
+                        {
+                            MessageBox.Show("An error occurred: " + ex.Message);
+                        }
+                    }
+                }
+                else if (latestReleaseInt == localProgramVersionInt)
+                {
+                    MessageBox.Show("You are using the latest version.");
+                }
+                else
+                    Debug.WriteLine("Release null, skipping check.");
+            }
+            else
+            {
+                MessageBox.Show("No new releases available.");
+            }
         }
     }
 }
