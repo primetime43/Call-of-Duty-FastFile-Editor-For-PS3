@@ -170,16 +170,6 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 File.Delete(zoneFilePath);
             }
-
-            // Deleting the Original Fast Files directory
-            if (Directory.Exists(_originalFastFilesPath))
-            {
-                try
-                {
-                    Directory.Delete(_originalFastFilesPath, true);
-                }
-                catch { }
-            }
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
