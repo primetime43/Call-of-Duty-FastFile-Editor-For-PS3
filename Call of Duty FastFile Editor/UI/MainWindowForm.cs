@@ -579,82 +579,102 @@ namespace Call_of_Duty_FastFile_Editor
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     string selectedFilePath = ofd.FileName;
-                    string fileName = Path.GetFileName(selectedFilePath);
-                    byte[] fileBytes = File.ReadAllBytes(selectedFilePath);
+                    string rawFileName = Path.GetFileName(selectedFilePath);
+                    byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
-                    // Check if the file already exists in the zone
-                    RawFileNode existingNode = rawFileNodes.FirstOrDefault(node => node.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+                    RawFileNode newRawFileNode = FastFileProcessing.ExtractFileEntriesWithSizeAndName(selectedFilePath)[0];
+
+                    string actualDiskFileName = Path.GetFileName(selectedFilePath);
+                    string rawFileNameFromHeader = newRawFileNode.FileName;
+                    byte[] rawFileContent = newRawFileNode.RawFileBytes;
+                    int newFileMaxSize = newRawFileNode.MaxSize;
+
+                    // 1) Check if file name already exists
+                    RawFileNode existingNode = rawFileNodes
+                        .FirstOrDefault(node => node.FileName.Equals(rawFileNameFromHeader, StringComparison.OrdinalIgnoreCase));
 
                     if (existingNode != null)
                     {
-                        // Overwrite existing raw file
-                        /*if (fileBytes.Length > existingNode.MaxSize)
-                        {
-                            MessageBox.Show($"The file size exceeds the maximum allowed size of {existingNode.MaxSize} bytes.", "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }*/
-
+                        // if the newFileMaxSize is greater than the existing node's MaxSize,
+                        // update the header's size with the new one and write its content
                         try
                         {
-                            FastFileProcessing.UpdateFileContent(zoneFilePath, existingNode, fileBytes);
-                            MessageBox.Show($"File '{fileName}' successfully updated in the zone file.", "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show($"Failed to update file: {ex.Message}", "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-
-                        // Update TreeView
-                        TreeNode existingTreeNode = filesTreeView.Nodes.Cast<TreeNode>()
-                            .FirstOrDefault(n => n.Text.Equals(fileName, StringComparison.OrdinalIgnoreCase));
-                        if (existingTreeNode != null)
-                        {
-                            existingTreeNode.Tag = existingNode.PatternIndexPosition;
-                        }
-                    }
-                    else
-                    {
-                        // Inject as a new raw file
-                        RawFileNode newNode = new RawFileNode
-                        {
-                            FileName = fileName,
-                            RawFileBytes = fileBytes,
-                            RawFileContent = Encoding.Default.GetString(fileBytes),
-                            MaxSize = fileBytes.Length,
-                            PatternIndexPosition = rawFileNodes.Count > 0 ? rawFileNodes.Max(node => node.PatternIndexPosition) + 1 : 0,
-                            StartOfFileHeader = rawFileNodes.Count > 0 ? rawFileNodes.Max(node => node.CodeEndPosition) : 0
-                        };
-
-                        try
-                        {
-                            // Write the new file to the zone file
-                            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Write))
+                            if (newFileMaxSize > existingNode.MaxSize)
                             {
-                                fs.Seek(newNode.StartOfFileHeader, SeekOrigin.Begin);
-                                fs.Write(newNode.Header, 0, newNode.Header.Length);
-                                fs.Write(newNode.RawFileBytes, 0, newNode.RawFileBytes.Length);
+                                // write the new file content to the zone at the existing offset
+                                // and make sure to append the extra length, so it shouldn't overwrite existing
+                                // code that comes after it. Also, update the size in the header.
+                                FastFileProcessing.ExpandAndUpdateFileContent(zoneFilePath, existingNode, newRawFileNode, newRawFileNode.RawFileContent);
                             }
-
-                            rawFileNodes.Add(newNode);
-
-                            // Add the new node to TreeView
-                            TreeNode newTreeNode = new TreeNode(newNode.FileName)
+                            else
                             {
-                                Tag = newNode.PatternIndexPosition
-                            };
-                            filesTreeView.Nodes.Add(newTreeNode);
-
-                            MessageBox.Show($"File '{fileName}' successfully injected into the zone file.", "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                // write the raw bytes to the zone at the existing offset
+                                FastFileProcessing.UpdateFileContent(zoneFilePath, existingNode, rawFileContent);
+                            }
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show($"Failed to inject file: {ex.Message}", "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"Failed to update file: {ex.Message}",
+                                "Injection Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+                            return;
+                        }
+                    }
+                    else if(existingNode == null)
+                    {
+                        // It's a brand-new file, not already in the zone
+                        try
+                        {
+                            // 1) Append it to the decompressed zone
+                            FastFileProcessing.AppendNewRawFile(zoneFilePath, rawFileName, rawFileContent);
+
+                            // 2) Re-extract the entire zone so we pick up the newly inserted file
+                            rawFileNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
+
+                            // 3) Clear & re-populate the TreeView
+                            filesTreeView.Nodes.Clear();
+                            PopulateTreeView();
+                            UIManager.SetTreeNodeColors(filesTreeView);
+
+                            //_hasUnsavedChanges = true;
+
+                            MessageBox.Show(
+                                $"File '{rawFileName}' successfully injected into the zone file.",
+                                "Injection Complete",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Failed to inject file: {ex.Message}",
+                                "Injection Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error
+                            );
                         }
                     }
 
-                    // Mark changes as unsaved
-                    _hasUnsavedChanges = true;
+                    // 2) Re-extract the entire zone to update rawFileNodes
+                    rawFileNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
+
+                    // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
+                    filesTreeView.Nodes.Clear();
+                    PopulateTreeView();
+
+                    // Optionally re-apply any color or style
+                    UIManager.SetTreeNodeColors(filesTreeView);
+
+                    // 4) Indicate changes
+                    //_hasUnsavedChanges = true;
+
+                    MessageBox.Show(
+                        $"File '{rawFileName}' was successfully injected/updated in the zone file.",
+                        "Injection Complete",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
                 }
             }
         }
@@ -723,7 +743,10 @@ namespace Call_of_Duty_FastFile_Editor
                             bw.Write(contentBytes);
 
                             // Write padding (00 FF FF FF FF) at the end
-                            bw.Write(new byte[] { 0x00, 0xFF, 0xFF, 0xFF, 0xFF });
+                            //bw.Write(new byte[] { 0x00, 0xFF, 0xFF, 0xFF, 0xFF });
+
+                            // Write padding (00) at the end
+                            bw.Write(new byte[] { 0x00 });
                         }
 
                         MessageBox.Show($"File successfully exported to:\n\n{exportPath}", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
