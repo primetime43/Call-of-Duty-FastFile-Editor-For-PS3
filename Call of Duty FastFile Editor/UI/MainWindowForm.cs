@@ -148,7 +148,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                         if (previousSelectedNodeData != null)
                         {
-                            SaveRawFile.Save(
+                            RawFileOperations.Save(
                                 filesTreeView,              // TreeView control
                                 ffFilePath,                 // Path to the Fast File (.ff)
                                 zoneFilePath,               // Path to the decompressed zone file
@@ -301,7 +301,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                SaveRawFile.Save(
+                RawFileOperations.Save(
                     filesTreeView,                // TreeView control
                     ffFilePath,                   // Path to the Fast File (.ff)
                     zoneFilePath,                 // Path to the decompressed zone file
@@ -707,76 +707,7 @@ namespace Call_of_Duty_FastFile_Editor
             string fileExtension = Path.GetExtension(selectedFileNode.FileName);
             string validExtensions = ".cfg,.gsc,.str,.vision,.rmb,.csc";
 
-            // Validate the extension
-            if (!validExtensions.Split(',').Contains(fileExtension, StringComparer.OrdinalIgnoreCase))
-            {
-                MessageBox.Show($"Unsupported file extension: {fileExtension}.", "Invalid Extension", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
-            {
-                saveFileDialog.Title = "Export File";
-                saveFileDialog.FileName = SanitizeFileName(selectedFileNode.FileName);
-                saveFileDialog.Filter = $"{fileExtension.TrimStart('.').ToUpper()} Files (*{fileExtension})|*{fileExtension}|All Files (*.*)|*.*";
-
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    try
-                    {
-                        string exportPath = saveFileDialog.FileName;
-
-                        using (FileStream fs = new FileStream(exportPath, FileMode.Create, FileAccess.Write))
-                        using (BinaryWriter bw = new BinaryWriter(fs))
-                        {
-                            // Write the header (size and padding)
-                            bw.Write(selectedFileNode.Header);
-
-                            // Write the file name in ASCII
-                            byte[] fileNameBytes = Encoding.ASCII.GetBytes(selectedFileNode.FileName);
-                            bw.Write(fileNameBytes);
-
-                            // Write a null terminator (0x00) after the file name
-                            bw.Write((byte)0x00);
-
-                            // Write the file content
-                            byte[] contentBytes = selectedFileNode.RawFileBytes ?? Encoding.UTF8.GetBytes(selectedFileNode.RawFileContent ?? string.Empty);
-                            bw.Write(contentBytes);
-
-                            // Write padding (00 FF FF FF FF) at the end
-                            //bw.Write(new byte[] { 0x00, 0xFF, 0xFF, 0xFF, 0xFF });
-
-                            // Write padding (00) at the end
-                            bw.Write(new byte[] { 0x00 });
-                        }
-
-                        MessageBox.Show($"File successfully exported to:\n\n{exportPath}", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Failed to export file: {ex.Message}", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Sanitizes a filename by replacing invalid characters with underscores.
-        /// </summary>
-        /// <param name="fileName">The original filename.</param>
-        /// <returns>A sanitized filename safe for the filesystem.</returns>
-        private string SanitizeFileName(string fileName)
-        {
-            // Retrieve all invalid characters for filenames
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-
-            // Replace each invalid character with an underscore
-            foreach (char c in invalidChars)
-            {
-                fileName = fileName.Replace(c, '_');
-            }
-
-            return fileName;
+            RawFileOperations.ExportRawFile(selectedFileNode, fileExtension);
         }
 
         /// <summary>
