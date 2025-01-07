@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Call_of_Duty_FastFile_Editor.Models;
+using Call_of_Duty_FastFile_Editor.FileOperations;
 
 namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
@@ -55,7 +56,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                 CreateBackup(ffFilePath);
 
                 // Update the zone file in memory
-                FastFileProcessing.UpdateFileContent(zoneFilePath, rawFileNode, updatedBytes);
+                RawFileInject.UpdateFileContent(zoneFilePath, rawFileNode, updatedBytes);
                 rawFileNode.RawFileContent = updatedText; // Update the in-memory representation
 
                 // Recompress the modified zone file back into the Fast File

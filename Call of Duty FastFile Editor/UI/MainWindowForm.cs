@@ -10,6 +10,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Linq;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Call_of_Duty_FastFile_Editor.FileOperations;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -604,12 +605,12 @@ namespace Call_of_Duty_FastFile_Editor
                                 // write the new file content to the zone at the existing offset
                                 // and make sure to append the extra length, so it shouldn't overwrite existing
                                 // code that comes after it. Also, update the size in the header.
-                                FastFileProcessing.ExpandAndUpdateFileContent(zoneFilePath, existingNode, newRawFileNode, newRawFileNode.RawFileContent);
+                                RawFileInject.ExpandAndUpdateFileContent(zoneFilePath, existingNode, newRawFileNode, newRawFileNode.RawFileContent);
                             }
                             else
                             {
                                 // write the raw bytes to the zone at the existing offset
-                                FastFileProcessing.UpdateFileContent(zoneFilePath, existingNode, rawFileContent);
+                                RawFileInject.UpdateFileContent(zoneFilePath, existingNode, rawFileContent);
                             }
                         }
                         catch (Exception ex)
@@ -627,7 +628,7 @@ namespace Call_of_Duty_FastFile_Editor
                         try
                         {
                             // 1) Append it to the decompressed zone
-                            FastFileProcessing.AppendNewRawFile(zoneFilePath, rawFileName, rawFileContent);
+                            RawFileInject.AppendNewRawFile(zoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
                             rawFileNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
