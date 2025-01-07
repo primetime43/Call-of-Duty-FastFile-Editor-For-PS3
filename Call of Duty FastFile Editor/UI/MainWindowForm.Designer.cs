@@ -29,6 +29,7 @@ namespace Call_of_Duty_FastFile_Editor
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
             saveFastFileToolStripMenuItem = new ToolStripMenuItem();
             saveFastFileAsToolStripMenuItem = new ToolStripMenuItem();
+            toolStripMenuItem1 = new ToolStripMenuItem();
             exitToolStripMenuItem = new ToolStripMenuItem();
             editToolStripMenuItem = new ToolStripMenuItem();
             saveRawFileToolStripMenuItem = new ToolStripMenuItem();
@@ -60,7 +61,7 @@ namespace Call_of_Duty_FastFile_Editor
             selectedItemStatusLabel = new ToolStripStatusLabel();
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
-            toolStripMenuItem1 = new ToolStripMenuItem();
+            filesTreeToolTip = new ToolTip(components);
             contextMenuStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -90,6 +91,7 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.Name = "filesTreeView";
             filesTreeView.Size = new Size(334, 777);
             filesTreeView.TabIndex = 0;
+            filesTreeToolTip.SetToolTip(filesTreeView, "Right click for more options.");
             filesTreeView.BeforeSelect += filesTreeView_BeforeSelect;
             filesTreeView.AfterSelect += filesTreeView_AfterSelect;
             // 
@@ -146,6 +148,13 @@ namespace Call_of_Duty_FastFile_Editor
             saveFastFileAsToolStripMenuItem.Size = new Size(192, 24);
             saveFastFileAsToolStripMenuItem.Text = "Save Fast File as...";
             saveFastFileAsToolStripMenuItem.Click += saveFastFileAsToolStripMenuItem_Click;
+            // 
+            // toolStripMenuItem1
+            // 
+            toolStripMenuItem1.Name = "toolStripMenuItem1";
+            toolStripMenuItem1.Size = new Size(192, 24);
+            toolStripMenuItem1.Text = "Close Fast File";
+            toolStripMenuItem1.Click += toolStripMenuItem1_Click;
             // 
             // exitToolStripMenuItem
             // 
@@ -378,12 +387,10 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
             // 
-            // toolStripMenuItem1
+            // filesTreeToolTip
             // 
-            toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(192, 24);
-            toolStripMenuItem1.Text = "Close Fast File";
-            toolStripMenuItem1.Click += toolStripMenuItem1_Click;
+            filesTreeToolTip.ShowAlways = true;
+            filesTreeToolTip.ToolTipIcon = ToolTipIcon.Info;
             // 
             // MainWindowForm
             // 
@@ -452,5 +459,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ContextMenuStrip contextMenuStrip1;
         private ToolStripMenuItem exportFileMenuItem;
         private ToolStripMenuItem toolStripMenuItem1;
+        private ToolTip filesTreeToolTip;
     }
 }
