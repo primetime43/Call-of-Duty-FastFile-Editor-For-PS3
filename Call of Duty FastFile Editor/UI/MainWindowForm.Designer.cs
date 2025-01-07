@@ -19,8 +19,11 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             textEditorControl1 = new TextEditorControl();
             filesTreeView = new TreeView();
+            contextMenuStrip1 = new ContextMenuStrip(components);
+            exportFileMenuItem = new ToolStripMenuItem();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
@@ -47,6 +50,8 @@ namespace Call_of_Duty_FastFile_Editor
             nazizombiefactorypatchffToolStripMenuItem = new ToolStripMenuItem();
             modernWarfareToolStripMenuItem = new ToolStripMenuItem();
             patchmpffToolStripMenuItem = new ToolStripMenuItem();
+            checkForUpdateToolStripMenuItem = new ToolStripMenuItem();
+            injectFileToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             statusStrip1 = new StatusStrip();
@@ -55,7 +60,7 @@ namespace Call_of_Duty_FastFile_Editor
             selectedItemStatusLabel = new ToolStripStatusLabel();
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
-            checkForUpdateToolStripMenuItem = new ToolStripMenuItem();
+            contextMenuStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -76,6 +81,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // filesTreeView
             // 
+            filesTreeView.ContextMenuStrip = contextMenuStrip1;
             filesTreeView.Dock = DockStyle.Fill;
             filesTreeView.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
             filesTreeView.HideSelection = false;
@@ -85,6 +91,20 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.TabIndex = 0;
             filesTreeView.BeforeSelect += filesTreeView_BeforeSelect;
             filesTreeView.AfterSelect += filesTreeView_AfterSelect;
+            // 
+            // contextMenuStrip1
+            // 
+            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { exportFileMenuItem });
+            contextMenuStrip1.Name = "contextMenuStrip1";
+            contextMenuStrip1.Size = new Size(129, 26);
+            // 
+            // exportFileMenuItem
+            // 
+            exportFileMenuItem.Name = "exportFileMenuItem";
+            exportFileMenuItem.Size = new Size(128, 22);
+            exportFileMenuItem.Text = "Export File";
+            exportFileMenuItem.ToolTipText = "Export the selected raw file";
+            exportFileMenuItem.Click += exportFileMenuItem_Click;
             // 
             // menuStrip1
             // 
@@ -184,7 +204,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { fileStructureInfoToolStripMenuItem, saveFileToPCToolStripMenuItem, originalFastFilesToolStripMenuItem, checkForUpdateToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { fileStructureInfoToolStripMenuItem, saveFileToPCToolStripMenuItem, originalFastFilesToolStripMenuItem, checkForUpdateToolStripMenuItem, injectFileToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
@@ -273,6 +293,20 @@ namespace Call_of_Duty_FastFile_Editor
             patchmpffToolStripMenuItem.Text = "patch_mp.ff";
             patchmpffToolStripMenuItem.Click += patchmpffToolStripMenuItem_Click;
             // 
+            // checkForUpdateToolStripMenuItem
+            // 
+            checkForUpdateToolStripMenuItem.Name = "checkForUpdateToolStripMenuItem";
+            checkForUpdateToolStripMenuItem.Size = new Size(195, 24);
+            checkForUpdateToolStripMenuItem.Text = "Check For Update";
+            checkForUpdateToolStripMenuItem.Click += checkForUpdateToolStripMenuItem_Click;
+            // 
+            // injectFileToolStripMenuItem
+            // 
+            injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
+            injectFileToolStripMenuItem.Size = new Size(195, 24);
+            injectFileToolStripMenuItem.Text = "Inject File";
+            injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
+            // 
             // aboutToolStripMenuItem
             // 
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
@@ -343,13 +377,6 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
             // 
-            // checkForUpdateToolStripMenuItem
-            // 
-            checkForUpdateToolStripMenuItem.Name = "checkForUpdateToolStripMenuItem";
-            checkForUpdateToolStripMenuItem.Size = new Size(195, 24);
-            checkForUpdateToolStripMenuItem.Text = "Check For Update";
-            checkForUpdateToolStripMenuItem.Click += checkForUpdateToolStripMenuItem_Click;
-            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -361,6 +388,7 @@ namespace Call_of_Duty_FastFile_Editor
             MainMenuStrip = menuStrip1;
             Name = "MainWindowForm";
             FormClosed += Form1_FormClosed;
+            contextMenuStrip1.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             splitContainer1.Panel1.ResumeLayout(false);
@@ -412,5 +440,8 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem nazizombiesumpfpatchffToolStripMenuItem;
         private ToolStripMenuItem nazizombiefactorypatchffToolStripMenuItem;
         private ToolStripMenuItem checkForUpdateToolStripMenuItem;
+        private ToolStripMenuItem injectFileToolStripMenuItem;
+        private ContextMenuStrip contextMenuStrip1;
+        private ToolStripMenuItem exportFileMenuItem;
     }
 }

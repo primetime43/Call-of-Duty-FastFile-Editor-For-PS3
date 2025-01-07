@@ -1,49 +1,19 @@
-﻿using Ionic.Zlib;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
+using Call_of_Duty_FastFile_Editor.Models;
 
 namespace Call_of_Duty_FastFile_Editor.IO
 {
-    public class FileEntryNode
-    {
-        public TreeNode Node { get; set; }
-
-        /// <summary>
-        /// This is where one of the patterns was found in the file from <see cref="FastFileProcessing.ExtractFileEntriesWithSizeAndName(string)"/>
-        /// </summary>
-        public int PatternIndexPosition { get; set; }
-        public int MaxSize { get; set; }
-        /// <summary>
-        /// Gets the position where the file header starts. 
-        /// This is also where the size of the file is located.
-        /// </summary>
-        public int StartOfFileHeader { get; set; }
-
-        private int _codeStartPosition;
-
-        /// <summary>
-        /// Gets the position where the code starts, calculated as StartOfFileHeader + 8 + Node.Text.Length + 1.
-        /// </summary>
-        public int CodeStartPosition
-        {
-            get => StartOfFileHeader + 8 + Node.Text.Length + 1;
-            set => _codeStartPosition = value; // Allow setting it manually if needed
-        }
-
-        /// <summary>
-        /// Gets or sets the file name.
-        /// </summary>
-        public string FileName { get; set; }
-
-        public int CodeEndPosition => CodeStartPosition + MaxSize;
-    }
-
     public static class FastFileProcessing
     {
         public static void DecompressFastFile(string inputFilePath, string outputFilePath)
         {
-            using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open), Encoding.Default))
-            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create), Encoding.Default))
+            using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
+            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
             {
                 binaryReader.BaseStream.Position = 12L;
 
@@ -71,10 +41,10 @@ namespace Call_of_Duty_FastFile_Editor.IO
 
         public static void RecompressFastFile(string ffFilePath, string zoneFilePath, FastFileHeader headerInfo)
         {
-            byte[] header = new byte[8] { 73, 87, 102, 102, 117, 49, 48, 48 }; // IWffu100 header
+            byte[] header = new byte[8] { 73, 87, 102, 102, 117, 49, 48, 48 }; // "Iwffu100" header
 
-            using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open), Encoding.Default))
-            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create), Encoding.Default))
+            using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
+            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
             {
                 // Write header to the new file
                 binaryWriter.Write(header);
@@ -89,7 +59,6 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 }
 
                 // Set the reader position to skip the header already written
-                //binaryReader.BaseStream.PatternIndexPosition = 0; // Start from the beginning of the zone file
                 binaryReader.BaseStream.Position = 12L; // Skip the original header
 
                 int chunkSize = 65536;
@@ -104,7 +73,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                     // Write the length of the compressed chunk (2 bytes)
                     int compressedLength = compressedChunk.Length;
                     byte[] lengthBytes = BitConverter.GetBytes(compressedLength);
-                    Array.Reverse(lengthBytes); // Make sure the length is in correct byte order
+                    Array.Reverse(lengthBytes); // Ensure correct byte order
                     binaryWriter.Write(lengthBytes, 2, 2); // Write only the last 2 bytes
 
                     // Write the compressed chunk
@@ -116,9 +85,49 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
         }
 
-        public static List<FileEntryNode> ExtractFileEntriesWithSizeAndName(string filePath)
+        /// <summary>
+        /// Updates the content of a specific file within the zone file.
+        /// </summary>
+        /// <param name="zoneFilePath">Path to the decompressed zone file.</param>
+        /// <param name="node">The RawFileNode representing the raw file to update.</param>
+        /// <param name="newContent">New content as a byte array.</param>
+        /// <exception cref="ArgumentException">Thrown when newContent exceeds MaxSize.</exception>
+        /// <exception cref="IOException">Thrown when file operations fail.</exception>
+        public static void UpdateFileContent(string zoneFilePath, RawFileNode rawFileNode, byte[] newContent)
         {
-            List<FileEntryNode> fileEntryNodes = new List<FileEntryNode>();
+            if (newContent.Length > rawFileNode.MaxSize)
+            {
+                throw new ArgumentException($"New content size ({newContent.Length} bytes) exceeds the maximum allowed size ({rawFileNode.MaxSize} bytes) for file '{rawFileNode.FileName}'.");
+            }
+
+            try
+            {
+                using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Write, FileShare.None))
+                {
+                    fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
+                    fs.Write(newContent, 0, newContent.Length);
+
+                    // Pad with zeros if newContent is smaller than MaxSize
+                    if (newContent.Length < rawFileNode.MaxSize)
+                    {
+                        byte[] padding = new byte[rawFileNode.MaxSize - newContent.Length];
+                        fs.Write(padding, 0, padding.Length);
+                    }
+                }
+
+                // Update the RawFileNode properties
+                rawFileNode.RawFileBytes = newContent;
+                rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                throw new IOException($"Failed to update content for raw file '{rawFileNode.FileName}': {ex.Message}", ex);
+            }
+        }
+
+        public static List<RawFileNode> ExtractFileEntriesWithSizeAndName(string filePath)
+        {
+            List<RawFileNode> rawFileNodes = new List<RawFileNode>();
             byte[] fileData = File.ReadAllBytes(filePath);
 
             // Define the byte patterns to search for
@@ -157,12 +166,6 @@ namespace Call_of_Duty_FastFile_Editor.IO
 
                         int patternIndex = i;
 
-                        // Debugging information: show the matched bytes
-                        byte[] matchedBytes = new byte[pattern.Length];
-                        Array.Copy(fileData, patternIndex, matchedBytes, 0, pattern.Length);
-                        string matchedBytesHex = BitConverter.ToString(matchedBytes).Replace("-", " ");
-                        //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nMatched Bytes: {matchedBytesHex}", "Pattern Match Debug Info");
-
                         // Move backwards to find the FF FF FF FF sequence
                         int ffffPosition = patternIndex - 1;
                         while (ffffPosition >= 4 && !(fileData[ffffPosition] == 0xFF && fileData[ffffPosition - 1] == 0xFF && fileData[ffffPosition - 2] == 0xFF && fileData[ffffPosition - 3] == 0xFF))
@@ -173,7 +176,6 @@ namespace Call_of_Duty_FastFile_Editor.IO
                         // Ensure the sequence is valid (not followed by \x00 and not part of a different structure)
                         if (ffffPosition < 4 || fileData[ffffPosition + 1] == 0x00)
                         {
-                            //MessageBox.Show($"Skipping invalid FF FF FF FF sequence at {ffffPosition:X}", "Invalid Sequence Debug Info");
                             continue;
                         }
 
@@ -190,40 +192,59 @@ namespace Call_of_Duty_FastFile_Editor.IO
 
                             if (!string.IsNullOrEmpty(fileName) && !fileName.Contains("\x00"))
                             {
-                                TreeNode treeNode = new TreeNode(fileName)
+                                // Read the file content
+                                string fileContent = ReadFileContentAfterName(filePath, patternIndex, maxSize);
+
+                                byte[] fileBytes = null;
+                                // Extract binary data
+                                fileBytes = ExtractBinaryContent(filePath, patternIndex, maxSize);
+
+                                rawFileNodes.Add(new RawFileNode
                                 {
-                                    Tag = patternIndex
-                                };
-                                fileEntryNodes.Add(new FileEntryNode
-                                {
-                                    Node = treeNode,
                                     PatternIndexPosition = patternIndex,
                                     MaxSize = maxSize,
                                     StartOfFileHeader = sizePosition,
-                                    FileName = fileName
+                                    FileName = fileName,
+                                    RawFileContent = fileContent,
+                                    RawFileBytes = fileBytes
                                 });
-
-                                // Debugging message box
-                                //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFile Name: {fileName}\nSize PatternIndexPosition: {sizePosition:X}\nMax Size: {maxSize}\nHeader Start: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
                             }
-                            else
-                            {
-                                //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFile Name Start: {fileNameStart:X}\nFile Name Invalid or Contains Null", "ExtractFileEntriesWithSizeAndName Debug Info");
-                            }
-                        }
-                        else
-                        {
-                            //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nFFFF PatternIndexPosition: {ffffPosition:X}\nSize PatternIndexPosition Invalid: {sizePosition:X}", "ExtractFileEntriesWithSizeAndName Debug Info");
                         }
                     }
                 }
             }
 
-            fileEntryNodes.Sort((a, b) => a.PatternIndexPosition.CompareTo(b.PatternIndexPosition));
-            return fileEntryNodes;
+            rawFileNodes.Sort((a, b) => a.PatternIndexPosition.CompareTo(b.PatternIndexPosition));
+            return rawFileNodes;
         }
 
-        public static string ExtractFullFileName(byte[] data, int fileNameStart)
+        private static byte[] ExtractBinaryContent(string filePath, int patternIndex, int maxSize)
+        {
+            byte[] fileData = File.ReadAllBytes(filePath);
+
+            // Move to the position after the name's null terminator
+            int contentStartPosition = patternIndex;
+            while (contentStartPosition < fileData.Length && fileData[contentStartPosition] != 0x00)
+            {
+                contentStartPosition++;
+            }
+            // Skip the null terminator
+            contentStartPosition++;
+
+            // Calculate content length up to max size
+            int contentLength = maxSize;
+            if (contentStartPosition + contentLength > fileData.Length)
+            {
+                contentLength = fileData.Length - contentStartPosition;
+            }
+
+            byte[] contentBytes = new byte[contentLength];
+            Array.Copy(fileData, contentStartPosition, contentBytes, 0, contentLength);
+
+            return RemoveZeroPadding(contentBytes);
+        }
+
+        private static string ExtractFullFileName(byte[] data, int fileNameStart)
         {
             StringBuilder fileName = new StringBuilder();
 
@@ -237,9 +258,6 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 }
                 fileName.Append(c);
             }
-
-            // Debugging message box
-            //MessageBox.Show($"Extracted File Name: {fileName}\nFile Name Start: {fileNameStart:X}", "ExtractFullFileName Debug Info");
 
             return fileName.ToString();
         }
@@ -267,10 +285,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
             byte[] contentBytes = new byte[contentLength];
             Array.Copy(fileData, contentStartPosition, contentBytes, 0, contentLength);
 
-            return RemoveZeroPadding(contentBytes);
+            byte[] trimmedBytes = RemoveZeroPadding(contentBytes);
+            return Encoding.Default.GetString(trimmedBytes);
         }
 
-        private static string RemoveZeroPadding(byte[] content)
+        private static byte[] RemoveZeroPadding(byte[] content)
         {
             // Remove zero padding (0x00) from the content
             int i = content.Length - 1;
@@ -279,9 +298,15 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 i--;
             }
 
-            // Convert the remaining content to a string
-            return Encoding.Default.GetString(content, 0, i + 1);
-        }
+            if (i < 0)
+            {
+                // All bytes are zero
+                return new byte[0];
+            }
 
+            byte[] trimmedContent = new byte[i + 1];
+            Array.Copy(content, 0, trimmedContent, 0, i + 1);
+            return trimmedContent;
+        }
     }
 }

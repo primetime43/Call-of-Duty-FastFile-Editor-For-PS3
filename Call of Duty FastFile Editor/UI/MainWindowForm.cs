@@ -1,10 +1,15 @@
 using Call_of_Duty_FastFile_Editor.CodeOperations;
 using Call_of_Duty_FastFile_Editor.IO;
+using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.UI;
 using System.Text.RegularExpressions;
 using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 using System.Diagnostics;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
+using System.Text;
+using System.Windows.Forms;
+using System.Linq;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -14,6 +19,7 @@ namespace Call_of_Duty_FastFile_Editor
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
         private bool _hasUnsavedChanges = false;
+
         public MainWindowForm()
         {
             InitializeComponent();
@@ -37,13 +43,16 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// List of file entry nodes extracted from the zone file.
         /// </summary>
-        private List<FileEntryNode> fileEntryNodes;
+        private List<RawFileNode> rawFileNodes;
 
         /// <summary>
         /// Header information of the opened Fast File.
         /// </summary>
         private FastFileHeader _header;
 
+        /// <summary>
+        /// Opens a Fast File, decompresses it, extracts file entries, and populates the TreeView.
+        /// </summary>
         private void openFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -64,36 +73,88 @@ namespace Call_of_Duty_FastFile_Editor
 
             UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, ffFilePath);
 
-            _header = new FastFileHeader(ffFilePath);
+            try
+            {
+                _header = new FastFileHeader(ffFilePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to read Fast File header: {ex.Message}", "Header Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             if (_header.IsValid)
             {
                 FastFileProcessing.DecompressFastFile(ffFilePath, zoneFilePath);
-                fileEntryNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
-                filesTreeView.Nodes.AddRange(fileEntryNodes.Select(node => node.Node).ToArray());
+                rawFileNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
+                PopulateTreeView();
+            }
+            else
+            {
+                MessageBox.Show("Invalid Fast File!\n\nThe Fast File you have selected is not a valid PS3 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                return;
             }
 
             UIManager.SetTreeNodeColors(filesTreeView);
 
-            // move this to the UIManager eventually
+            // Enable relevant menu items
             saveRawFileToolStripMenuItem.Enabled = true;
             renameRawFileToolStripMenuItem.Enabled = true;
             saveFastFileToolStripMenuItem.Enabled = true;
             saveFastFileAsToolStripMenuItem.Enabled = true;
         }
 
+        /// <summary>
+        /// Populates the TreeView with TreeNodes corresponding to RawFileNodes.
+        /// </summary>
+        private void PopulateTreeView()
+        {
+            // Clear existing nodes to avoid duplication
+            filesTreeView.Nodes.Clear();
+
+            var treeNodes = rawFileNodes.Select(node =>
+            {
+                var treeNode = new TreeNode(node.FileName)
+                {
+                    Tag = node.PatternIndexPosition // Associate TreeNode with RawFileNode via Tag
+                };
+                return treeNode;
+            }).ToArray();
+
+            filesTreeView.Nodes.AddRange(treeNodes);
+        }
+
+        /// <summary>
+        /// Handles actions before selecting a new TreeView node, prompting to save unsaved changes.
+        /// </summary>
         private void filesTreeView_BeforeSelect(object sender, TreeViewCancelEventArgs e)
         {
             if (_hasUnsavedChanges)
             {
-                DialogResult result = MessageBox.Show("You have unsaved changes. Do you want to save before switching?", "Unsaved Changes", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                DialogResult result = MessageBox.Show(
+                    "You have unsaved changes. Do you want to save before switching?",
+                    "Unsaved Changes",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning
+                );
+
                 if (result == DialogResult.Yes)
                 {
                     if (_previousSelectedNode != null)
                     {
-                        var previousSelectedNodeData = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == (int)_previousSelectedNode.Tag);
+                        var previousSelectedNodeData = rawFileNodes
+                            .FirstOrDefault(node => node.PatternIndexPosition == (int)_previousSelectedNode.Tag);
+
                         if (previousSelectedNodeData != null)
                         {
-                            SaveRawFile.Save(filesTreeView, zoneFilePath, fileEntryNodes, textEditorControl1.Text);
+                            SaveRawFile.Save(
+                                filesTreeView,              // TreeView control
+                                ffFilePath,                 // Path to the Fast File (.ff)
+                                zoneFilePath,               // Path to the decompressed zone file
+                                rawFileNodes,             // List of RawFileNode objects
+                                textEditorControl1.Text,    // Updated text from the editor
+                                _header                     // FastFileHeader instance
+                            );
                         }
                     }
                     _hasUnsavedChanges = false;
@@ -107,44 +168,79 @@ namespace Call_of_Duty_FastFile_Editor
             _previousSelectedNode = filesTreeView.SelectedNode; // Save the current node before changing
         }
 
+        /// <summary>
+        /// Handles actions after selecting a new TreeView node, loading the corresponding file content.
+        /// </summary>
         private void filesTreeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (e.Node.Tag is int position)
             {
                 string fileName = e.Node.Text; // Get the selected file name
-                var selectedNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                var selectedNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                 int maxSize = selectedNode?.MaxSize ?? 0;
-                string fileContent = FastFileProcessing.ReadFileContentAfterName(zoneFilePath, position, maxSize);
 
-                textEditorControl1.TextChanged -= textEditorControl1_TextChanged; // Unsubscribe to prevent multiple triggers
-                textEditorControl1.Text = fileContent;
-                textEditorControl1.TextChanged += textEditorControl1_TextChanged; // Resubscribe
+                if (selectedNode != null)
+                {
+                    string fileContent = selectedNode.RawFileContent ?? string.Empty;
+                    textEditorControl1.TextChanged -= textEditorControl1_TextChanged; // Unsubscribe to prevent multiple triggers
+                    textEditorControl1.Text = fileContent;
+                    textEditorControl1.TextChanged += textEditorControl1_TextChanged; // Resubscribe
 
-                UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
-                UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
-                _hasUnsavedChanges = false; // Reset the flag after loading new content
+                    UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
+                    UIManager.UpdateStatusStrip(
+                        selectedFileMaxSizeStatusLabel,
+                        selectedFileCurrentSizeStatusLabel,
+                        maxSize,
+                        textEditorControl1.Text.Length
+                    );
+                    _hasUnsavedChanges = false; // Reset the flag after loading new content
+                }
             }
         }
 
+        /// <summary>
+        /// Handles text changes in the editor, marking the content as unsaved.
+        /// </summary>
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
             if (filesTreeView.SelectedNode?.Tag is int position)
             {
-                var selectedNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
-                int maxSize = selectedNode?.MaxSize ?? 0;
-                UIManager.UpdateStatusStrip(selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel, maxSize, textEditorControl1.Text.Length);
-                _hasUnsavedChanges = true;
+                var selectedNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                if (selectedNode != null)
+                {
+                    int maxSize = selectedNode.MaxSize;
+                    UIManager.UpdateStatusStrip(
+                        selectedFileMaxSizeStatusLabel,
+                        selectedFileCurrentSizeStatusLabel,
+                        maxSize,
+                        textEditorControl1.Text.Length
+                    );
+                    _hasUnsavedChanges = true;
+                }
             }
         }
 
+        /// <summary>
+        /// Saves the current Fast File, recompressing it.
+        /// </summary>
         private void saveFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, _header);
-            MessageBox.Show("Fast File saved to:\n\n" + ffFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-            _hasUnsavedChanges = false; // Reset the flag after saving
-            Application.Restart();
+            try
+            {
+                FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, _header);
+                MessageBox.Show("Fast File saved to:\n\n" + ffFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                _hasUnsavedChanges = false; // Reset the flag after saving
+                Application.Restart();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save Fast File: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
+        /// <summary>
+        /// Saves the Fast File as a new file.
+        /// </summary>
         private void saveFastFileAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             using (SaveFileDialog saveFileDialog = new SaveFileDialog())
@@ -154,56 +250,146 @@ namespace Call_of_Duty_FastFile_Editor
 
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    string newFilePath = saveFileDialog.FileName;
-                    FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath, _header);
-                    MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-                    _hasUnsavedChanges = false; // Reset the flag after saving
-                    Application.Restart();
+                    try
+                    {
+                        string newFilePath = saveFileDialog.FileName;
+                        FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath, _header);
+                        MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                        _hasUnsavedChanges = false; // Reset the flag after saving
+                        Application.Restart();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to save Fast File As: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
 
+        /// <summary>
+        /// Cleans up resources when the form is closed.
+        /// </summary>
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             // Deleting the zone file of the opened ff file
             if (File.Exists(zoneFilePath))
             {
-                File.Delete(zoneFilePath);
+                try
+                {
+                    File.Delete(zoneFilePath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to delete zone file: {ex.Message}", "Deletion Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
+        /// <summary>
+        /// Exits the application.
+        /// </summary>
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Close();
         }
 
+        /// <summary>
+        /// Saves the raw file using SaveRawFile utility.
+        /// </summary>
         private void saveRawFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SaveRawFile.Save(filesTreeView, zoneFilePath, fileEntryNodes, textEditorControl1.Text);
-            _hasUnsavedChanges = false; // Reset the flag after saving
-        }
-
-        private void removeCommentsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
-            textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
-            textEditorControl1.Text = Regex.Replace(textEditorControl1.Text, "(\\r\\n){2,}", "\r\n\r\n");
-        }
-
-        private void saveFileToPCToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            string path = Regex.Replace(filesTreeView.SelectedNode.Text, "/", "\\");
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Title = "Choose where to save Asset...";
-            saveFileDialog.FileName = Path.GetFileName(path);
-            saveFileDialog.Filter = Path.GetExtension(path) + " files|*" + Path.GetExtension(path);
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            try
             {
-                textEditorControl1.SaveFile(saveFileDialog.FileName);
-                MessageBox.Show("File " + Path.GetFileName(saveFileDialog.FileName) + " saved to:\n" + saveFileDialog.FileName, "File Saved.", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                SaveRawFile.Save(
+                    filesTreeView,                // TreeView control
+                    ffFilePath,                   // Path to the Fast File (.ff)
+                    zoneFilePath,                 // Path to the decompressed zone file
+                    rawFileNodes,               // List of RawFileNode objects
+                    textEditorControl1.Text,      // Updated text from the editor
+                    _header                       // FastFileHeader instance
+                );
+                _hasUnsavedChanges = false; // Reset the flag after saving
+                MessageBox.Show("Raw file saved successfully.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save raw file: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
+        /// <summary>
+        /// Removes comments from the code in the editor.
+        /// </summary>
+        private void removeCommentsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
+                textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
+                textEditorControl1.Text = Regex.Replace(textEditorControl1.Text, "(\\r\\n){2,}", "\r\n\r\n");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to remove comments: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Saves the selected file to PC.
+        /// </summary>
+        private void saveFileToPCToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesTreeView.SelectedNode == null)
+            {
+                MessageBox.Show("Please select a file to save.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!(filesTreeView.SelectedNode.Tag is int position))
+            {
+                MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            if (selectedFileNode == null)
+            {
+                MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Title = "Choose where to save Asset...";
+                saveFileDialog.FileName = Path.GetFileName(selectedFileNode.FileName);
+                saveFileDialog.Filter = "All Files (*.*)|*.*";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        if (string.IsNullOrEmpty(selectedFileNode.RawFileContent))
+                        {
+                            MessageBox.Show("Selected text file has no content to save.", "Empty File", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            return;
+                        }
+                        // Determine encoding based on your requirements
+                        Encoding encoding = Encoding.UTF8; // or another appropriate encoding
+                        File.WriteAllText(saveFileDialog.FileName, selectedFileNode.RawFileContent, encoding);
+
+                        MessageBox.Show($"File successfully saved to:\n\n{saveFileDialog.FileName}", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to save file: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows information about the file structure in a new form.
+        /// </summary>
         private void fileStructureInfoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (filesTreeView.SelectedNode != null)
@@ -211,7 +397,7 @@ namespace Call_of_Duty_FastFile_Editor
                 if (filesTreeView.SelectedNode.Tag is int position)
                 {
                     string fileName = filesTreeView.SelectedNode.Text; // Get the selected file name
-                    var selectedFileNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                    var selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
 
                     // Additional logic for handling the selected file node
                     if (selectedFileNode != null)
@@ -220,32 +406,55 @@ namespace Call_of_Duty_FastFile_Editor
                     }
                     else
                     {
-                        MessageBox.Show("Selected file node not found in file entry nodes.");
+                        MessageBox.Show("Selected file node not found in file entry nodes.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Selected node does not have a valid position.");
+                    MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
             {
-                MessageBox.Show("No node is selected.");
+                MessageBox.Show("No node is selected.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
+        /// <summary>
+        /// Compresses the code in the editor.
+        /// </summary>
         private void compressCodeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
-            textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
-            textEditorControl1.Text = CodeCompressor.CompressCode(textEditorControl1.Text);
+            try
+            {
+                textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
+                textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
+                textEditorControl1.Text = CodeCompressor.CompressCode(textEditorControl1.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to compress code: {ex.Message}", "Compression Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
+        /// <summary>
+        /// Checks the syntax of the code in the editor.
+        /// </summary>
         private void checkSyntaxToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SyntaxChecker.CheckSyntax(textEditorControl1.Text);
+            try
+            {
+                SyntaxChecker.CheckSyntax(textEditorControl1.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Syntax check failed: {ex.Message}", "Syntax Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
+        /// <summary>
+        /// Displays the About dialog.
+        /// </summary>
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             string message = "Call of Duty Fast File Editor for PS3\n" +
@@ -262,26 +471,41 @@ namespace Call_of_Duty_FastFile_Editor
             MessageBox.Show(message, "About Call of Duty Fast File Editor");
         }
 
+        /// <summary>
+        /// Downloads the default Fast File for COD5.
+        /// </summary>
         private void defaultffToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DownloadManager.DownloadFile("default.ff", Path.Combine("Original Fast Files", "COD5"));
         }
 
+        /// <summary>
+        /// Downloads the patch_mp.ff Fast File for COD5.
+        /// </summary>
         private void patchmpffToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD5"));
         }
 
+        /// <summary>
+        /// Downloads the nazi_zombie_factory_patch.ff Fast File for COD5.
+        /// </summary>
         private void nazizombiefactorypatchffToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DownloadManager.DownloadFile("nazi_zombie_factory_patch.ff", Path.Combine("Original Fast Files", "COD5"));
         }
 
+        /// <summary>
+        /// Downloads the patch_mp.ff Fast File for COD4.
+        /// </summary>
         private void patchmpffToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD4"));
         }
 
+        /// <summary>
+        /// Checks for updates asynchronously.
+        /// </summary>
         private void checkForUpdateToolStripMenuItem_Click(object sender, EventArgs e)
         {
             checkForUpdate();
@@ -289,46 +513,243 @@ namespace Call_of_Duty_FastFile_Editor
 
         private async void checkForUpdate()
         {
-            var release = await ReleaseChecker.CheckForNewRelease("primetime43", "Call-of-Duty-FastFile-Editor-For-PS3");
-
-            if (release != null)
+            try
             {
-                int latestReleaseInt = ReleaseChecker.convertVersionToInt(release.tag_name);
-                int localProgramVersionInt = ReleaseChecker.convertVersionToInt(_programVersion);
+                var release = await ReleaseChecker.CheckForNewRelease("primetime43", "Call-of-Duty-FastFile-Editor-For-PS3");
 
-                if (latestReleaseInt > localProgramVersionInt)
+                if (release != null)
                 {
-                    DialogResult result = MessageBox.Show("Current version: " + _programVersion + "\nNew release available: " + release.name + " (" + release.tag_name + ")\nDo you want to download it?", "New Release", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    int latestReleaseInt = ReleaseChecker.convertVersionToInt(release.tag_name);
+                    int localProgramVersionInt = ReleaseChecker.convertVersionToInt(_programVersion);
 
-                    if (result == DialogResult.Yes)
+                    if (latestReleaseInt > localProgramVersionInt)
                     {
-                        try
-                        {
-                            var startInfo = new ProcessStartInfo
-                            {
-                                FileName = ReleaseChecker.releaseURL,
-                                UseShellExecute = true
-                            };
+                        DialogResult result = MessageBox.Show(
+                            "Current version: " + _programVersion + "\nNew release available: " + release.name + " (" + release.tag_name + ")\nDo you want to download it?",
+                            "New Release",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question
+                        );
 
-                            Process.Start(startInfo);
-                        }
-                        catch (System.ComponentModel.Win32Exception ex)
+                        if (result == DialogResult.Yes)
                         {
-                            MessageBox.Show("An error occurred: " + ex.Message);
+                            try
+                            {
+                                var startInfo = new ProcessStartInfo
+                                {
+                                    FileName = ReleaseChecker.releaseURL,
+                                    UseShellExecute = true
+                                };
+
+                                Process.Start(startInfo);
+                            }
+                            catch (System.ComponentModel.Win32Exception ex)
+                            {
+                                MessageBox.Show("An error occurred: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
                         }
                     }
-                }
-                else if (latestReleaseInt == localProgramVersionInt)
-                {
-                    MessageBox.Show("You are using the latest version.");
+                    else if (latestReleaseInt == localProgramVersionInt)
+                    {
+                        MessageBox.Show("You are using the latest version.", "No Update Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Local version is newer than the latest release.");
+                    }
                 }
                 else
-                    Debug.WriteLine("Release null, skipping check.");
+                {
+                    MessageBox.Show("No new releases available.", "Update Check", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("No new releases available.");
+                MessageBox.Show($"Failed to check for updates: {ex.Message}", "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void injectFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Title = "Inject a File";
+                ofd.Filter = "Allowed Files (*.cfg;*.gsc;*.atr;*.csc;*.rmb;*.arena;*.vision)|*.cfg;*.gsc;*.atr;*.csc;*.rmb;*.arena;*.vision|All Files (*.*)|*.*";
+
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    string selectedFilePath = ofd.FileName;
+                    string fileName = Path.GetFileName(selectedFilePath);
+                    byte[] fileBytes = File.ReadAllBytes(selectedFilePath);
+
+                    // Check if the file already exists in the zone
+                    RawFileNode existingNode = rawFileNodes.FirstOrDefault(node => node.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+
+                    if (existingNode != null)
+                    {
+                        // Overwrite existing raw file
+                        if (fileBytes.Length > existingNode.MaxSize)
+                        {
+                            MessageBox.Show($"The file size exceeds the maximum allowed size of {existingNode.MaxSize} bytes.", "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        try
+                        {
+                            FastFileProcessing.UpdateFileContent(zoneFilePath, existingNode, fileBytes);
+                            MessageBox.Show($"File '{fileName}' successfully updated in the zone file.", "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Failed to update file: {ex.Message}", "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        // Update TreeView
+                        TreeNode existingTreeNode = filesTreeView.Nodes.Cast<TreeNode>()
+                            .FirstOrDefault(n => n.Text.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+                        if (existingTreeNode != null)
+                        {
+                            existingTreeNode.Tag = existingNode.PatternIndexPosition;
+                        }
+                    }
+                    else
+                    {
+                        // Inject as a new raw file
+                        RawFileNode newNode = new RawFileNode
+                        {
+                            FileName = fileName,
+                            RawFileBytes = fileBytes,
+                            RawFileContent = Encoding.Default.GetString(fileBytes),
+                            MaxSize = fileBytes.Length,
+                            PatternIndexPosition = rawFileNodes.Count > 0 ? rawFileNodes.Max(node => node.PatternIndexPosition) + 1 : 0,
+                            StartOfFileHeader = rawFileNodes.Count > 0 ? rawFileNodes.Max(node => node.CodeEndPosition) : 0
+                        };
+
+                        try
+                        {
+                            // Write the new file to the zone file
+                            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Write))
+                            {
+                                fs.Seek(newNode.StartOfFileHeader, SeekOrigin.Begin);
+                                fs.Write(newNode.Header, 0, newNode.Header.Length);
+                                fs.Write(newNode.RawFileBytes, 0, newNode.RawFileBytes.Length);
+                            }
+
+                            rawFileNodes.Add(newNode);
+
+                            // Add the new node to TreeView
+                            TreeNode newTreeNode = new TreeNode(newNode.FileName)
+                            {
+                                Tag = newNode.PatternIndexPosition
+                            };
+                            filesTreeView.Nodes.Add(newTreeNode);
+
+                            MessageBox.Show($"File '{fileName}' successfully injected into the zone file.", "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Failed to inject file: {ex.Message}", "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+
+                    // Mark changes as unsaved
+                    _hasUnsavedChanges = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Exports the selected file, including its header information, to a chosen location.
+        /// </summary>
+        private void exportFileMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesTreeView.SelectedNode == null)
+            {
+                MessageBox.Show("Please select a file to export.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!(filesTreeView.SelectedNode.Tag is int position))
+            {
+                MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            if (selectedFileNode == null)
+            {
+                MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            string fileExtension = Path.GetExtension(selectedFileNode.FileName);
+            string validExtensions = ".cfg,.gsc,.str,.vision,.rmb,.csc";
+
+            // Validate the extension
+            if (!validExtensions.Split(',').Contains(fileExtension, StringComparer.OrdinalIgnoreCase))
+            {
+                MessageBox.Show($"Unsupported file extension: {fileExtension}.", "Invalid Extension", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Title = "Export File";
+                saveFileDialog.FileName = SanitizeFileName(selectedFileNode.FileName);
+                saveFileDialog.Filter = $"{fileExtension.TrimStart('.').ToUpper()} Files (*{fileExtension})|*{fileExtension}|All Files (*.*)|*.*";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string exportPath = saveFileDialog.FileName;
+
+                        using (FileStream fs = new FileStream(exportPath, FileMode.Create, FileAccess.Write))
+                        using (BinaryWriter bw = new BinaryWriter(fs))
+                        {
+                            // Write the header (size and padding)
+                            bw.Write(selectedFileNode.Header);
+
+                            // Write the file name in ASCII
+                            byte[] fileNameBytes = Encoding.ASCII.GetBytes(selectedFileNode.FileName);
+                            bw.Write(fileNameBytes);
+
+                            // Write a null terminator (0x00) after the file name
+                            bw.Write((byte)0x00);
+
+                            // Write the file content
+                            byte[] contentBytes = selectedFileNode.RawFileBytes ?? Encoding.UTF8.GetBytes(selectedFileNode.RawFileContent ?? string.Empty);
+                            bw.Write(contentBytes);
+                        }
+
+                        MessageBox.Show($"File successfully exported to:\n\n{exportPath}", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to export file: {ex.Message}", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sanitizes a filename by replacing invalid characters with underscores.
+        /// </summary>
+        /// <param name="fileName">The original filename.</param>
+        /// <returns>A sanitized filename safe for the filesystem.</returns>
+        private string SanitizeFileName(string fileName)
+        {
+            // Retrieve all invalid characters for filenames
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+
+            // Replace each invalid character with an underscore
+            foreach (char c in invalidChars)
+            {
+                fileName = fileName.Replace(c, '_');
+            }
+
+            return fileName;
         }
     }
 }

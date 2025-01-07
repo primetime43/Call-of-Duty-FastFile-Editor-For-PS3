@@ -1,18 +1,19 @@
 ﻿using Call_of_Duty_FastFile_Editor.IO;
+using Call_of_Duty_FastFile_Editor.Models;
 
 namespace Call_of_Duty_FastFile_Editor.UI
 {
     // NOTE: 0D 0A is a line break in hex
     public partial class FileStructureInfoForm : Form
     {
-        private FileEntryNode _selectedFileNode;
+        private RawFileNode _selectedFileNode;
 
         public FileStructureInfoForm()
         {
             InitializeComponent();
         }
 
-        public FileStructureInfoForm(FileEntryNode selectedFileNode)
+        public FileStructureInfoForm(RawFileNode selectedFileNode)
         {
             InitializeComponent();
 

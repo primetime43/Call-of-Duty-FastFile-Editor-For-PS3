@@ -1,24 +1,25 @@
 ﻿using Call_of_Duty_FastFile_Editor.IO;
 using System;
 using System.IO;
-using System.Net;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using Call_of_Duty_FastFile_Editor.Models;
 
 namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
     public class SaveRawFile
     {
-        public static void Save(TreeView filesTreeView, string zoneFilePath, List<FileEntryNode> fileEntryNodes, string updatedText)
+        public static void Save(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, string updatedText, FastFileHeader headerInfo)
         {
             try
             {
                 if (filesTreeView.SelectedNode?.Tag is int position)
                 {
-                    var fileEntryNode = fileEntryNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
-                    if (fileEntryNode != null)
+                    var rawFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                    if (rawFileNode != null)
                     {
-                        SaveFileNode(zoneFilePath, fileEntryNode, updatedText);
+                        SaveFileNode(ffFilePath, zoneFilePath, rawFileNode, updatedText, headerInfo);
                     }
                     else
                     {
@@ -36,42 +37,52 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
             }
         }
 
-        private static void SaveFileNode(string zoneFilePath, FileEntryNode fileEntryNode, string updatedText)
+        private static void SaveFileNode(string ffFilePath, string zoneFilePath, RawFileNode rawFileNode, string updatedText, FastFileHeader headerInfo)
         {
-            int originalSize;
-            using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite), Encoding.Default))
+            byte[] updatedBytes = Encoding.ASCII.GetBytes(updatedText);
+            int updatedSize = updatedBytes.Length;
+            int originalSize = rawFileNode.MaxSize;
+
+            if (updatedSize > originalSize)
             {
-                binaryReader.BaseStream.Position = fileEntryNode.PatternIndexPosition;
-                originalSize = fileEntryNode.MaxSize;
+                MessageBox.Show($"New size is {updatedSize - originalSize} bytes larger than the original size.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                return;
             }
 
-            using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite), Encoding.Default))
+            try
             {
-                // Calculate the position to write the updated content
-                long updatePosition = fileEntryNode.StartOfFileHeader + 8 + fileEntryNode.Node.Text.Length + 1;
-                //MessageBox.Show($"Updating at position: {updatePosition}");
-                byte[] updatedBytes = Encoding.ASCII.GetBytes(updatedText);
-                int updatedSize = updatedBytes.Length;
+                // Create a backup before making changes
+                CreateBackup(ffFilePath);
 
-                if (updatedSize > originalSize)
-                {
-                    MessageBox.Show($"New size is {updatedSize - originalSize} bytes larger than original size", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
-                    return;
-                }
+                // Update the zone file in memory
+                FastFileProcessing.UpdateFileContent(zoneFilePath, rawFileNode, updatedBytes);
+                rawFileNode.RawFileContent = updatedText; // Update the in-memory representation
 
-                binaryWriter.BaseStream.Position = updatePosition;
-                binaryWriter.Write(updatedBytes);
+                // Recompress the modified zone file back into the Fast File
+                FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, headerInfo);
 
-                // Pad with zeros if the new data is shorter than the original data
-                if (updatedSize < originalSize)
-                {
-                    long paddingPosition = updatePosition + updatedSize;
-                    int paddingSize = originalSize - updatedSize;
-                    binaryWriter.BaseStream.Position = paddingPosition;
-                    binaryWriter.Write(new byte[paddingSize]);
-                }
+                MessageBox.Show($"Raw File '{rawFileNode.FileName}' successfully saved to Zone and Fast File.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            }
+            catch (ArgumentException argEx)
+            {
+                MessageBox.Show(argEx.Message, "Size Exceeded", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (IOException ioEx)
+            {
+                MessageBox.Show($"Failed to save file: {ioEx.Message}", "IO Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
-                MessageBox.Show($"Raw File '{fileEntryNode.FileName}' Saved To Zone.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+        private static void CreateBackup(string originalFilePath)
+        {
+            string backupPath = $"{originalFilePath}.backup";
+            try
+            {
+                File.Copy(originalFilePath, backupPath, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to create backup: {ex.Message}", "Backup Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
