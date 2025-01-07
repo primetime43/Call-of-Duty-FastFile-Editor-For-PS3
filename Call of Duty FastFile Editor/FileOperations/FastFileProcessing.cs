@@ -91,14 +91,13 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// <param name="zoneFilePath">Path to the decompressed zone file.</param>
         /// <param name="node">The RawFileNode representing the raw file to update.</param>
         /// <param name="newContent">New content as a byte array.</param>
-        /// <exception cref="ArgumentException">Thrown when newContent exceeds MaxSize.</exception>
         /// <exception cref="IOException">Thrown when file operations fail.</exception>
         public static void UpdateFileContent(string zoneFilePath, RawFileNode rawFileNode, byte[] newContent)
         {
-            if (newContent.Length > rawFileNode.MaxSize)
+            /*if (newContent.Length > rawFileNode.MaxSize)
             {
                 throw new ArgumentException($"New content size ({newContent.Length} bytes) exceeds the maximum allowed size ({rawFileNode.MaxSize} bytes) for file '{rawFileNode.FileName}'.");
-            }
+            }*/
 
             try
             {

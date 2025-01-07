@@ -588,11 +588,11 @@ namespace Call_of_Duty_FastFile_Editor
                     if (existingNode != null)
                     {
                         // Overwrite existing raw file
-                        if (fileBytes.Length > existingNode.MaxSize)
+                        /*if (fileBytes.Length > existingNode.MaxSize)
                         {
                             MessageBox.Show($"The file size exceeds the maximum allowed size of {existingNode.MaxSize} bytes.", "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
-                        }
+                        }*/
 
                         try
                         {
@@ -721,6 +721,9 @@ namespace Call_of_Duty_FastFile_Editor
                             // Write the file content
                             byte[] contentBytes = selectedFileNode.RawFileBytes ?? Encoding.UTF8.GetBytes(selectedFileNode.RawFileContent ?? string.Empty);
                             bw.Write(contentBytes);
+
+                            // Write padding (00 FF FF FF FF) at the end
+                            bw.Write(new byte[] { 0x00, 0xFF, 0xFF, 0xFF, 0xFF });
                         }
 
                         MessageBox.Show($"File successfully exported to:\n\n{exportPath}", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
