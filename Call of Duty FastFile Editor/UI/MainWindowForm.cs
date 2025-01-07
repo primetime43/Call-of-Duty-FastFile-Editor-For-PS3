@@ -751,5 +751,22 @@ namespace Call_of_Duty_FastFile_Editor
 
             return fileName;
         }
+
+        /// <summary>
+        /// Close the opened fast file, clear the tree view, and reset the form.
+        /// Recompresses the zone file back into the fast file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, _header);
+                _hasUnsavedChanges = false; // Reset the flag after saving
+                Application.Restart();
+            }
+            catch {}
+        }
     }
 }

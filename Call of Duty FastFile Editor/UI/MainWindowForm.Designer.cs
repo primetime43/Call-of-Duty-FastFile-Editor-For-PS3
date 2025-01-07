@@ -60,6 +60,7 @@ namespace Call_of_Duty_FastFile_Editor
             selectedItemStatusLabel = new ToolStripStatusLabel();
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
+            toolStripMenuItem1 = new ToolStripMenuItem();
             contextMenuStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -118,7 +119,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openFastFileToolStripMenuItem, saveFastFileToolStripMenuItem, saveFastFileAsToolStripMenuItem, exitToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openFastFileToolStripMenuItem, saveFastFileToolStripMenuItem, saveFastFileAsToolStripMenuItem, toolStripMenuItem1, exitToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new Size(44, 24);
             fileToolStripMenuItem.Text = "File";
@@ -377,6 +378,13 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel.Text = "Selected File Current Size";
             selectedFileCurrentSizeStatusLabel.Visible = false;
             // 
+            // toolStripMenuItem1
+            // 
+            toolStripMenuItem1.Name = "toolStripMenuItem1";
+            toolStripMenuItem1.Size = new Size(192, 24);
+            toolStripMenuItem1.Text = "Close Fast File";
+            toolStripMenuItem1.Click += toolStripMenuItem1_Click;
+            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -443,5 +451,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem injectFileToolStripMenuItem;
         private ContextMenuStrip contextMenuStrip1;
         private ToolStripMenuItem exportFileMenuItem;
+        private ToolStripMenuItem toolStripMenuItem1;
     }
 }
