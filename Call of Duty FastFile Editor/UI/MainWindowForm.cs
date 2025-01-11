@@ -622,7 +622,7 @@ namespace Call_of_Duty_FastFile_Editor
                             return;
                         }
                     }
-                    else if(existingNode == null)
+                    else if (existingNode == null)
                     {
                         // It's a brand-new file, not already in the zone
                         try
@@ -724,7 +724,31 @@ namespace Call_of_Duty_FastFile_Editor
                 _hasUnsavedChanges = false; // Reset the flag after saving
                 Application.Restart();
             }
-            catch {}
+            catch { }
+        }
+
+        private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesTreeView.SelectedNode == null)
+            {
+                MessageBox.Show("Please select a file to rename.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!(filesTreeView.SelectedNode.Tag is int position))
+            {
+                MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            if (selectedFileNode == null)
+            {
+                MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            RawFileOperations.RenameRawFile(filesTreeView, ffFilePath, zoneFilePath, rawFileNodes, _header);
         }
     }
 }

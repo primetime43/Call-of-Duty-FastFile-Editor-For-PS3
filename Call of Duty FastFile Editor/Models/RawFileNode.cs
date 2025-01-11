@@ -85,6 +85,24 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public byte[] RawFileBytes { get; set; }
 
+        /// <summary>
+        /// Updates the file name and returns the byte array representation.
+        /// </summary>
+        /// <param name="newFileName">The new file name.</param>
+        /// <returns>Byte array of the new file name with a null terminator.</returns>
+        public byte[] GetFileNameBytes(string newFileName)
+        {
+            // Convert the new file name to ASCII bytes
+            byte[] fileNameBytes = Encoding.ASCII.GetBytes(newFileName);
+
+            // Append a null terminator
+            byte[] result = new byte[fileNameBytes.Length + 1];
+            Array.Copy(fileNameBytes, result, fileNameBytes.Length);
+            result[fileNameBytes.Length] = 0x00;
+
+            return result;
+        }
+
         private static string IntToHexBigEndian(int value)
         {
             // Convert the int to a byte array (little-endian by default)
