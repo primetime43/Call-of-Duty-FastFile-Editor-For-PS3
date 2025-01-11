@@ -63,6 +63,9 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
             filesTreeToolTip = new ToolTip(components);
+            tabControl1 = new TabControl();
+            rawFilesPage = new TabPage();
+            tabPage2 = new TabPage();
             contextMenuStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -70,6 +73,8 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             statusStrip1.SuspendLayout();
+            tabControl1.SuspendLayout();
+            rawFilesPage.SuspendLayout();
             SuspendLayout();
             // 
             // textEditorControl1
@@ -78,7 +83,7 @@ namespace Call_of_Duty_FastFile_Editor
             textEditorControl1.IsReadOnly = false;
             textEditorControl1.Location = new Point(0, 0);
             textEditorControl1.Name = "textEditorControl1";
-            textEditorControl1.Size = new Size(1104, 777);
+            textEditorControl1.Size = new Size(1094, 743);
             textEditorControl1.TabIndex = 0;
             textEditorControl1.TextChanged += textEditorControl1_TextChanged;
             // 
@@ -90,7 +95,7 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.HideSelection = false;
             filesTreeView.Location = new Point(8, 0);
             filesTreeView.Name = "filesTreeView";
-            filesTreeView.Size = new Size(334, 777);
+            filesTreeView.Size = new Size(330, 743);
             filesTreeView.TabIndex = 0;
             filesTreeToolTip.SetToolTip(filesTreeView, "Right click for more options.");
             filesTreeView.BeforeSelect += filesTreeView_BeforeSelect;
@@ -191,32 +196,32 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             renameRawFileToolStripMenuItem.Enabled = false;
             renameRawFileToolStripMenuItem.Name = "renameRawFileToolStripMenuItem";
-            renameRawFileToolStripMenuItem.Size = new Size(207, 24);
+            renameRawFileToolStripMenuItem.Size = new Size(214, 24);
             renameRawFileToolStripMenuItem.Text = "Rename Raw File";
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(204, 6);
+            toolStripSeparator1.Size = new Size(211, 6);
             // 
             // compressCodeToolStripMenuItem
             // 
             compressCodeToolStripMenuItem.Name = "compressCodeToolStripMenuItem";
-            compressCodeToolStripMenuItem.Size = new Size(207, 24);
+            compressCodeToolStripMenuItem.Size = new Size(214, 24);
             compressCodeToolStripMenuItem.Text = "Compress Code";
             compressCodeToolStripMenuItem.Click += compressCodeToolStripMenuItem_Click;
             // 
             // removeCommentsToolStripMenuItem
             // 
             removeCommentsToolStripMenuItem.Name = "removeCommentsToolStripMenuItem";
-            removeCommentsToolStripMenuItem.Size = new Size(207, 24);
+            removeCommentsToolStripMenuItem.Size = new Size(214, 24);
             removeCommentsToolStripMenuItem.Text = "Remove Comments";
             removeCommentsToolStripMenuItem.Click += removeCommentsToolStripMenuItem_Click;
             // 
             // checkSyntaxToolStripMenuItem
             // 
             checkSyntaxToolStripMenuItem.Name = "checkSyntaxToolStripMenuItem";
-            checkSyntaxToolStripMenuItem.Size = new Size(207, 24);
+            checkSyntaxToolStripMenuItem.Size = new Size(214, 24);
             checkSyntaxToolStripMenuItem.Text = "Check Syntax";
             checkSyntaxToolStripMenuItem.Click += checkSyntaxToolStripMenuItem_Click;
             // 
@@ -335,7 +340,7 @@ namespace Call_of_Duty_FastFile_Editor
             // splitContainer1
             // 
             splitContainer1.Dock = DockStyle.Fill;
-            splitContainer1.Location = new Point(0, 28);
+            splitContainer1.Location = new Point(3, 3);
             splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -346,8 +351,8 @@ namespace Call_of_Duty_FastFile_Editor
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(textEditorControl1);
-            splitContainer1.Size = new Size(1450, 777);
-            splitContainer1.SplitterDistance = 342;
+            splitContainer1.Size = new Size(1436, 743);
+            splitContainer1.SplitterDistance = 338;
             splitContainer1.TabIndex = 0;
             // 
             // statusStrip1
@@ -400,12 +405,44 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeToolTip.ShowAlways = true;
             filesTreeToolTip.ToolTipIcon = ToolTipIcon.Info;
             // 
+            // tabControl1
+            // 
+            tabControl1.Controls.Add(rawFilesPage);
+            tabControl1.Controls.Add(tabPage2);
+            tabControl1.Dock = DockStyle.Fill;
+            tabControl1.Location = new Point(0, 28);
+            tabControl1.Name = "tabControl1";
+            tabControl1.SelectedIndex = 0;
+            tabControl1.Size = new Size(1450, 777);
+            tabControl1.TabIndex = 3;
+            // 
+            // rawFilesPage
+            // 
+            rawFilesPage.Controls.Add(splitContainer1);
+            rawFilesPage.Location = new Point(4, 24);
+            rawFilesPage.Name = "rawFilesPage";
+            rawFilesPage.Padding = new Padding(3);
+            rawFilesPage.Size = new Size(1442, 749);
+            rawFilesPage.TabIndex = 0;
+            rawFilesPage.Text = "Raw Files";
+            rawFilesPage.UseVisualStyleBackColor = true;
+            // 
+            // tabPage2
+            // 
+            tabPage2.Location = new Point(4, 24);
+            tabPage2.Name = "tabPage2";
+            tabPage2.Padding = new Padding(3);
+            tabPage2.Size = new Size(1442, 749);
+            tabPage2.TabIndex = 1;
+            tabPage2.Text = "tabPage2";
+            tabPage2.UseVisualStyleBackColor = true;
+            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1450, 827);
-            Controls.Add(splitContainer1);
+            Controls.Add(tabControl1);
             Controls.Add(statusStrip1);
             Controls.Add(menuStrip1);
             MainMenuStrip = menuStrip1;
@@ -420,6 +457,8 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.ResumeLayout(false);
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
+            tabControl1.ResumeLayout(false);
+            rawFilesPage.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -469,5 +508,8 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem toolStripMenuItem1;
         private ToolTip filesTreeToolTip;
         private ToolStripMenuItem renameFileToolStripMenuItem;
+        private TabControl tabControl1;
+        private TabPage rawFilesPage;
+        private TabPage tabPage2;
     }
 }
