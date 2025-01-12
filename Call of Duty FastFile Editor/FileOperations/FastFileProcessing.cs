@@ -15,7 +15,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
             {
-                binaryReader.BaseStream.Position = 12L;
+                binaryReader.BaseStream.Position = Constants.FastFiles.HeaderLength;
 
                 try
                 {
@@ -57,7 +57,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 }
 
                 // Set the reader position to skip the header already written
-                binaryReader.BaseStream.Position = 12L; // Skip the original header
+                binaryReader.BaseStream.Position = Constants.FastFiles.HeaderLength; // Skip the header section
 
                 int chunkSize = 65536;
                 while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length)
