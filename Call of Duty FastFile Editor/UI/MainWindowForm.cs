@@ -87,7 +87,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (_header.IsValid)
             {
                 FastFileProcessing.DecompressFastFile(ffFilePath, zoneFilePath);
-                rawFileNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
+                rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(zoneFilePath);
                 PopulateTreeView();
             }
             else
@@ -583,7 +583,7 @@ namespace Call_of_Duty_FastFile_Editor
                     string rawFileName = Path.GetFileName(selectedFilePath);
                     byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
-                    RawFileNode newRawFileNode = FastFileProcessing.ExtractFileEntriesWithSizeAndName(selectedFilePath)[0];
+                    RawFileNode newRawFileNode = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(selectedFilePath)[0];
 
                     string actualDiskFileName = Path.GetFileName(selectedFilePath);
                     string rawFileNameFromHeader = newRawFileNode.FileName;
@@ -631,7 +631,7 @@ namespace Call_of_Duty_FastFile_Editor
                             RawFileInject.AppendNewRawFile(zoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
-                            rawFileNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
+                            rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(zoneFilePath);
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
@@ -658,7 +658,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     // 2) Re-extract the entire zone to update rawFileNodes
-                    rawFileNodes = FastFileProcessing.ExtractFileEntriesWithSizeAndName(zoneFilePath);
+                    rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(zoneFilePath);
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();

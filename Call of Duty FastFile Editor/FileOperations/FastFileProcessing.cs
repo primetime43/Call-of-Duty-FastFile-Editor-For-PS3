@@ -41,21 +41,19 @@ namespace Call_of_Duty_FastFile_Editor.IO
 
         public static void RecompressFastFile(string ffFilePath, string zoneFilePath, FastFileHeader headerInfo)
         {
-            byte[] header = new byte[8] { 73, 87, 102, 102, 117, 49, 48, 48 }; // "Iwffu100" header
-
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
             {
                 // Write header to the new file
-                binaryWriter.Write(header);
+                binaryWriter.Write(Constants.FastFiles.IWffu100_header);
 
                 if (headerInfo.IsCod5File)
                 {
-                    binaryWriter.Write(new byte[4] { 0, 0, 1, 131 });
+                    binaryWriter.Write(Constants.FastFiles.WaW_VersionValue);
                 }
                 else if (headerInfo.IsCod4File)
                 {
-                    binaryWriter.Write(new byte[4] { 0, 0, 0, 1 });
+                    binaryWriter.Write(Constants.FastFiles.CoD4_VersionValue);
                 }
 
                 // Set the reader position to skip the header already written
@@ -86,27 +84,18 @@ namespace Call_of_Duty_FastFile_Editor.IO
         }
 
         /// <summary>
-        /// Extracts the file entries from a Fast File (.ff) with their size and name.
+        /// Extracts the file entries from a Fast File (.ff) zone with their size and name.
         /// Setting raw file objects to the list of extracted file entries.
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
-        public static List<RawFileNode> ExtractFileEntriesWithSizeAndName(string filePath)
+        public static List<RawFileNode> ExtractZoneFileEntriesWithSizeAndName(string filePath)
         {
             List<RawFileNode> rawFileNodes = new List<RawFileNode>();
             byte[] fileData = File.ReadAllBytes(filePath);
 
-            // Define the byte patterns to search for
-            byte[][] patterns = new byte[][]
-            {
-                new byte[] { 0x2E, 0x63, 0x66, 0x67, 0x00 }, // .cfg
-                new byte[] { 0x2E, 0x67, 0x73, 0x63, 0x00 }, // .gsc
-                new byte[] { 0x2E, 0x61, 0x74, 0x72, 0x00 }, // .atr
-                new byte[] { 0x2E, 0x63, 0x73, 0x63, 0x00 }, // .csc
-                new byte[] { 0x2E, 0x72, 0x6D, 0x62, 0x00 }, // .rmb
-                new byte[] { 0x2E, 0x61, 0x72, 0x65, 0x6E, 0x61, 0x00 }, // .arena
-                new byte[] { 0x2E, 0x76, 0x69, 0x73, 0x69, 0x6F, 0x6E, 0x00 } // .vision
-            };
+            // Use the centralized patterns from Constants
+            byte[][] patterns = Constants.RawFiles.FileNamePatterns;
 
             using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(fileData), Encoding.Default))
             {

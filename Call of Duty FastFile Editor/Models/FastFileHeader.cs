@@ -8,9 +8,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
     public class FastFileHeader
     {
         // Properties representing header details
-        public string FileType { get; private set; }
+        public string FastFileMagic { get; private set; } // Represents a signed or unsigned FF IWffu100/IWff0100
         public int GameVersion { get; private set; }
-        public short Identifier { get; private set; }
+        //public short Identifier { get; private set;  // delete eventually, not needed
         public int FileLength { get; private set; }
         public bool IsValid { get; private set; }
         public bool IsCod4File { get; private set; }
@@ -48,13 +48,14 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
                 // Read the first 8 characters to determine the file type
                 char[] headerChars = binaryReader.ReadChars(8);
-                FileType = new string(headerChars).TrimEnd('\0'); // Remove any trailing null characters
+                FastFileMagic = new string(headerChars).TrimEnd('\0'); // Remove any trailing null characters
 
                 // Read the next 4 bytes as an integer and convert from network byte order (big-endian) to host byte order (little-endian)
                 GameVersion = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
 
+                // Not sure if this Identifier is needed
                 // Read the next 2 bytes as a short integer and convert from network byte order (big-endian) to host byte order (little-endian)
-                Identifier = IPAddress.NetworkToHostOrder(binaryReader.ReadInt16());
+                //Identifier = IPAddress.NetworkToHostOrder(binaryReader.ReadInt16());
 
                 // Get the length of the file
                 FileLength = Convert.ToInt32(new FileInfo(filePath).Length);
@@ -75,22 +76,23 @@ namespace Call_of_Duty_FastFile_Editor.Models
             IsCod5File = false;
 
             // Check for specific invalid identifier
-            if (Identifier == 30938)
+            // Not sure if this Identifier is needed
+            /*if (Identifier == 30938)
             {
                 IsValid = false;
                 return;
-            }
+            }*/
 
-            // Check the FileType and GameVersion to determine validity
-            if (FileType != "Iwffu100")
+            // Check the FastFileMagic and GameVersion to determine validity
+            if (FastFileMagic == Constants.FastFiles.UnSignedFF)
             {
                 switch (GameVersion)
                 {
-                    case 1:
+                    case Constants.FastFiles.VersionValueCoD4:
                         IsCod4File = true;
                         IsValid = true;
                         break;
-                    case 387:
+                    case Constants.FastFiles.VersionValueWaW:
                         IsCod5File = true;
                         IsValid = true;
                         break;
