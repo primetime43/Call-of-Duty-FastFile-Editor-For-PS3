@@ -66,6 +66,8 @@ namespace Call_of_Duty_FastFile_Editor
             tabControl1 = new TabControl();
             rawFilesPage = new TabPage();
             tabPage2 = new TabPage();
+            dataGridView1 = new DataGridView();
+            bindingSource1 = new BindingSource(components);
             contextMenuStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -75,6 +77,9 @@ namespace Call_of_Duty_FastFile_Editor
             statusStrip1.SuspendLayout();
             tabControl1.SuspendLayout();
             rawFilesPage.SuspendLayout();
+            tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             SuspendLayout();
             // 
             // textEditorControl1
@@ -429,13 +434,23 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // tabPage2
             // 
+            tabPage2.Controls.Add(dataGridView1);
             tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3);
             tabPage2.Size = new Size(1442, 749);
             tabPage2.TabIndex = 1;
-            tabPage2.Text = "tabPage2";
+            tabPage2.Text = "Raw File Info";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // dataGridView1
+            // 
+            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridView1.Location = new Point(-4, 0);
+            dataGridView1.Name = "dataGridView1";
+            dataGridView1.Size = new Size(493, 432);
+            dataGridView1.TabIndex = 0;
             // 
             // MainWindowForm
             // 
@@ -459,6 +474,9 @@ namespace Call_of_Duty_FastFile_Editor
             statusStrip1.PerformLayout();
             tabControl1.ResumeLayout(false);
             rawFilesPage.ResumeLayout(false);
+            tabPage2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -511,5 +529,7 @@ namespace Call_of_Duty_FastFile_Editor
         private TabControl tabControl1;
         private TabPage rawFilesPage;
         private TabPage tabPage2;
+        private DataGridView dataGridView1;
+        private BindingSource bindingSource1;
     }
 }

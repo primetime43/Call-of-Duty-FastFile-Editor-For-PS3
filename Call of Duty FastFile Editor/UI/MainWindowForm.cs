@@ -85,8 +85,8 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     _openedFastFile.OpenedFastFilesZone.FileData = File.ReadAllBytes(_openedFastFile.ZoneFilePath);
                     _openedFastFile.OpenedFastFilesZone.SetZoneOffsets();
-                    MessageBox.Show("Zone size: " + _openedFastFile.OpenedFastFilesZone.DecimalValues["ZoneFileSize"]);
                     PopulateTreeView();
+                    PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFilesZone);
                 }
                 catch (EndOfStreamException ex)
                 {
@@ -758,6 +758,27 @@ namespace Call_of_Duty_FastFile_Editor
             }
 
             RawFileOperations.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, rawFileNodes, _openedFastFile);
+        }
+
+        /// <summary>
+        /// Populates the DataGridView with Zone decimal values.
+        /// </summary>
+        private void PopulateZoneValuesDataGridView(Zone zone)
+        {
+            if (zone == null || zone.DecimalValues == null)
+                return;
+
+            // Convert the dictionary to a list of objects with matching property names
+            var dataSource = zone.DecimalValues.Select(kvp => new
+            {
+                ZoneName = kvp.Key,
+                ZoneDecValue = kvp.Value,
+                ZoneHexValue = Zone.ConvertToBigEndianHex(kvp.Value),
+                ZoneOffset = _openedFastFile.OpenedFastFilesZone.GetZoneOffset(kvp.Key)
+            }).ToList();
+
+            // Assign the data source to the DataGridView
+            dataGridView1.DataSource = dataSource;
         }
     }
 }

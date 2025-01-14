@@ -14,7 +14,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public byte[] FileData { get; set; }
         public uint ZoneFileSize { get; set; }
         public uint Unknown1 { get; set; }
-        public uint Unknown2 { get; set; }
+        public uint RecordCount { get; set; }
         public uint Unknown3 { get; set; }
         public uint Unknown4 { get; set; }
         public uint Unknown5 { get; set; }
@@ -22,14 +22,29 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint Unknown7 { get; set; }
         public uint Unknown8 { get; set; }
         public uint TagCount { get; set; }
-        public uint Unknown9 { get; set; }
-        public uint RecordCount { get; set; }
         public uint Unknown10 { get; set; }
         public uint Unknown11 { get; set; }
         public List<uint> TagPtrs { get; set; } = new List<uint>();
         public List<string> Tags { get; set; } = new List<string>();
 
         public Dictionary<string, uint> DecimalValues { get; private set; }
+
+        // Mapping of property names to their respective offsets
+        private readonly Dictionary<string, int> _zonePropertyOffsets = new Dictionary<string, int>
+        {
+            { "ZoneFileSize", Constants.ZoneFile.ZoneSizeOffset },
+            { "Unknown1", Constants.ZoneFile.Unknown1Offset },
+            { "RecordCount", Constants.ZoneFile.RecordCountOffset },
+            { "Unknown3", Constants.ZoneFile.Unknown3Offset },
+            { "Unknown4", Constants.ZoneFile.Unknown4Offset },
+            { "Unknown5", Constants.ZoneFile.Unknown5Offset },
+            { "Unknown6", Constants.ZoneFile.Unknown6Offset },
+            { "Unknown7", Constants.ZoneFile.Unknown7Offset },
+            { "Unknown8", Constants.ZoneFile.Unknown8Offset },
+            { "TagCount", Constants.ZoneFile.TagCountOffset },
+            { "Unknown10", Constants.ZoneFile.Unknown10Offset },
+            { "Unknown11", Constants.ZoneFile.Unknown11Offset }
+        };
 
         /// <summary>
         /// Sets the values of locations in the zone based off the offsets from Constants
@@ -39,7 +54,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         {
             this.ZoneFileSize = ReadUInt32AtOffset(Constants.ZoneFile.ZoneSizeOffset);
             this.Unknown1 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown1Offset);
-            this.Unknown2 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown2Offset);
+            this.RecordCount = ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset);
             this.Unknown3 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown3Offset);
             this.Unknown4 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown4Offset);
             this.Unknown5 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown5Offset);
@@ -47,7 +62,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             this.Unknown7 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown7Offset);
             this.Unknown8 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown8Offset);
             //this.TagCount = ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset);
-            this.Unknown9 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown9Offset);
+            this.TagCount = ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset);
             //this.RecordCount = ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset);
             this.Unknown10 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown10Offset);
             this.Unknown11 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown11Offset);
@@ -61,7 +76,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             {
                 { "ZoneFileSize", ZoneFileSize },
                 { "Unknown1", Unknown1 },
-                { "Unknown2", Unknown2 },
+                { "RecordCount", RecordCount },
                 { "Unknown3", Unknown3 },
                 { "Unknown4", Unknown4 },
                 { "Unknown5", Unknown5 },
@@ -69,8 +84,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 { "Unknown7", Unknown7 },
                 { "Unknown8", Unknown8 },
                 { "TagCount", TagCount },
-                { "Unknown9", Unknown9 },
-                { "RecordCount", RecordCount },
                 { "Unknown10", Unknown10 },
                 { "Unknown11", Unknown11 }
             };
@@ -85,16 +98,14 @@ namespace Call_of_Duty_FastFile_Editor.Models
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"ZoneFileSize: {ZoneFileSize}");
             sb.AppendLine($"Unknown1: {Unknown1}");
-            sb.AppendLine($"Unknown2: {Unknown2}");
+            sb.AppendLine($"RecordCount: {RecordCount}");
             sb.AppendLine($"Unknown3: {Unknown3}");
             sb.AppendLine($"Unknown4: {Unknown4}");
             sb.AppendLine($"Unknown5: {Unknown5}");
             sb.AppendLine($"Unknown6: {Unknown6}");
             sb.AppendLine($"Unknown7: {Unknown7}");
             sb.AppendLine($"Unknown8: {Unknown8}");
-            //sb.AppendLine($"TagCount: {TagCount}");
-            sb.AppendLine($"Unknown9: {Unknown9}");
-            //sb.AppendLine($"RecordCount: {RecordCount}");
+            sb.AppendLine($"TagCount: {TagCount}");
             sb.AppendLine($"Unknown10: {Unknown10}");
             sb.AppendLine($"Unknown11: {Unknown11}");
 
@@ -161,6 +172,42 @@ namespace Call_of_Duty_FastFile_Editor.Models
             byte[] bytes = new byte[length];
             Array.Copy(FileData, offset, bytes, 0, length);
             return bytes;
+        }
+
+        /// <summary>
+        /// Retrieves the offset for a given zone property name.
+        /// </summary>
+        /// <param name="zoneName">The name of the zone property.</param>
+        /// <returns>A string representing the offset in hexadecimal format (e.g., "0x00").</returns>
+        public string GetZoneOffset(string zoneName)
+        {
+            if (_zonePropertyOffsets.TryGetValue(zoneName, out int offset))
+            {
+                return $"0x{offset:X2}";
+            }
+            else
+            {
+                return "N/A";
+            }
+        }
+
+        /// <summary>
+        /// Converts a uint value to a big endian hexadecimal string. Move this from here to a utility class?
+        /// </summary>
+        /// <param name="value">The uint value to convert.</param>
+        /// <returns>A string representing the big endian hexadecimal value.</returns>
+        public static string ConvertToBigEndianHex(uint value)
+        {
+            byte[] bytes = BitConverter.GetBytes(value);
+
+            // Check system endianness and reverse if necessary to get big endian
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(bytes);
+            }
+
+            // Convert byte array to hexadecimal string without dashes
+            return BitConverter.ToString(bytes).Replace("-", "");
         }
 
         /// <summary>
