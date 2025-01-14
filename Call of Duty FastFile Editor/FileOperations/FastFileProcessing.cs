@@ -10,6 +10,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
 {
     public static class FastFileProcessing
     {
+        /// <summary>
+        /// Decompress the FastFile to get a zone file.
+        /// </summary>
+        /// <param name="inputFilePath"></param>
+        /// <param name="outputFilePath"></param>
         public static void DecompressFastFile(string inputFilePath, string outputFilePath)
         {
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
@@ -39,7 +44,13 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
         }
 
-        public static void RecompressFastFile(string ffFilePath, string zoneFilePath, FastFileHeader headerInfo)
+        /// <summary>
+        /// Recompress the extracted zone file back into a FastFile.
+        /// </summary>
+        /// <param name="ffFilePath"></param>
+        /// <param name="zoneFilePath"></param>
+        /// <param name="openedFastFile"></param>
+        public static void RecompressFastFile(string ffFilePath, string zoneFilePath, FastFile openedFastFile)
         {
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
@@ -47,11 +58,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 // Write header to the new file
                 binaryWriter.Write(Constants.FastFiles.IWffu100_header);
 
-                if (headerInfo.IsCod5File)
+                if (openedFastFile.IsCod5File)
                 {
                     binaryWriter.Write(Constants.FastFiles.WaW_VersionValue);
                 }
-                else if (headerInfo.IsCod4File)
+                else if (openedFastFile.IsCod4File)
                 {
                     binaryWriter.Write(Constants.FastFiles.CoD4_VersionValue);
                 }
@@ -84,15 +95,15 @@ namespace Call_of_Duty_FastFile_Editor.IO
         }
 
         /// <summary>
-        /// Extracts the file entries from a Fast File (.ff) zone with their size and name.
+        /// Extracts the file entries from a FastFile (.ff) zone with their size and name.
         /// Setting raw file objects to the list of extracted file entries.
         /// </summary>
-        /// <param name="filePath"></param>
+        /// <param name="zoneFilePath"></param>
         /// <returns></returns>
-        public static List<RawFileNode> ExtractZoneFileEntriesWithSizeAndName(string filePath)
+        public static List<RawFileNode> ExtractZoneFileEntriesWithSizeAndName(string zoneFilePath)
         {
             List<RawFileNode> rawFileNodes = new List<RawFileNode>();
-            byte[] fileData = File.ReadAllBytes(filePath);
+            byte[] fileData = File.ReadAllBytes(zoneFilePath);
 
             // Use the centralized patterns from Constants
             byte[][] patterns = Constants.RawFiles.FileNamePatterns;
@@ -154,11 +165,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
                             if (!string.IsNullOrEmpty(fileName) && !fileName.Contains("\x00"))
                             {
                                 // Read the file content
-                                string fileContent = ReadFileContentAfterName(filePath, patternIndex, maxSize);
+                                string fileContent = ReadFileContentAfterName(zoneFilePath, patternIndex, maxSize);
 
                                 byte[] fileBytes = null;
                                 // Extract binary data
-                                fileBytes = ExtractBinaryContent(filePath, patternIndex, maxSize);
+                                fileBytes = ExtractBinaryContent(zoneFilePath, patternIndex, maxSize);
 
                                 rawFileNodes.Add(new RawFileNode
                                 {

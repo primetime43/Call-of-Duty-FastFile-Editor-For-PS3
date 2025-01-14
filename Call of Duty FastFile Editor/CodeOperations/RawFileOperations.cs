@@ -8,6 +8,7 @@ using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.UI;
 using System.Runtime.CompilerServices;
+using static Call_of_Duty_FastFile_Editor.Models.FastFile;
 
 namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
@@ -69,7 +70,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         /// <param name="zoneFilePath">Path to the Zone File.</param>
         /// <param name="rawFileNodes">List of RawFileNodes.</param>
         /// <param name="headerInfo">Fast File header information.</param>
-        public static void RenameRawFile(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, FastFileHeader headerInfo)
+        public static void RenameRawFile(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, FastFile openedFastFile)
         {
             try
             {
@@ -228,7 +229,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         ///     <item>Delegates the actual saving process to <see cref="SaveFileNode"/>.</item>
         /// </list>
         /// </remarks>
-        public static void Save(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, string updatedText, FastFileHeader headerInfo)
+        public static void Save(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, string updatedText, FastFile openedFastFile)
         {
             try
             {
@@ -237,7 +238,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                     var rawFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                     if (rawFileNode != null)
                     {
-                        SaveFileNode(ffFilePath, zoneFilePath, rawFileNode, updatedText, headerInfo);
+                        SaveFileNode(ffFilePath, zoneFilePath, rawFileNode, updatedText, openedFastFile.OpenedFastFileHeader);
                     }
                     else
                     {

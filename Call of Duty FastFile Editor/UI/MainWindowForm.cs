@@ -7,9 +7,6 @@ using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 using System.Diagnostics;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
 using System.Text;
-using System.Windows.Forms;
-using System.Linq;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Call_of_Duty_FastFile_Editor.FileOperations;
 
 namespace Call_of_Duty_FastFile_Editor
@@ -32,24 +29,14 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
-        /// Path to the selected Fast File. (contains the full path + file name + extension)
-        /// </summary>
-        private string ffFilePath;
-
-        /// <summary>
-        /// Path to the decompressed zone file corresponding to the selected Fast File.
-        /// </summary>
-        private string zoneFilePath;
-
-        /// <summary>
         /// List of file entry nodes extracted from the zone file.
         /// </summary>
         private List<RawFileNode> rawFileNodes;
 
         /// <summary>
-        /// Header information of the opened Fast File.
+        /// FastFile instance representing the opened Fast File.
         /// </summary>
-        private FastFileHeader _header;
+        private FastFile _openedFastFile;
 
         /// <summary>
         /// Opens a Fast File, decompresses it, extracts file entries, and populates the TreeView.
@@ -69,30 +56,52 @@ namespace Call_of_Duty_FastFile_Editor
 
             filesTreeView.Nodes.Clear();
 
-            ffFilePath = openFileDialog.FileName;
-            zoneFilePath = Path.Combine(Path.GetDirectoryName(ffFilePath), Path.GetFileNameWithoutExtension(ffFilePath) + ".zone");
-
-            UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, ffFilePath);
-
             try
             {
-                _header = new FastFileHeader(ffFilePath);
+                _openedFastFile = new FastFile(openFileDialog.FileName);
+                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile.FastFileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to read Fast File header: {ex.Message}", "Header Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Failed to read FastFile header: {ex.Message}", "Header Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (_header.IsValid)
+            if (_openedFastFile.IsValid)
             {
-                FastFileProcessing.DecompressFastFile(ffFilePath, zoneFilePath);
-                rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(zoneFilePath);
-                PopulateTreeView();
+                try
+                {
+                    // Decompress the Fast File to get the zone file
+                    FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
+                    rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to decompress FastFile: {ex.Message}", "Decompression Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                try
+                {
+                    _openedFastFile.OpenedFastFilesZone.FileData = File.ReadAllBytes(_openedFastFile.ZoneFilePath);
+                    _openedFastFile.OpenedFastFilesZone.SetZoneOffsets();
+                    MessageBox.Show("Zone size: " + _openedFastFile.OpenedFastFilesZone.DecimalValues["ZoneFileSize"]);
+                    PopulateTreeView();
+                }
+                catch (EndOfStreamException ex)
+                {
+                    MessageBox.Show($"Deserialization failed: {ex.Message}", "Deserialization Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to deserialize zone file: {ex.Message}", "Deserialization Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
             }
             else
             {
-                MessageBox.Show("Invalid Fast File!\n\nThe Fast File you have selected is not a valid PS3 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                MessageBox.Show("Invalid FastFile!\n\nThe FastFile you have selected is not a valid PS3 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
                 return;
             }
 
@@ -150,11 +159,11 @@ namespace Call_of_Duty_FastFile_Editor
                         {
                             RawFileOperations.Save(
                                 filesTreeView,              // TreeView control
-                                ffFilePath,                 // Path to the Fast File (.ff)
-                                zoneFilePath,               // Path to the decompressed zone file
+                                _openedFastFile.FfFilePath,                 // Path to the Fast File (.ff)
+                                _openedFastFile.ZoneFilePath,               // Path to the decompressed zone file
                                 rawFileNodes,             // List of RawFileNode objects
                                 textEditorControl1.Text,    // Updated text from the editor
-                                _header                     // FastFileHeader instance
+                                _openedFastFile                     // FastFile instance
                             );
                         }
                     }
@@ -228,8 +237,8 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, _header);
-                MessageBox.Show("Fast File saved to:\n\n" + ffFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
+                MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                 _hasUnsavedChanges = false; // Reset the flag after saving
                 Application.Restart();
             }
@@ -254,7 +263,7 @@ namespace Call_of_Duty_FastFile_Editor
                     try
                     {
                         string newFilePath = saveFileDialog.FileName;
-                        FastFileProcessing.RecompressFastFile(ffFilePath, newFilePath, _header);
+                        FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, newFilePath, _openedFastFile);
                         MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                         _hasUnsavedChanges = false; // Reset the flag after saving
                         Application.Restart();
@@ -273,11 +282,11 @@ namespace Call_of_Duty_FastFile_Editor
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             // Deleting the zone file of the opened ff file
-            if (File.Exists(zoneFilePath))
+            if (File.Exists(_openedFastFile.ZoneFilePath))
             {
                 try
                 {
-                    File.Delete(zoneFilePath);
+                    File.Delete(_openedFastFile.ZoneFilePath);
                 }
                 catch (Exception ex)
                 {
@@ -303,11 +312,11 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 RawFileOperations.Save(
                     filesTreeView,                // TreeView control
-                    ffFilePath,                   // Path to the Fast File (.ff)
-                    zoneFilePath,                 // Path to the decompressed zone file
+                    _openedFastFile.FfFilePath,                   // Path to the Fast File (.ff)
+                    _openedFastFile.ZoneFilePath,                 // Path to the decompressed zone file
                     rawFileNodes,               // List of RawFileNode objects
                     textEditorControl1.Text,      // Updated text from the editor
-                    _header                       // FastFileHeader instance
+                    _openedFastFile                       // FastFile instance
                 );
                 _hasUnsavedChanges = false; // Reset the flag after saving
                 MessageBox.Show("Raw file saved successfully.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -605,12 +614,12 @@ namespace Call_of_Duty_FastFile_Editor
                                 // write the new file content to the zone at the existing offset
                                 // and make sure to append the extra length, so it shouldn't overwrite existing
                                 // code that comes after it. Also, update the size in the header.
-                                RawFileInject.ExpandAndUpdateFileContent(zoneFilePath, existingNode, newRawFileNode, newRawFileNode.RawFileContent);
+                                RawFileInject.ExpandAndUpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, newRawFileNode, newRawFileNode.RawFileContent);
                             }
                             else
                             {
                                 // write the raw bytes to the zone at the existing offset
-                                RawFileInject.UpdateFileContent(zoneFilePath, existingNode, rawFileContent);
+                                RawFileInject.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
                             }
                         }
                         catch (Exception ex)
@@ -628,10 +637,10 @@ namespace Call_of_Duty_FastFile_Editor
                         try
                         {
                             // 1) Append it to the decompressed zone
-                            RawFileInject.AppendNewRawFile(zoneFilePath, rawFileName, rawFileContent);
+                            RawFileInject.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
-                            rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(zoneFilePath);
+                            rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
@@ -658,7 +667,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     // 2) Re-extract the entire zone to update rawFileNodes
-                    rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(zoneFilePath);
+                    rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();
@@ -720,7 +729,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                FastFileProcessing.RecompressFastFile(ffFilePath, zoneFilePath, _header);
+                FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
                 _hasUnsavedChanges = false; // Reset the flag after saving
                 Application.Restart();
             }
@@ -748,7 +757,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            RawFileOperations.RenameRawFile(filesTreeView, ffFilePath, zoneFilePath, rawFileNodes, _header);
+            RawFileOperations.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, rawFileNodes, _openedFastFile);
         }
     }
 }

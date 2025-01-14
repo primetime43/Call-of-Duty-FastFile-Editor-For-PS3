@@ -4,6 +4,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
 {
     public static class FastFileDecompressor
     {
+        /// <summary>
+        /// Decompresses the specified byte array using the Zlib algorithm.
+        /// </summary>
+        /// <param name="compressedData"></param>
+        /// <returns></returns>
         public static byte[] DecompressFF(byte[] compressedData)
         {
             using (MemoryStream input = new MemoryStream(compressedData))
