@@ -8,6 +8,8 @@ using System.Diagnostics;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.FileOperations;
+using Call_of_Duty_FastFile_Editor.Services;
+using System;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -87,6 +89,7 @@ namespace Call_of_Duty_FastFile_Editor
                     _openedFastFile.OpenedFastFilesZone.SetZoneOffsets();
                     PopulateTreeView();
                     PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFilesZone);
+                    PopulateStringTable();
                 }
                 catch (EndOfStreamException ex)
                 {
@@ -281,17 +284,17 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
-            // Deleting the zone file of the opened ff file
-            if (File.Exists(_openedFastFile.ZoneFilePath))
+            try
             {
-                try
+                // Deleting the zone file of the opened ff file
+                if (_openedFastFile != null && File.Exists(_openedFastFile.ZoneFilePath))
                 {
                     File.Delete(_openedFastFile.ZoneFilePath);
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to delete zone file: {ex.Message}", "Deletion Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to delete zone file: {ex.Message}", "Deletion Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -729,11 +732,19 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
-                _hasUnsavedChanges = false; // Reset the flag after saving
-                Application.Restart();
+                if (_openedFastFile != null && File.Exists(_openedFastFile.FfFilePath))
+                {
+                    FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
+                    _hasUnsavedChanges = false; // Reset the flag after saving
+                    filesTreeView.Nodes.Clear();
+                    textEditorControl1.ResetText();
+                    MessageBox.Show("Fast File closed.", "Close Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to close fastfile: {ex.Message}", "Close Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -773,12 +784,48 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 ZoneName = kvp.Key,
                 ZoneDecValue = kvp.Value,
-                ZoneHexValue = Zone.ConvertToBigEndianHex(kvp.Value),
+                ZoneHexValue = Utilities.ConvertToBigEndianHex(kvp.Value),
                 ZoneOffset = _openedFastFile.OpenedFastFilesZone.GetZoneOffset(kvp.Key)
             }).ToList();
 
             // Assign the data source to the DataGridView
             dataGridView1.DataSource = dataSource;
+        }
+
+        /// <summary>
+        /// Populates the Tags page view with the tags extracted from the zone file.
+        /// </summary>
+        private void PopulateTags()
+        {
+
+        }
+
+        /// <summary>
+        /// Populates the String Table page view with the tables extracted from the zone file.
+        /// </summary>
+        private void PopulateStringTable()
+        {
+            // Clear the existing nodes to avoid duplicates
+            stringTablesTreeView.Nodes.Clear();
+
+            // 1) Find all CSV string tables in the zone
+            List<ZoneStringTable> csvTables = StringTableOperations.FindCsvStringTables(_openedFastFile.OpenedFastFilesZone);
+            if (csvTables == null || csvTables.Count == 0)
+                return;
+
+            // 2) Add each table to the TreeView
+            foreach (var table in csvTables)
+            {
+                // Create a parent node with the table name
+                TreeNode tableNode = new TreeNode(table.TableName);
+
+                // Add child nodes for RowCount and ColumnCount
+                tableNode.Nodes.Add("Rows: " + table.RowCount);
+                tableNode.Nodes.Add("Columns: " + table.ColumnCount);
+
+                // Add this table node to the top-level tree
+                stringTablesTreeView.Nodes.Add(tableNode);
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Call_of_Duty_FastFile_Editor.Models;
+using Call_of_Duty_FastFile_Editor.Services;
 using System.Net;
 using System.Text;
 
@@ -49,7 +50,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// Maximum allowed size for the file's content in hex format.
         /// Computed as the big-endian representation of MaxSize.
         /// </summary>
-        public string MaxSizeHex => IntToHexBigEndian(MaxSize);
+        public string MaxSizeHex => Utilities.ConvertToBigEndianHex(MaxSize);
 
         /// <summary>
         /// Position where the file header starts. 
@@ -103,7 +104,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             return result;
         }
 
-        private static string IntToHexBigEndian(int value)
+        /*private static string IntToHexBigEndian(int value)
         {
             // Convert the int to a byte array (little-endian by default)
             byte[] bytes = BitConverter.GetBytes(value);
@@ -113,6 +114,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
             // Convert the byte array to a hexadecimal string
             return BitConverter.ToString(bytes).Replace("-", "");
-        }
+        }*/
     }
 }

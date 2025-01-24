@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using Call_of_Duty_FastFile_Editor.Services;
 using System.Text;
-using System.Windows.Forms;
+
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {    
@@ -52,20 +50,20 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public void SetZoneOffsets()
         {
-            this.ZoneFileSize = ReadUInt32AtOffset(Constants.ZoneFile.ZoneSizeOffset);
-            this.Unknown1 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown1Offset);
-            this.RecordCount = ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset);
-            this.Unknown3 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown3Offset);
-            this.Unknown4 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown4Offset);
-            this.Unknown5 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown5Offset);
-            this.Unknown6 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown6Offset);
-            this.Unknown7 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown7Offset);
-            this.Unknown8 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown8Offset);
-            //this.TagCount = ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset);
-            this.TagCount = ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset);
-            //this.RecordCount = ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset);
-            this.Unknown10 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown10Offset);
-            this.Unknown11 = ReadUInt32AtOffset(Constants.ZoneFile.Unknown11Offset);
+            this.ZoneFileSize = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.ZoneSizeOffset, this);
+            this.Unknown1 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown1Offset, this);
+            this.RecordCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset, this);
+            this.Unknown3 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown3Offset, this);
+            this.Unknown4 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown4Offset, this);
+            this.Unknown5 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown5Offset, this);
+            this.Unknown6 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown6Offset, this);
+            this.Unknown7 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown7Offset, this);
+            this.Unknown8 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown8Offset, this);
+            //this.TagCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset, this);
+            this.TagCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset, this);
+            //this.RecordCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset, this);
+            this.Unknown10 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown10Offset, this);
+            this.Unknown11 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown11Offset, this);
 
             SetDecimalValues();
         }
@@ -113,68 +111,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
         }
 
         /// <summary>
-        /// Helper method to read a UInt32 at a specific offset. Can specify endianness.
-        /// </summary>
-        /// <param name="offset"></param>
-        /// <param name="isBigEndian"></param>
-        /// <returns></returns>
-        /// <exception cref="EndOfStreamException"></exception>
-        public uint ReadUInt32AtOffset(int offset, bool isBigEndian = true)
-        {
-            if (offset + 4 > FileData.Length)
-                throw new EndOfStreamException($"Cannot read UInt32 at offset 0x{offset:X}, exceeds file length.");
-
-            byte[] bytes = new byte[4];
-            Array.Copy(FileData, offset, bytes, 0, 4);
-
-            if (isBigEndian)
-                Array.Reverse(bytes);
-
-            return BitConverter.ToUInt32(bytes, 0);
-        }
-
-
-        /// <summary>
-        /// Helper method to read a null-terminated string at a specific offset
-        /// </summary>
-        /// <param name="offset"></param>
-        /// <returns></returns>
-        /// <exception cref="EndOfStreamException"></exception>
-        public string ReadStringAtOffset(int offset)
-        {
-            if (offset >= FileData.Length)
-                throw new EndOfStreamException($"Cannot read string at offset 0x{offset:X}, exceeds file length.");
-
-            int end = offset;
-            while (end < FileData.Length && FileData[end] != 0x00)
-            {
-                end++;
-            }
-
-            if (end == FileData.Length)
-                throw new EndOfStreamException($"String starting at offset 0x{offset:X} is not null-terminated.");
-
-            return Encoding.UTF8.GetString(FileData, offset, end - offset);
-        }
-
-        /// <summary>
-        /// Helper method to get bytes at a specific offset and length
-        /// </summary>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        /// <exception cref="EndOfStreamException"></exception>
-        public byte[] GetBytesAtOffset(int offset, int length = 4) // default 4 bytes aka a word
-        {
-            if (offset + length > FileData.Length)
-                throw new EndOfStreamException($"Cannot read {length} bytes at offset 0x{offset:X}, exceeds file length.");
-
-            byte[] bytes = new byte[length];
-            Array.Copy(FileData, offset, bytes, 0, length);
-            return bytes;
-        }
-
-        /// <summary>
         /// Retrieves the offset for a given zone property name.
         /// </summary>
         /// <param name="zoneName">The name of the zone property.</param>
@@ -189,49 +125,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
             {
                 return "N/A";
             }
-        }
-
-        /// <summary>
-        /// Converts a uint value to a big endian hexadecimal string. Move this from here to a utility class?
-        /// </summary>
-        /// <param name="value">The uint value to convert.</param>
-        /// <returns>A string representing the big endian hexadecimal value.</returns>
-        public static string ConvertToBigEndianHex(uint value)
-        {
-            byte[] bytes = BitConverter.GetBytes(value);
-
-            // Check system endianness and reverse if necessary to get big endian
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(bytes);
-            }
-
-            // Convert byte array to hexadecimal string without dashes
-            return BitConverter.ToString(bytes).Replace("-", "");
-        }
-
-        /// <summary>
-        /// Helper method to read a string until a null terminator starting at a specific offset
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <returns></returns>
-        private string ReadNullTerminatedString(BinaryReader reader)
-        {
-            List<byte> bytes = new List<byte>();
-            try
-            {
-                byte b;
-                while ((b = reader.ReadByte()) != 0)
-                {
-                    bytes.Add(b);
-                }
-            }
-            catch (EndOfStreamException)
-            {
-                MessageBox.Show("Unexpected end of stream while reading a null-terminated string.", "Deserialization Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                throw;
-            }
-            return Encoding.UTF8.GetString(bytes.ToArray());
         }
     }
 }

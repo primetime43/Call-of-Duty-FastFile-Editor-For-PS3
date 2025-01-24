@@ -67,7 +67,10 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage = new TabPage();
             tabPage2 = new TabPage();
             dataGridView1 = new DataGridView();
+            tabPage1 = new TabPage();
+            tabPage3 = new TabPage();
             bindingSource1 = new BindingSource(components);
+            stringTablesTreeView = new TreeView();
             contextMenuStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -79,6 +82,7 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.SuspendLayout();
             tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            tabPage3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             SuspendLayout();
             // 
@@ -414,6 +418,8 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             tabControl1.Controls.Add(rawFilesPage);
             tabControl1.Controls.Add(tabPage2);
+            tabControl1.Controls.Add(tabPage1);
+            tabControl1.Controls.Add(tabPage3);
             tabControl1.Dock = DockStyle.Fill;
             tabControl1.Location = new Point(0, 28);
             tabControl1.Name = "tabControl1";
@@ -452,6 +458,34 @@ namespace Call_of_Duty_FastFile_Editor
             dataGridView1.Size = new Size(493, 432);
             dataGridView1.TabIndex = 0;
             // 
+            // tabPage1
+            // 
+            tabPage1.Location = new Point(4, 24);
+            tabPage1.Name = "tabPage1";
+            tabPage1.Padding = new Padding(3);
+            tabPage1.Size = new Size(1442, 749);
+            tabPage1.TabIndex = 2;
+            tabPage1.Text = "Tags";
+            tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // tabPage3
+            // 
+            tabPage3.Controls.Add(stringTablesTreeView);
+            tabPage3.Location = new Point(4, 24);
+            tabPage3.Name = "tabPage3";
+            tabPage3.Padding = new Padding(3);
+            tabPage3.Size = new Size(1442, 749);
+            tabPage3.TabIndex = 3;
+            tabPage3.Text = "String Tables";
+            tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // stringTablesTreeView
+            // 
+            stringTablesTreeView.Location = new Point(0, 0);
+            stringTablesTreeView.Name = "stringTablesTreeView";
+            stringTablesTreeView.Size = new Size(250, 749);
+            stringTablesTreeView.TabIndex = 0;
+            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -476,6 +510,7 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.ResumeLayout(false);
             tabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            tabPage3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -531,5 +566,8 @@ namespace Call_of_Duty_FastFile_Editor
         private TabPage tabPage2;
         private DataGridView dataGridView1;
         private BindingSource bindingSource1;
+        private TabPage tabPage1;
+        private TabPage tabPage3;
+        private TreeView stringTablesTreeView;
     }
 }
