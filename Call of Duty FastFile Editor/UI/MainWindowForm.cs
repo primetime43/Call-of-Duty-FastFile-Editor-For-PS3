@@ -287,30 +287,11 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
-        /// Cleans up resources when the form is closed.
-        /// </summary>
-        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            try
-            {
-                // Deleting the zone file of the opened ff file
-                if (_openedFastFile != null && File.Exists(_openedFastFile.ZoneFilePath))
-                {
-                    File.Delete(_openedFastFile.ZoneFilePath);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to delete zone file: {ex.Message}", "Deletion Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        /// <summary>
         /// Exits the application.
         /// </summary>
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            CloseFastFileAndCleanUp();
+            CloseFastFileAndCleanUp(true);
             Close();
         }
 
@@ -738,7 +719,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <param name="e"></param>
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            CloseFastFileAndCleanUp();
+            CloseFastFileAndCleanUp(true);
         }
 
         private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -875,7 +856,7 @@ namespace Call_of_Duty_FastFile_Editor
             Clipboard.SetText(toCopy);
         }
 
-        private void CloseFastFileAndCleanUp()
+        private void CloseFastFileAndCleanUp(bool deleteZoneFile = false)
         {
             try
             {
@@ -889,6 +870,18 @@ namespace Call_of_Duty_FastFile_Editor
                     dataGridView1.DataSource = null;
                     _openedFastFile = null;
                     textEditorControl1.ResetText();
+
+                    try
+                    {
+                        // Delete the zone file if requested
+                        if (deleteZoneFile)
+                            File.Delete(_openedFastFile.ZoneFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to delete zone file: {ex.Message}", "Deletion Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
                     MessageBox.Show("Fast File closed.", "Close Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }

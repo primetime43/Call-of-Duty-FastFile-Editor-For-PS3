@@ -526,7 +526,6 @@ namespace Call_of_Duty_FastFile_Editor
             Controls.Add(menuStrip1);
             MainMenuStrip = menuStrip1;
             Name = "MainWindowForm";
-            FormClosed += Form1_FormClosed;
             contextMenuStripRawFiles.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
