@@ -250,7 +250,7 @@ namespace Call_of_Duty_FastFile_Editor
                 FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
                 MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                 _hasUnsavedChanges = false; // Reset the flag after saving
-                Application.Restart();
+                CloseFastFileAndCleanUp();
             }
             catch (Exception ex)
             {
@@ -276,7 +276,7 @@ namespace Call_of_Duty_FastFile_Editor
                         FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, newFilePath, _openedFastFile);
                         MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                         _hasUnsavedChanges = false; // Reset the flag after saving
-                        Application.Restart();
+                        CloseFastFileAndCleanUp();
                     }
                     catch (Exception ex)
                     {
@@ -886,6 +886,7 @@ namespace Call_of_Duty_FastFile_Editor
                     filesTreeView.Nodes.Clear();
                     stringTablesTreeView.Nodes.Clear();
                     tagsListView.Items.Clear();
+                    dataGridView1.DataSource = null;
                     _openedFastFile = null;
                     textEditorControl1.ResetText();
                     MessageBox.Show("Fast File closed.", "Close Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
