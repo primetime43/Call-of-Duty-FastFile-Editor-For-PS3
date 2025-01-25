@@ -68,7 +68,9 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 }
 
                 // Set the reader position to skip the header already written
-                binaryReader.BaseStream.Position = Constants.FastFiles.HeaderLength; // Skip the header section
+                // This should eventually be removed. This caused a bug where the header would be missing
+                // Cause bug #6 https://github.com/primetime43/Call-of-Duty-FastFile-Editor-For-PS3/issues/6
+                //binaryReader.BaseStream.Position = Constants.FastFiles.HeaderLength; // Skip the header section
 
                 int chunkSize = 65536;
                 while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length)
