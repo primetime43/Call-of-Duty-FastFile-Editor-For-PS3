@@ -14,7 +14,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
     public class RawFileOperations
     {
-        public static void ExportRawFile(ZoneAsset_RawFileNode exportedRawFile, string fileExtension)
+        public static void ExportRawFile(RawFileNode exportedRawFile, string fileExtension)
         {
             using (SaveFileDialog saveFileDialog = new SaveFileDialog())
             {
@@ -70,7 +70,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         /// <param name="zoneFilePath">Path to the Zone File.</param>
         /// <param name="rawFileNodes">List of RawFileNodes.</param>
         /// <param name="headerInfo">Fast File header information.</param>
-        public static void RenameRawFile(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<ZoneAsset_RawFileNode> rawFileNodes, FastFile openedFastFile)
+        public static void RenameRawFile(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, FastFile openedFastFile)
         {
             try
             {
@@ -216,7 +216,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         /// <param name="filesTreeView">The TreeView control containing the list of raw files.</param>
         /// <param name="ffFilePath">The file path to the Fast File (.ff) being edited.</param>
         /// <param name="zoneFilePath">The file path to the decompressed Zone File (.zone) corresponding to the Fast File.</param>
-        /// <param name="rawFileNodes">A list of <see cref="ZoneAsset_RawFileNode"/> objects representing the raw files within the Zone File.</param>
+        /// <param name="rawFileNodes">A list of <see cref="RawFileNode"/> objects representing the raw files within the Zone File.</param>
         /// <param name="updatedText">The updated content for the selected raw file, as edited by the user.</param>
         /// <param name="headerInfo">An instance of <see cref="FastFileHeader"/> containing header information of the Fast File.</param>
         /// <exception cref="ArgumentException">Thrown when the updated content size exceeds the original maximum size of the raw file.</exception>
@@ -225,11 +225,11 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         /// This method performs the following steps:
         /// <list type="number">
         ///     <item>Validates that a raw file is selected in the TreeView.</item>
-        ///     <item>Retrieves the corresponding <see cref="ZoneAsset_RawFileNode"/> based on the selected node's position.</item>
+        ///     <item>Retrieves the corresponding <see cref="RawFileNode"/> based on the selected node's position.</item>
         ///     <item>Delegates the actual saving process to <see cref="SaveFileNode"/>.</item>
         /// </list>
         /// </remarks>
-        public static void Save(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<ZoneAsset_RawFileNode> rawFileNodes, string updatedText, FastFile openedFastFile)
+        public static void Save(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, string updatedText, FastFile openedFastFile)
         {
             try
             {
@@ -261,7 +261,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         /// </summary>
         /// <param name="ffFilePath">The file path to the Fast File (.ff) being edited.</param>
         /// <param name="zoneFilePath">The file path to the decompressed Zone File (.zone) corresponding to the Fast File.</param>
-        /// <param name="rawFileNode">The <see cref="ZoneAsset_RawFileNode"/> object representing the raw file to be updated.</param>
+        /// <param name="rawFileNode">The <see cref="RawFileNode"/> object representing the raw file to be updated.</param>
         /// <param name="updatedText">The new content for the raw file, as edited by the user.</param>
         /// <param name="headerInfo">An instance of <see cref="FastFileHeader"/> containing header information of the Fast File.</param>
         /// <exception cref="ArgumentException">Thrown when the updated content size exceeds the original maximum size of the raw file.</exception>
@@ -273,11 +273,11 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         ///     <item>Validates that the size of the updated content does not exceed the original maximum size.</item>
         ///     <item>Creates a backup of the Zone File before making any changes.</item>
         ///     <item>Updates the Zone File with the new content at the specified position.</item>
-        ///     <item>Updates the in-memory <see cref="ZoneAsset_RawFileNode"/> with the new content.</item>
+        ///     <item>Updates the in-memory <see cref="RawFileNode"/> with the new content.</item>
         ///     <item>Notifies the user of the successful save operation to the raw file.</item>
         /// </list>
         /// </remarks>
-        private static void SaveFileNode(string ffFilePath, string zoneFilePath, ZoneAsset_RawFileNode rawFileNode, string updatedText, FastFileHeader headerInfo)
+        private static void SaveFileNode(string ffFilePath, string zoneFilePath, RawFileNode rawFileNode, string updatedText, FastFileHeader headerInfo)
         {
             byte[] updatedBytes = Encoding.ASCII.GetBytes(updatedText);
             int updatedSize = updatedBytes.Length;

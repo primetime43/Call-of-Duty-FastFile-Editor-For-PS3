@@ -23,9 +23,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint Unknown10 { get; set; }
         public uint Unknown11 { get; set; }
         public List<uint> TagPtrs { get; set; } = new List<uint>();
-        public ZoneAsset_Tags? Tags { get; set; }
 
-        public Dictionary<string, uint> DecimalValues { get; private set; }
+        public Dictionary<string, uint>? DecimalValues { get; private set; }
+
+        public ZoneFileAssets ZoneFileAssets { get; set; } = new ZoneFileAssets();
 
         // Mapping of property names to their respective offsets
         private readonly Dictionary<string, int> _zonePropertyOffsets = new Dictionary<string, int>

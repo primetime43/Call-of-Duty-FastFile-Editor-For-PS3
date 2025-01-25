@@ -7,8 +7,8 @@ namespace Call_of_Duty_FastFile_Editor.Models
 {
     public class FastFile
     {
-        // Publicly accessible Zone associated with the FastFile
-        public Zone OpenedFastFilesZone { get; private set; }
+        // Zone associated with the FastFile
+        public Zone OpenedFastFileZone { get; private set; }
 
         /// <summary>
         /// Path to the selected FastFile. (contains the full path + file name + extension)
@@ -30,9 +30,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public bool IsCod4File => OpenedFastFileHeader.IsCod4File;
         public bool IsCod5File => OpenedFastFileHeader.IsCod5File;
 
-        // Use this eventually. Not currently being used
-        public FastFileAssets FastFileAssets { get; set; }
-
         public FastFileHeader OpenedFastFileHeader;
 
         /// <summary>
@@ -51,7 +48,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 throw new FileNotFoundException($"The file '{filePath}' does not exist.", filePath);
 
             // Initialize Zone
-            this.OpenedFastFilesZone = new Zone();
+            this.OpenedFastFileZone = new Zone();
 
             // Initialize FastFileHeader
             this.OpenedFastFileHeader = new FastFileHeader(filePath);

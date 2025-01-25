@@ -33,7 +33,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// List of file entry nodes extracted from the zone file.
         /// </summary>
-        private List<ZoneAsset_RawFileNode> rawFileNodes;
+        private List<RawFileNode> rawFileNodes;
 
         /// <summary>
         /// FastFile instance representing the opened Fast File.
@@ -81,6 +81,7 @@ namespace Call_of_Duty_FastFile_Editor
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
                     rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
+                    _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = rawFileNodes;
                 }
                 catch (Exception ex)
                 {
@@ -90,10 +91,10 @@ namespace Call_of_Duty_FastFile_Editor
 
                 try
                 {
-                    _openedFastFile.OpenedFastFilesZone.FileData = File.ReadAllBytes(_openedFastFile.ZoneFilePath);
-                    _openedFastFile.OpenedFastFilesZone.SetZoneOffsets();
+                    _openedFastFile.OpenedFastFileZone.FileData = File.ReadAllBytes(_openedFastFile.ZoneFilePath);
+                    _openedFastFile.OpenedFastFileZone.SetZoneOffsets();
                     PopulateTreeView();
-                    PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFilesZone);
+                    PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
                     PopulateTags();
                     PopulateStringTable();
                 }
@@ -309,6 +310,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            CloseFastFileAndCleanUp();
             Close();
         }
 
@@ -601,7 +603,7 @@ namespace Call_of_Duty_FastFile_Editor
                     string rawFileName = Path.GetFileName(selectedFilePath);
                     byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
-                    ZoneAsset_RawFileNode newRawFileNode = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(selectedFilePath)[0];
+                    RawFileNode newRawFileNode = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(selectedFilePath)[0];
 
                     string actualDiskFileName = Path.GetFileName(selectedFilePath);
                     string rawFileNameFromHeader = newRawFileNode.FileName;
@@ -609,7 +611,7 @@ namespace Call_of_Duty_FastFile_Editor
                     int newFileMaxSize = newRawFileNode.MaxSize;
 
                     // 1) Check if file name already exists
-                    ZoneAsset_RawFileNode existingNode = rawFileNodes
+                    RawFileNode existingNode = rawFileNodes
                         .FirstOrDefault(node => node.FileName.Equals(rawFileNameFromHeader, StringComparison.OrdinalIgnoreCase));
 
                     if (existingNode != null)
@@ -715,7 +717,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            ZoneAsset_RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -753,7 +755,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            ZoneAsset_RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -777,7 +779,7 @@ namespace Call_of_Duty_FastFile_Editor
                 ZoneName = kvp.Key,
                 ZoneDecValue = kvp.Value,
                 ZoneHexValue = Utilities.ConvertToBigEndianHex(kvp.Value),
-                ZoneOffset = _openedFastFile.OpenedFastFilesZone.GetZoneOffset(kvp.Key)
+                ZoneOffset = _openedFastFile.OpenedFastFileZone.GetZoneOffset(kvp.Key)
             }).ToList();
 
             // Assign the data source to the DataGridView
@@ -799,7 +801,10 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.Columns.Add("Offset (Hex)", 100);
 
             // Fetch the results
-            var tagsInfo = TagOperations.FindTags(_openedFastFile.OpenedFastFilesZone);
+            var tagsInfo = TagOperations.FindTags(_openedFastFile.OpenedFastFileZone);
+
+            // Set the opened FastFile's Zone object to hold the tags
+            _openedFastFile.OpenedFastFileZone.ZoneFileAssets.Tags = tagsInfo;
 
             if (tagsInfo == null)
                 return;
@@ -826,9 +831,12 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTreeView.Nodes.Clear();
 
             // 1) Find all CSV string tables in the zone
-            List<ZoneAsset_StringTable> csvTables = StringTableOperations.FindCsvStringTables(_openedFastFile.OpenedFastFilesZone);
+            List<StringTable> csvTables = StringTableOperations.FindCsvStringTables(_openedFastFile.OpenedFastFileZone);
             if (csvTables == null || csvTables.Count == 0)
                 return;
+
+            // Set the opened FastFile's Zone object to hold the string tables
+            _openedFastFile.OpenedFastFileZone.ZoneFileAssets.StringTables = csvTables;
 
             // 2) Add each table to the TreeView
             foreach (var table in csvTables)

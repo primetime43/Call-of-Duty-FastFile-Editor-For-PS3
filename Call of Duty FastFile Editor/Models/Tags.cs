@@ -2,16 +2,17 @@
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
-    public class ZoneAsset_TagEntry
+    public class Tags
     {
-        public required string Tag { get; set; }
-        public required int OffsetDec { get; set; }
-        public required string OffsetHex { get; set; }
+        public List<ZoneAsset_TagEntry> TagEntries { get; set; }
+        = new List<ZoneAsset_TagEntry>();
     }
 
-    public class ZoneAsset_Tags
-    {        
-        public required List<ZoneAsset_TagEntry> TagEntries { get; set; }
+    public class ZoneAsset_TagEntry
+    {
+        public string Tag { get; set; }
+        public int OffsetDec { get; set; }
+        public string OffsetHex { get; set; }
     }
 
     public static class TagOperations
@@ -46,7 +47,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// is null-terminated ASCII, and we store each tag's offset in both 
         /// decimal and hex.
         /// </summary>
-        public static ZoneAsset_Tags? FindTags(Zone zone)
+        public static Tags? FindTags(Zone zone)
         {
             byte[] zoneBytes = zone.FileData;
 
@@ -117,7 +118,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             }
 
             // Return them
-            return new ZoneAsset_Tags
+            return new Tags
             {
                 TagEntries = tagEntries
             };
