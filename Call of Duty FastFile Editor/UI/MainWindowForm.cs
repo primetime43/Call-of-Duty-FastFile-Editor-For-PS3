@@ -868,7 +868,6 @@ namespace Call_of_Duty_FastFile_Editor
                     stringTablesTreeView.Nodes.Clear();
                     tagsListView.Items.Clear();
                     dataGridView1.DataSource = null;
-                    _openedFastFile = null;
                     textEditorControl1.ResetText();
 
                     try
@@ -882,6 +881,7 @@ namespace Call_of_Duty_FastFile_Editor
                         MessageBox.Show($"Failed to delete zone file: {ex.Message}", "Deletion Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
+                    _openedFastFile = null;
                     MessageBox.Show("Fast File closed.", "Close Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
