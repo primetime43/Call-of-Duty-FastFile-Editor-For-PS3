@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
-    public class ZoneStringTable
+    public class ZoneAsset_StringTable
     {
         public int RowCount { get; set; }
         public int ColumnCount { get; set; }
@@ -22,10 +22,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         ///
         /// This is more robust than scanning for ".csv" first.
         /// </summary>
-        public static List<ZoneStringTable> FindCsvStringTables(Zone zone)
+        public static List<ZoneAsset_StringTable> FindCsvStringTables(Zone zone)
         {
             byte[] zoneBytes = zone.FileData;
-            List<ZoneStringTable> tables = new List<ZoneStringTable>();
+            List<ZoneAsset_StringTable> tables = new List<ZoneAsset_StringTable>();
 
             // We'll scan for 0xFF FF FF FF
             for (int i = 0; i < zoneBytes.Length - 4; i++)
@@ -63,7 +63,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
                     if (looksLikeCsv)
                     {
-                        tables.Add(new ZoneStringTable
+                        tables.Add(new ZoneAsset_StringTable
                         {
                             RowCount = (int)rowCountU,
                             ColumnCount = (int)columnCountU,

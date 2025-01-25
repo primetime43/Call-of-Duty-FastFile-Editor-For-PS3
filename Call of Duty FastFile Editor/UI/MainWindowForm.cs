@@ -33,7 +33,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// List of file entry nodes extracted from the zone file.
         /// </summary>
-        private List<RawFileNode> rawFileNodes;
+        private List<ZoneAsset_RawFileNode> rawFileNodes;
 
         /// <summary>
         /// FastFile instance representing the opened Fast File.
@@ -45,6 +45,11 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void openFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if(_openedFastFile != null)
+            {
+                CloseFastFileAndCleanUp();
+            }
+
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Title = "Select a COD5 Fast File",
@@ -89,6 +94,7 @@ namespace Call_of_Duty_FastFile_Editor
                     _openedFastFile.OpenedFastFilesZone.SetZoneOffsets();
                     PopulateTreeView();
                     PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFilesZone);
+                    PopulateTags();
                     PopulateStringTable();
                 }
                 catch (EndOfStreamException ex)
@@ -595,7 +601,7 @@ namespace Call_of_Duty_FastFile_Editor
                     string rawFileName = Path.GetFileName(selectedFilePath);
                     byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
-                    RawFileNode newRawFileNode = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(selectedFilePath)[0];
+                    ZoneAsset_RawFileNode newRawFileNode = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(selectedFilePath)[0];
 
                     string actualDiskFileName = Path.GetFileName(selectedFilePath);
                     string rawFileNameFromHeader = newRawFileNode.FileName;
@@ -603,7 +609,7 @@ namespace Call_of_Duty_FastFile_Editor
                     int newFileMaxSize = newRawFileNode.MaxSize;
 
                     // 1) Check if file name already exists
-                    RawFileNode existingNode = rawFileNodes
+                    ZoneAsset_RawFileNode existingNode = rawFileNodes
                         .FirstOrDefault(node => node.FileName.Equals(rawFileNameFromHeader, StringComparison.OrdinalIgnoreCase));
 
                     if (existingNode != null)
@@ -709,7 +715,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            ZoneAsset_RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -730,21 +736,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <param name="e"></param>
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            try
-            {
-                if (_openedFastFile != null && File.Exists(_openedFastFile.FfFilePath))
-                {
-                    FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
-                    _hasUnsavedChanges = false; // Reset the flag after saving
-                    filesTreeView.Nodes.Clear();
-                    textEditorControl1.ResetText();
-                    MessageBox.Show("Fast File closed.", "Close Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to close fastfile: {ex.Message}", "Close Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            CloseFastFileAndCleanUp();
         }
 
         private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -761,7 +753,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            ZoneAsset_RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -797,7 +789,32 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void PopulateTags()
         {
+            tagsListView.View = View.Details;
+            tagsListView.Columns.Clear();
+            tagsListView.Items.Clear();
+            tagsListView.MultiSelect = true;
+            tagsListView.FullRowSelect = true;
+            tagsListView.Columns.Add("Tag", 100);
+            tagsListView.Columns.Add("Offset (Dec)", 100);
+            tagsListView.Columns.Add("Offset (Hex)", 100);
 
+            // Fetch the results
+            var tagsInfo = TagOperations.FindTags(_openedFastFile.OpenedFastFilesZone);
+
+            if (tagsInfo == null)
+                return;
+
+            // Now tagsInfo.TagEntries holds all entries
+            foreach (var entry in tagsInfo.TagEntries)
+            {
+                // Create a row with 3 columns
+                var lvi = new ListViewItem(entry.Tag);
+                lvi.SubItems.Add(entry.OffsetDec.ToString());
+                lvi.SubItems.Add(entry.OffsetHex);
+
+                tagsListView.Items.Add(lvi);
+            }
+            tagsListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
         /// <summary>
@@ -809,7 +826,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTreeView.Nodes.Clear();
 
             // 1) Find all CSV string tables in the zone
-            List<ZoneStringTable> csvTables = StringTableOperations.FindCsvStringTables(_openedFastFile.OpenedFastFilesZone);
+            List<ZoneAsset_StringTable> csvTables = StringTableOperations.FindCsvStringTables(_openedFastFile.OpenedFastFilesZone);
             if (csvTables == null || csvTables.Count == 0)
                 return;
 
@@ -825,6 +842,50 @@ namespace Call_of_Duty_FastFile_Editor
 
                 // Add this table node to the top-level tree
                 stringTablesTreeView.Nodes.Add(tableNode);
+            }
+        }
+
+        private void copyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            CopySelectedItemsToClipboard();
+        }
+
+        private void CopySelectedItemsToClipboard()
+        {
+            if (tagsListView.SelectedItems.Count == 0)
+                return;
+
+            List<string> selectedTexts = new List<string>();
+            foreach (ListViewItem item in tagsListView.SelectedItems)
+            {
+                selectedTexts.Add(item.Text);
+            }
+
+            string toCopy = string.Join(Environment.NewLine, selectedTexts);
+
+            // Put on clipboard
+            Clipboard.SetText(toCopy);
+        }
+
+        private void CloseFastFileAndCleanUp()
+        {
+            try
+            {
+                if (_openedFastFile != null && File.Exists(_openedFastFile.FfFilePath))
+                {
+                    FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
+                    _hasUnsavedChanges = false; // Reset the flag after saving
+                    filesTreeView.Nodes.Clear();
+                    stringTablesTreeView.Nodes.Clear();
+                    tagsListView.Items.Clear();
+                    _openedFastFile = null;
+                    textEditorControl1.ResetText();
+                    MessageBox.Show("Fast File closed.", "Close Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to close fastfile: {ex.Message}", "Close Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

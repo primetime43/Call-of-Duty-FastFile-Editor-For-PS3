@@ -6,14 +6,14 @@ namespace Call_of_Duty_FastFile_Editor.UI
     // NOTE: 0D 0A is a line break in hex
     public partial class FileStructureInfoForm : Form
     {
-        private RawFileNode _selectedFileNode;
+        private ZoneAsset_RawFileNode _selectedFileNode;
 
         public FileStructureInfoForm()
         {
             InitializeComponent();
         }
 
-        public FileStructureInfoForm(RawFileNode selectedFileNode)
+        public FileStructureInfoForm(ZoneAsset_RawFileNode selectedFileNode)
         {
             InitializeComponent();
 

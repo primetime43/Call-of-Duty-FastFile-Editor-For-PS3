@@ -8,7 +8,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
     /// <summary>
     /// Represents a raw file stored within a FastFile, containing metadata and content.
     /// </summary>
-    public class RawFileNode
+    public class ZoneAsset_RawFileNode
     {
         /// <summary>
         /// Generates the raw file header consisting of the file size (big-endian) and padding (FF FF FF FF).

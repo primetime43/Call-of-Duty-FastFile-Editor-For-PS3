@@ -22,7 +22,7 @@ namespace Call_of_Duty_FastFile_Editor
             components = new System.ComponentModel.Container();
             textEditorControl1 = new TextEditorControl();
             filesTreeView = new TreeView();
-            contextMenuStrip1 = new ContextMenuStrip(components);
+            contextMenuStripRawFiles = new ContextMenuStrip(components);
             exportFileMenuItem = new ToolStripMenuItem();
             renameFileToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1 = new MenuStrip();
@@ -68,10 +68,13 @@ namespace Call_of_Duty_FastFile_Editor
             tabPage2 = new TabPage();
             dataGridView1 = new DataGridView();
             tabPage1 = new TabPage();
+            tagsListView = new ListView();
+            contextMenuStripTagsCopy = new ContextMenuStrip(components);
+            copyToolStripMenuItem = new ToolStripMenuItem();
             tabPage3 = new TabPage();
-            bindingSource1 = new BindingSource(components);
             stringTablesTreeView = new TreeView();
-            contextMenuStrip1.SuspendLayout();
+            bindingSource1 = new BindingSource(components);
+            contextMenuStripRawFiles.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -82,6 +85,8 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.SuspendLayout();
             tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            tabPage1.SuspendLayout();
+            contextMenuStripTagsCopy.SuspendLayout();
             tabPage3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             SuspendLayout();
@@ -98,7 +103,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // filesTreeView
             // 
-            filesTreeView.ContextMenuStrip = contextMenuStrip1;
+            filesTreeView.ContextMenuStrip = contextMenuStripRawFiles;
             filesTreeView.Dock = DockStyle.Fill;
             filesTreeView.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
             filesTreeView.HideSelection = false;
@@ -110,11 +115,11 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.BeforeSelect += filesTreeView_BeforeSelect;
             filesTreeView.AfterSelect += filesTreeView_AfterSelect;
             // 
-            // contextMenuStrip1
+            // contextMenuStripRawFiles
             // 
-            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { exportFileMenuItem, renameFileToolStripMenuItem });
-            contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(139, 48);
+            contextMenuStripRawFiles.Items.AddRange(new ToolStripItem[] { exportFileMenuItem, renameFileToolStripMenuItem });
+            contextMenuStripRawFiles.Name = "contextMenuStrip1";
+            contextMenuStripRawFiles.Size = new Size(139, 48);
             // 
             // exportFileMenuItem
             // 
@@ -460,6 +465,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // tabPage1
             // 
+            tabPage1.Controls.Add(tagsListView);
             tabPage1.Location = new Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new Padding(3);
@@ -467,6 +473,30 @@ namespace Call_of_Duty_FastFile_Editor
             tabPage1.TabIndex = 2;
             tabPage1.Text = "Tags";
             tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // tagsListView
+            // 
+            tagsListView.ContextMenuStrip = contextMenuStripTagsCopy;
+            tagsListView.Location = new Point(0, 0);
+            tagsListView.Name = "tagsListView";
+            tagsListView.Size = new Size(487, 750);
+            tagsListView.Sorting = SortOrder.Ascending;
+            tagsListView.TabIndex = 0;
+            tagsListView.UseCompatibleStateImageBehavior = false;
+            tagsListView.View = View.Details;
+            // 
+            // contextMenuStripTagsCopy
+            // 
+            contextMenuStripTagsCopy.Items.AddRange(new ToolStripItem[] { copyToolStripMenuItem });
+            contextMenuStripTagsCopy.Name = "contextMenuStripTagsCopy";
+            contextMenuStripTagsCopy.Size = new Size(103, 26);
+            // 
+            // copyToolStripMenuItem
+            // 
+            copyToolStripMenuItem.Name = "copyToolStripMenuItem";
+            copyToolStripMenuItem.Size = new Size(102, 22);
+            copyToolStripMenuItem.Text = "Copy";
+            copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
             // 
             // tabPage3
             // 
@@ -497,7 +527,7 @@ namespace Call_of_Duty_FastFile_Editor
             MainMenuStrip = menuStrip1;
             Name = "MainWindowForm";
             FormClosed += Form1_FormClosed;
-            contextMenuStrip1.ResumeLayout(false);
+            contextMenuStripRawFiles.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             splitContainer1.Panel1.ResumeLayout(false);
@@ -510,6 +540,8 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.ResumeLayout(false);
             tabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            tabPage1.ResumeLayout(false);
+            contextMenuStripTagsCopy.ResumeLayout(false);
             tabPage3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
             ResumeLayout(false);
@@ -556,7 +588,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem nazizombiefactorypatchffToolStripMenuItem;
         private ToolStripMenuItem checkForUpdateToolStripMenuItem;
         private ToolStripMenuItem injectFileToolStripMenuItem;
-        private ContextMenuStrip contextMenuStrip1;
+        private ContextMenuStrip contextMenuStripRawFiles;
         private ToolStripMenuItem exportFileMenuItem;
         private ToolStripMenuItem toolStripMenuItem1;
         private ToolTip filesTreeToolTip;
@@ -569,5 +601,8 @@ namespace Call_of_Duty_FastFile_Editor
         private TabPage tabPage1;
         private TabPage tabPage3;
         private TreeView stringTablesTreeView;
+        private ListView tagsListView;
+        private ContextMenuStrip contextMenuStripTagsCopy;
+        private ToolStripMenuItem copyToolStripMenuItem;
     }
 }

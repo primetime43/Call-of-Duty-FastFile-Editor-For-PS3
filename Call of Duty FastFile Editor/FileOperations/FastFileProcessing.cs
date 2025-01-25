@@ -100,9 +100,9 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// </summary>
         /// <param name="zoneFilePath"></param>
         /// <returns></returns>
-        public static List<RawFileNode> ExtractZoneFileEntriesWithSizeAndName(string zoneFilePath)
+        public static List<ZoneAsset_RawFileNode> ExtractZoneFileEntriesWithSizeAndName(string zoneFilePath)
         {
-            List<RawFileNode> rawFileNodes = new List<RawFileNode>();
+            List<ZoneAsset_RawFileNode> rawFileNodes = new List<ZoneAsset_RawFileNode>();
             byte[] fileData = File.ReadAllBytes(zoneFilePath);
 
             // Use the centralized patterns from Constants
@@ -171,7 +171,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                                 // Extract binary data
                                 fileBytes = ExtractBinaryContent(zoneFilePath, patternIndex, maxSize);
 
-                                rawFileNodes.Add(new RawFileNode
+                                rawFileNodes.Add(new ZoneAsset_RawFileNode
                                 {
                                     PatternIndexPosition = patternIndex,
                                     MaxSize = maxSize,

@@ -21,7 +21,7 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         /// <param name="node">The RawFileNode representing the raw file to update.</param>
         /// <param name="newContent">New content as a byte array.</param>
         /// <exception cref="IOException">Thrown when file operations fail.</exception>
-        public static void UpdateFileContent(string zoneFilePath, RawFileNode rawFileNode, byte[] newContent)
+        public static void UpdateFileContent(string zoneFilePath, ZoneAsset_RawFileNode rawFileNode, byte[] newContent)
         {
             // I think we want to get rid of this eventually.
             // Not sure yet, but the user may be able to create larger files if they just change the
@@ -62,7 +62,7 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
 
         // this would be for expanding the size of original raw file content & sizes (not custom raw files)
         // not yet implemented
-        public static void ExpandAndUpdateFileContent(string zoneFilePath, RawFileNode existingRawFileNode, RawFileNode newRawFileNode, string newContent)
+        public static void ExpandAndUpdateFileContent(string zoneFilePath, ZoneAsset_RawFileNode existingRawFileNode, ZoneAsset_RawFileNode newRawFileNode, string newContent)
         {
             int oldSize = newRawFileNode.MaxSize;
             int newSize = newContent.Length;

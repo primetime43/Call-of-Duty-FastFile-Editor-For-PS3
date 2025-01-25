@@ -30,6 +30,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public bool IsCod4File => OpenedFastFileHeader.IsCod4File;
         public bool IsCod5File => OpenedFastFileHeader.IsCod5File;
 
+        // Use this eventually. Not currently being used
+        public FastFileAssets FastFileAssets { get; set; }
+
         public FastFileHeader OpenedFastFileHeader;
 
         /// <summary>

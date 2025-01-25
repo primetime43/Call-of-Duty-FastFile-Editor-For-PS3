@@ -23,7 +23,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint Unknown10 { get; set; }
         public uint Unknown11 { get; set; }
         public List<uint> TagPtrs { get; set; } = new List<uint>();
-        public List<string> Tags { get; set; } = new List<string>();
+        public ZoneAsset_Tags? Tags { get; set; }
 
         public Dictionary<string, uint> DecimalValues { get; private set; }
 

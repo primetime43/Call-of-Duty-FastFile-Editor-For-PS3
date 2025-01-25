@@ -12,7 +12,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// </summary>
         /// <param name="rawFileNode">The raw file node in the opened FF to export.</param>
         /// <param name="destinationPath">The full path where the file will be exported.</param>
-        public static void ExportRawFile(RawFileNode rawFileNode, string destinationPath)
+        public static void ExportRawFile(ZoneAsset_RawFileNode rawFileNode, string destinationPath)
         {
             if (rawFileNode == null)
                 throw new ArgumentNullException(nameof(rawFileNode), "Raw file node cannot be null.");
@@ -35,7 +35,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// </summary>
         /// <param name="rawFileNode">The raw file node to be exported.</param>
         /// <param name="destinationPath">The full path where the file will be exported.</param>
-        private static void ExportRawFileNode(RawFileNode rawFileNode, string destinationPath)
+        private static void ExportRawFileNode(ZoneAsset_RawFileNode rawFileNode, string destinationPath)
         {
             if (rawFileNode.RawFileBytes == null || rawFileNode.RawFileBytes.Length == 0)
                 throw new InvalidOperationException($"Raw file '{rawFileNode.FileName}' contains no data.");
