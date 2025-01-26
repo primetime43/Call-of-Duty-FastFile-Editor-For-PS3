@@ -73,6 +73,8 @@ namespace Call_of_Duty_FastFile_Editor
             copyToolStripMenuItem = new ToolStripMenuItem();
             tabPage3 = new TabPage();
             stringTablesTreeView = new TreeView();
+            tabPageMapEnt = new TabPage();
+            treeViewMapEnt = new TreeView();
             bindingSource1 = new BindingSource(components);
             contextMenuStripRawFiles.SuspendLayout();
             menuStrip1.SuspendLayout();
@@ -88,6 +90,7 @@ namespace Call_of_Duty_FastFile_Editor
             tabPage1.SuspendLayout();
             contextMenuStripTagsCopy.SuspendLayout();
             tabPage3.SuspendLayout();
+            tabPageMapEnt.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             SuspendLayout();
             // 
@@ -425,6 +428,7 @@ namespace Call_of_Duty_FastFile_Editor
             tabControl1.Controls.Add(tabPage2);
             tabControl1.Controls.Add(tabPage1);
             tabControl1.Controls.Add(tabPage3);
+            tabControl1.Controls.Add(tabPageMapEnt);
             tabControl1.Dock = DockStyle.Fill;
             tabControl1.Location = new Point(0, 28);
             tabControl1.Name = "tabControl1";
@@ -516,6 +520,24 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTreeView.Size = new Size(250, 749);
             stringTablesTreeView.TabIndex = 0;
             // 
+            // tabPageMapEnt
+            // 
+            tabPageMapEnt.Controls.Add(treeViewMapEnt);
+            tabPageMapEnt.Location = new Point(4, 24);
+            tabPageMapEnt.Name = "tabPageMapEnt";
+            tabPageMapEnt.Padding = new Padding(3);
+            tabPageMapEnt.Size = new Size(1442, 749);
+            tabPageMapEnt.TabIndex = 4;
+            tabPageMapEnt.Text = "Map Entities";
+            tabPageMapEnt.UseVisualStyleBackColor = true;
+            // 
+            // treeViewMapEnt
+            // 
+            treeViewMapEnt.Location = new Point(0, 0);
+            treeViewMapEnt.Name = "treeViewMapEnt";
+            treeViewMapEnt.Size = new Size(307, 749);
+            treeViewMapEnt.TabIndex = 2;
+            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -542,6 +564,7 @@ namespace Call_of_Duty_FastFile_Editor
             tabPage1.ResumeLayout(false);
             contextMenuStripTagsCopy.ResumeLayout(false);
             tabPage3.ResumeLayout(false);
+            tabPageMapEnt.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -603,5 +626,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ListView tagsListView;
         private ContextMenuStrip contextMenuStripTagsCopy;
         private ToolStripMenuItem copyToolStripMenuItem;
+        private TabPage tabPageMapEnt;
+        private TreeView treeViewMapEnt;
     }
 }
