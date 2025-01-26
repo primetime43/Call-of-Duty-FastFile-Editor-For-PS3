@@ -93,10 +93,10 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     _openedFastFile.OpenedFastFileZone.FileData = File.ReadAllBytes(_openedFastFile.ZoneFilePath);
                     _openedFastFile.OpenedFastFileZone.SetZoneOffsets();
-                    PopulateTreeView();
-                    PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
-                    PopulateTags();
-                    PopulateStringTable();
+                    //PopulateTreeView();
+                    //PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
+                    //PopulateTags();
+                    //PopulateStringTable();
                     PopulateMapEntities();
                 }
                 catch (EndOfStreamException ex)
@@ -837,66 +837,59 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void PopulateMapEntities()
         {
-            //var test = MapEntityOperations.ParseMapEnts(_openedFastFile.OpenedFastFileZone);
+            int offset = MapEntityOperations.FindMapHeaderOffsetViaFF(_openedFastFile.OpenedFastFileZone);
+            if (offset == -1)
+            {
+                MessageBox.Show("No map header found near large FF blocks.");
+                return;
+            }
 
-            // 1) Parse the .map entities from a known offset (for testing)
-            List<MapEntity> mapTest = MapEntityOperations.ParseMapEntsAtOffset(
-                _openedFastFile.OpenedFastFileZone,
-                28068541
-            );
+            // If found, parse the block
+            List<MapEntity> mapTest = MapEntityOperations.ParseMapEntsAtOffset(_openedFastFile.OpenedFastFileZone, offset);
 
-            // 2) Sort mapTest by classname alphabetically (A–Z).
-            //    For entities without classname, treat the label as "" (empty).
+            if (mapTest.Count == 0)
+            {
+                MessageBox.Show("Found an offset, but parsing yielded no entities.", "Empty",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // 3) (Optional) Sort mapTest by "classname" alphabetically
             mapTest.Sort((entA, entB) =>
             {
-                // Attempt to read "classname" from each entity
-                bool aHasClass = entA.Properties.TryGetValue("classname", out string aClass);
-                bool bHasClass = entB.Properties.TryGetValue("classname", out string bClass);
+                entA.Properties.TryGetValue("classname", out string aClass);
+                entB.Properties.TryGetValue("classname", out string bClass);
 
-                // If missing, treat it as empty
                 aClass ??= "";
                 bClass ??= "";
 
-                // Compare ignoring case
                 return string.Compare(aClass, bClass, StringComparison.OrdinalIgnoreCase);
             });
 
-            //
-            // --- Also populate the TreeView with classname as the parent ---
-            //
-            treeViewMapEnt.Nodes.Clear(); // clear existing data if any
+            // 4) Clear existing TreeView nodes
+            treeViewMapEnt.Nodes.Clear();
 
+            // 5) Populate the TreeView
             for (int i = 0; i < mapTest.Count; i++)
             {
                 MapEntity entity = mapTest[i];
 
-                // Look for a "classname" property to use as the parent label
-                // If none exists, we’ll just label it "Entity i"
-                string parentLabel;
-                if (entity.Properties.TryGetValue("classname", out string classNameVal))
-                {
-                    parentLabel = classNameVal;
-                }
-                else
-                {
-                    parentLabel = $"Entity {i}";
-                }
+                // Use "classname" or a fallback label
+                string parentLabel = entity.Properties.TryGetValue("classname", out string classNameVal)
+                    ? classNameVal
+                    : $"Entity {i}";
 
-                // Create the parent node
                 TreeNode parentNode = new TreeNode(parentLabel);
 
-                // Add child nodes for each key-value pair, skipping "classname" 
-                // (since we used it for the parent label)
+                // For each key-value pair (except "classname"), add a child node
                 foreach (var kvp in entity.Properties)
                 {
                     if (kvp.Key.Equals("classname", StringComparison.OrdinalIgnoreCase))
                         continue;
 
-                    // "key = value" format
                     parentNode.Nodes.Add(new TreeNode($"{kvp.Key} = {kvp.Value}"));
                 }
 
-                // Add the parent node to the tree
                 treeViewMapEnt.Nodes.Add(parentNode);
             }
         }

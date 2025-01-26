@@ -68,60 +68,108 @@ namespace Call_of_Duty_FastFile_Editor.Models
             return results;
         }
 
-        /// <summary>
-        /// This existing method tries to automatically locate the .map block
-        /// near the end of the file, scanning backward for a plausible big-endian length
-        /// followed by ASCII data that includes '{'.
-        /// 
-        /// MAYBE DELETE THIS
-        /// </summary>
-        public static List<MapEntity> ParseMapEnts(Zone zone)
+        public static int FindMapHeaderOffsetViaFF(Zone zone)
         {
-            var results = new List<MapEntity>();
-            byte[] zoneBytes = zone.FileData;
-            if (zoneBytes == null || zoneBytes.Length < 8)
-                return results;
+            if (zone?.FileData == null)
+                return -1;
 
-            // We'll scan backwards, starting from near the end.
-            int startIndex = zoneBytes.Length - 4;
+            byte[] data = zone.FileData;
+            int fileLength = data.Length;
 
-            for (int i = startIndex; i >= 0; i--)
+            // 1) Find large runs of 0xFF (say, >= 32 in a row).
+            List<int> ffRuns = FindRunsOfFF(data, minRunLength: 32);
+            if (ffRuns.Count == 0)
+                return -1; // no runs found
+
+            // 2) For each run offset, scan a window around it
+            const int SEARCH_WINDOW = 512; // how many bytes before/after the run to check
+
+            foreach (int runOffset in ffRuns)
             {
-                if (i + 3 >= zoneBytes.Length)
-                    continue;
+                // Define the region we’ll search for the .map header
+                // For safety, ensure we don’t go below 0 or above fileLength-4
+                int windowStart = Math.Max(0, runOffset - SEARCH_WINDOW);
+                int windowEnd = Math.Min(fileLength - 4, runOffset + SEARCH_WINDOW);
 
-                int length = (zoneBytes[i] << 24)
-                           | (zoneBytes[i + 1] << 16)
-                           | (zoneBytes[i + 2] << 8)
-                           | (zoneBytes[i + 3]);
-
-                if (length <= 0 || length > zoneBytes.Length)
-                    continue;
-
-                int startOfMapData = i + 4;
-                int endOfMapData = startOfMapData + length;
-                if (endOfMapData > zoneBytes.Length)
-                    continue;
-
-                byte[] mapDataBytes = new byte[length];
-                Buffer.BlockCopy(zoneBytes, startOfMapData, mapDataBytes, 0, length);
-
-                // Quick check for brace
-                if (Array.IndexOf(mapDataBytes, (byte)'{') < 0)
-                    continue;
-
-                string mapText = Encoding.ASCII.GetString(mapDataBytes);
-
-                var parsed = ParseMapString(mapText);
-                if (parsed.Count > 0)
+                for (int i = windowStart; i <= windowEnd; i++)
                 {
-                    results.AddRange(parsed);
-                    // If you only expect one block, break here
-                    break;
+                    // Try reading 4 bytes big-endian => length
+                    int length = (data[i] << 24)
+                               | (data[i + 1] << 16)
+                               | (data[i + 2] << 8)
+                               | (data[i + 3]);
+
+                    if (length <= 0)
+                        continue;
+
+                    // Ensure it fits
+                    int mapDataStart = i + 4;
+                    int mapDataEnd = mapDataStart + length;
+                    if (mapDataEnd > fileLength)
+                        continue;
+
+                    // Optional quick check for "{" in the first 256 bytes
+                    // (similar to your existing code)
+                    bool hasBrace = false;
+                    int peekEnd = Math.Min(mapDataEnd, mapDataStart + 256);
+                    for (int p = mapDataStart; p < peekEnd; p++)
+                    {
+                        if (data[p] == '{')
+                        {
+                            hasBrace = true;
+                            break;
+                        }
+                    }
+                    if (!hasBrace)
+                        continue;
+
+                    // Now do a full parse
+                    var testEntities = ParseMapEntsAtOffset(zone, i);
+                    if (testEntities.Count > 0)
+                    {
+                        // Found a valid .map block
+                        return i; // immediate success
+                    }
                 }
             }
 
-            return results;
+            return -1; // If we exhaust all runs/windows without success
+        }
+
+        private static List<int> FindRunsOfFF(byte[] data, int minRunLength)
+        {
+            // Return a list of offsets where a run of at least minRunLength 0xFF begins.
+            // E.g. if minRunLength=32, we find all places where at least 32 consecutive 0xFF are found.
+            var runOffsets = new List<int>();
+
+            int i = 0;
+            while (i < data.Length)
+            {
+                // If current byte is 0xFF, see how long this run goes
+                if (data[i] == 0xFF)
+                {
+                    int runStart = i;
+                    int runCount = 1;
+                    i++;
+
+                    while (i < data.Length && data[i] == 0xFF)
+                    {
+                        runCount++;
+                        i++;
+                    }
+
+                    if (runCount >= minRunLength)
+                    {
+                        runOffsets.Add(runStart);
+                    }
+                }
+                else
+                {
+                    i++;
+                }
+            }
+
+            return runOffsets;
         }
 
         /// <summary>
@@ -136,7 +184,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
         {
             var entities = new List<MapEntity>();
 
-            // Split text into lines, ignoring empty lines
             var lines = mapText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
             MapEntity currentEntity = null;
@@ -155,13 +202,17 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
                 if (line == "}")
                 {
-                    if (currentEntity != null)
+                    // Only add if currentEntity has at least 1 property
+                    if (currentEntity != null && currentEntity.Properties.Count > 0)
+                    {
                         entities.Add(currentEntity);
+                    }
                     currentEntity = null;
                     insideBraces = false;
                     continue;
                 }
 
+                // Attempt to parse key-value lines only inside braces
                 if (insideBraces && currentEntity != null)
                 {
                     var match = LinePattern.Match(line);
