@@ -93,10 +93,11 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     _openedFastFile.OpenedFastFileZone.FileData = File.ReadAllBytes(_openedFastFile.ZoneFilePath);
                     _openedFastFile.OpenedFastFileZone.SetZoneOffsets();
-                    //PopulateTreeView();
-                    //PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
-                    //PopulateTags();
-                    //PopulateStringTable();
+                    // Move these eventually and change how they're loaded
+                    PopulateTreeView();
+                    PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
+                    PopulateTags();
+                    PopulateStringTable();
                     PopulateMapEntities();
                 }
                 catch (EndOfStreamException ex)
