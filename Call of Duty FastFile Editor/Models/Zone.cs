@@ -6,10 +6,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
 {    
     public class Zone
     {
+        public string ZoneFilePath;
         /// <summary>
         /// Binary data of the zone file
         /// </summary>
-        public byte[] FileData { get; set; }
+        public byte[] FileData { get; private set; }
         public uint ZoneFileSize { get; set; }
         public uint Unknown1 { get; set; }
         public uint RecordCount { get; set; }
@@ -67,6 +68,14 @@ namespace Call_of_Duty_FastFile_Editor.Models
             this.Unknown11 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown11Offset, this);
 
             SetDecimalValues();
+        }
+
+        /// <summary>
+        /// Sets the bytes from the zone to the FileData property
+        /// </summary>
+        public void SetZoneData()
+        {
+            this.FileData = File.ReadAllBytes(ZoneFilePath);
         }
 
         private void SetDecimalValues()

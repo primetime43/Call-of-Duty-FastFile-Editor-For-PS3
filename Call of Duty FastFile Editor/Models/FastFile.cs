@@ -49,6 +49,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
             // Initialize Zone
             this.OpenedFastFileZone = new Zone();
+            this.OpenedFastFileZone.ZoneFilePath = this.ZoneFilePath;
 
             // Initialize FastFileHeader
             this.OpenedFastFileHeader = new FastFileHeader(filePath);

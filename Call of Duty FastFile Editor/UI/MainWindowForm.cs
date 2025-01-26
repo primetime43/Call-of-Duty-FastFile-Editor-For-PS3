@@ -10,6 +10,7 @@ using System.Text;
 using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.Services;
 using System;
+using System.ComponentModel;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -28,6 +29,25 @@ namespace Call_of_Duty_FastFile_Editor
             DirectoryInfo directoryInfo = new DirectoryInfo(_originalFastFilesPath);
             directoryInfo.Attributes |= FileAttributes.Hidden;
             this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion}";
+
+            // Universal toolstrip menu item
+            copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
+            universalContextMenu.Opening += universalContextMenu_Opening;
+        }
+
+        private string _rightClickedItemText = string.Empty;
+
+        private void universalContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            copyToolStripMenuItem.Enabled = !string.IsNullOrEmpty(_rightClickedItemText);
+        }
+
+        private void copyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_rightClickedItemText))
+            {
+                Clipboard.SetText(_rightClickedItemText);
+            }
         }
 
         /// <summary>
@@ -80,8 +100,8 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
-                    rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
-                    _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = rawFileNodes;
+                    _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
+                    rawFileNodes = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles;
                 }
                 catch (Exception ex)
                 {
@@ -91,7 +111,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                 try
                 {
-                    _openedFastFile.OpenedFastFileZone.FileData = File.ReadAllBytes(_openedFastFile.ZoneFilePath);
+                    _openedFastFile.OpenedFastFileZone.SetZoneData();
                     _openedFastFile.OpenedFastFileZone.SetZoneOffsets();
                     // Move these eventually and change how they're loaded
                     PopulateTreeView();
@@ -820,7 +840,7 @@ namespace Call_of_Duty_FastFile_Editor
         private void PopulateStringTable()
         {
             // Clear the existing nodes to avoid duplicates
-            stringTablesTreeView.Nodes.Clear();
+            stringTableTreeView.Nodes.Clear();
 
             // 1) Find all CSV string tables in the zone
             List<StringTable> csvTables = StringTableOperations.FindCsvStringTables(_openedFastFile.OpenedFastFileZone);
@@ -841,7 +861,7 @@ namespace Call_of_Duty_FastFile_Editor
                 tableNode.Nodes.Add("Columns: " + table.ColumnCount);
 
                 // Add this table node to the top-level tree
-                stringTablesTreeView.Nodes.Add(tableNode);
+                stringTableTreeView.Nodes.Add(tableNode);
             }
         }
 
@@ -928,26 +948,66 @@ namespace Call_of_Duty_FastFile_Editor
             }
         }
 
-        private void copyToolStripMenuItem_Click(object sender, EventArgs e)
+        private void listView_MouseDownCopy(object sender, MouseEventArgs e)
         {
-            CopySelectedItemsToClipboard();
+            if (e.Button == MouseButtons.Right)
+            {
+                var lv = (ListView)sender;
+                ListViewHitTestInfo hit = lv.HitTest(e.Location);
+                if (hit.Item != null)
+                {
+                    _rightClickedItemText = hit.Item.Text;  // or subItem text
+                }
+                else
+                {
+                    _rightClickedItemText = string.Empty;
+                }
+            }
         }
 
-        private void CopySelectedItemsToClipboard()
+        private void treeView_MouseDownCopy(object sender, MouseEventArgs e)
         {
-            if (tagsListView.SelectedItems.Count == 0)
-                return;
-
-            List<string> selectedTexts = new List<string>();
-            foreach (ListViewItem item in tagsListView.SelectedItems)
+            if (e.Button == MouseButtons.Right)
             {
-                selectedTexts.Add(item.Text);
+                var tv = (TreeView)sender;
+                TreeNode node = tv.GetNodeAt(e.X, e.Y);
+                if (node != null)
+                {
+                    tv.SelectedNode = node;
+                    _rightClickedItemText = node.Text;
+                }
+                else
+                {
+                    _rightClickedItemText = string.Empty;
+                }
             }
+        }
 
-            string toCopy = string.Join(Environment.NewLine, selectedTexts);
+        private void dataGrid_MouseDownCopy(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                var dgv = (DataGridView)sender;
+                // Get row/column of the clicked cell
+                DataGridView.HitTestInfo hit = dgv.HitTest(e.X, e.Y);
 
-            // Put on clipboard
-            Clipboard.SetText(toCopy);
+                if (hit.RowIndex >= 0 && hit.ColumnIndex >= 0)
+                {
+                    // Optionally select the clicked row/cell
+                    dgv.ClearSelection();
+                    dgv.Rows[hit.RowIndex].Selected = true;
+                    dgv.CurrentCell = dgv[hit.ColumnIndex, hit.RowIndex];
+
+                    // Store the cell's value in our right-clicked text
+                    object cellValue = dgv[hit.ColumnIndex, hit.RowIndex].Value;
+                    _rightClickedItemText = cellValue?.ToString() ?? string.Empty;
+                }
+                else
+                {
+                    // Right-clicked outside a valid cell
+                    _rightClickedItemText = string.Empty;
+                }
+            }
         }
 
         private void CloseFastFileAndCleanUp(bool deleteZoneFile = false)
@@ -960,7 +1020,7 @@ namespace Call_of_Duty_FastFile_Editor
                     _hasUnsavedChanges = false; // Reset the flag after saving
                     filesTreeView.Nodes.Clear();
                     treeViewMapEnt.Nodes.Clear();
-                    stringTablesTreeView.Nodes.Clear();
+                    stringTableTreeView.Nodes.Clear();
                     tagsListView.Items.Clear();
                     dataGridView1.DataSource = null;
                     textEditorControl1.ResetText();

@@ -25,7 +25,7 @@ namespace Call_of_Duty_FastFile_Editor
             contextMenuStripRawFiles = new ContextMenuStrip(components);
             exportFileMenuItem = new ToolStripMenuItem();
             renameFileToolStripMenuItem = new ToolStripMenuItem();
-            menuStrip1 = new MenuStrip();
+            menuStripTopToolbar = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
             saveFastFileToolStripMenuItem = new ToolStripMenuItem();
@@ -56,7 +56,7 @@ namespace Call_of_Duty_FastFile_Editor
             injectFileToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
-            statusStrip1 = new StatusStrip();
+            statusStripBottom = new StatusStrip();
             loadedFileNameStatusLabel = new ToolStripStatusLabel();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             selectedItemStatusLabel = new ToolStripStatusLabel();
@@ -64,31 +64,31 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
             filesTreeToolTip = new ToolTip(components);
             tabControl1 = new TabControl();
+            universalContextMenu = new ContextMenuStrip(components);
+            copyToolStripMenuItem = new ToolStripMenuItem();
             rawFilesPage = new TabPage();
             tabPage2 = new TabPage();
             dataGridView1 = new DataGridView();
             tabPage1 = new TabPage();
             tagsListView = new ListView();
-            contextMenuStripTagsCopy = new ContextMenuStrip(components);
-            copyToolStripMenuItem = new ToolStripMenuItem();
             tabPage3 = new TabPage();
-            stringTablesTreeView = new TreeView();
+            stringTableTreeView = new TreeView();
             tabPageMapEnt = new TabPage();
             treeViewMapEnt = new TreeView();
             bindingSource1 = new BindingSource(components);
             contextMenuStripRawFiles.SuspendLayout();
-            menuStrip1.SuspendLayout();
+            menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
-            statusStrip1.SuspendLayout();
+            statusStripBottom.SuspendLayout();
             tabControl1.SuspendLayout();
+            universalContextMenu.SuspendLayout();
             rawFilesPage.SuspendLayout();
             tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             tabPage1.SuspendLayout();
-            contextMenuStripTagsCopy.SuspendLayout();
             tabPage3.SuspendLayout();
             tabPageMapEnt.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
@@ -139,15 +139,15 @@ namespace Call_of_Duty_FastFile_Editor
             renameFileToolStripMenuItem.Text = "Rename File";
             renameFileToolStripMenuItem.Click += renameFileToolStripMenuItem_Click;
             // 
-            // menuStrip1
+            // menuStripTopToolbar
             // 
-            menuStrip1.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, toolsToolStripMenuItem, aboutToolStripMenuItem });
-            menuStrip1.Location = new Point(0, 0);
-            menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(1450, 28);
-            menuStrip1.TabIndex = 1;
-            menuStrip1.Text = "menuStrip1";
+            menuStripTopToolbar.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            menuStripTopToolbar.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, toolsToolStripMenuItem, aboutToolStripMenuItem });
+            menuStripTopToolbar.Location = new Point(0, 0);
+            menuStripTopToolbar.Name = "menuStripTopToolbar";
+            menuStripTopToolbar.Size = new Size(1450, 28);
+            menuStripTopToolbar.TabIndex = 1;
+            menuStripTopToolbar.Text = "menuStrip1";
             // 
             // fileToolStripMenuItem
             // 
@@ -372,14 +372,14 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.SplitterDistance = 338;
             splitContainer1.TabIndex = 0;
             // 
-            // statusStrip1
+            // statusStripBottom
             // 
-            statusStrip1.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            statusStrip1.Items.AddRange(new ToolStripItem[] { loadedFileNameStatusLabel, toolStripStatusLabel1, selectedItemStatusLabel, selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel });
-            statusStrip1.Location = new Point(0, 805);
-            statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1450, 22);
-            statusStrip1.TabIndex = 2;
+            statusStripBottom.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            statusStripBottom.Items.AddRange(new ToolStripItem[] { loadedFileNameStatusLabel, toolStripStatusLabel1, selectedItemStatusLabel, selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel });
+            statusStripBottom.Location = new Point(0, 805);
+            statusStripBottom.Name = "statusStripBottom";
+            statusStripBottom.Size = new Size(1450, 22);
+            statusStripBottom.TabIndex = 2;
             // 
             // loadedFileNameStatusLabel
             // 
@@ -424,6 +424,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // tabControl1
             // 
+            tabControl1.ContextMenuStrip = universalContextMenu;
             tabControl1.Controls.Add(rawFilesPage);
             tabControl1.Controls.Add(tabPage2);
             tabControl1.Controls.Add(tabPage1);
@@ -435,6 +436,19 @@ namespace Call_of_Duty_FastFile_Editor
             tabControl1.SelectedIndex = 0;
             tabControl1.Size = new Size(1450, 777);
             tabControl1.TabIndex = 3;
+            // 
+            // universalContextMenu
+            // 
+            universalContextMenu.Items.AddRange(new ToolStripItem[] { copyToolStripMenuItem });
+            universalContextMenu.Name = "contextMenuStripTagsCopy";
+            universalContextMenu.Size = new Size(103, 26);
+            // 
+            // copyToolStripMenuItem
+            // 
+            copyToolStripMenuItem.Name = "copyToolStripMenuItem";
+            copyToolStripMenuItem.Size = new Size(102, 22);
+            copyToolStripMenuItem.Text = "Copy";
+            copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
             // 
             // rawFilesPage
             // 
@@ -466,6 +480,7 @@ namespace Call_of_Duty_FastFile_Editor
             dataGridView1.Name = "dataGridView1";
             dataGridView1.Size = new Size(493, 432);
             dataGridView1.TabIndex = 0;
+            dataGridView1.MouseDown += dataGrid_MouseDownCopy;
             // 
             // tabPage1
             // 
@@ -480,7 +495,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // tagsListView
             // 
-            tagsListView.ContextMenuStrip = contextMenuStripTagsCopy;
+            tagsListView.ContextMenuStrip = universalContextMenu;
             tagsListView.Location = new Point(0, 0);
             tagsListView.Name = "tagsListView";
             tagsListView.Size = new Size(487, 750);
@@ -488,23 +503,11 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.TabIndex = 0;
             tagsListView.UseCompatibleStateImageBehavior = false;
             tagsListView.View = View.Details;
-            // 
-            // contextMenuStripTagsCopy
-            // 
-            contextMenuStripTagsCopy.Items.AddRange(new ToolStripItem[] { copyToolStripMenuItem });
-            contextMenuStripTagsCopy.Name = "contextMenuStripTagsCopy";
-            contextMenuStripTagsCopy.Size = new Size(103, 26);
-            // 
-            // copyToolStripMenuItem
-            // 
-            copyToolStripMenuItem.Name = "copyToolStripMenuItem";
-            copyToolStripMenuItem.Size = new Size(102, 22);
-            copyToolStripMenuItem.Text = "Copy";
-            copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
+            tagsListView.MouseDown += listView_MouseDownCopy;
             // 
             // tabPage3
             // 
-            tabPage3.Controls.Add(stringTablesTreeView);
+            tabPage3.Controls.Add(stringTableTreeView);
             tabPage3.Location = new Point(4, 24);
             tabPage3.Name = "tabPage3";
             tabPage3.Padding = new Padding(3);
@@ -513,12 +516,14 @@ namespace Call_of_Duty_FastFile_Editor
             tabPage3.Text = "String Tables";
             tabPage3.UseVisualStyleBackColor = true;
             // 
-            // stringTablesTreeView
+            // stringTableTreeView
             // 
-            stringTablesTreeView.Location = new Point(0, 0);
-            stringTablesTreeView.Name = "stringTablesTreeView";
-            stringTablesTreeView.Size = new Size(250, 749);
-            stringTablesTreeView.TabIndex = 0;
+            stringTableTreeView.ContextMenuStrip = universalContextMenu;
+            stringTableTreeView.Location = new Point(0, 0);
+            stringTableTreeView.Name = "stringTableTreeView";
+            stringTableTreeView.Size = new Size(250, 749);
+            stringTableTreeView.TabIndex = 0;
+            stringTableTreeView.MouseDown += treeView_MouseDownCopy;
             // 
             // tabPageMapEnt
             // 
@@ -533,10 +538,12 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // treeViewMapEnt
             // 
+            treeViewMapEnt.ContextMenuStrip = universalContextMenu;
             treeViewMapEnt.Location = new Point(0, 0);
             treeViewMapEnt.Name = "treeViewMapEnt";
             treeViewMapEnt.Size = new Size(307, 749);
             treeViewMapEnt.TabIndex = 2;
+            treeViewMapEnt.MouseDown += treeView_MouseDownCopy;
             // 
             // MainWindowForm
             // 
@@ -544,25 +551,25 @@ namespace Call_of_Duty_FastFile_Editor
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1450, 827);
             Controls.Add(tabControl1);
-            Controls.Add(statusStrip1);
-            Controls.Add(menuStrip1);
-            MainMenuStrip = menuStrip1;
+            Controls.Add(statusStripBottom);
+            Controls.Add(menuStripTopToolbar);
+            MainMenuStrip = menuStripTopToolbar;
             Name = "MainWindowForm";
             contextMenuStripRawFiles.ResumeLayout(false);
-            menuStrip1.ResumeLayout(false);
-            menuStrip1.PerformLayout();
+            menuStripTopToolbar.ResumeLayout(false);
+            menuStripTopToolbar.PerformLayout();
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
-            statusStrip1.ResumeLayout(false);
-            statusStrip1.PerformLayout();
+            statusStripBottom.ResumeLayout(false);
+            statusStripBottom.PerformLayout();
             tabControl1.ResumeLayout(false);
+            universalContextMenu.ResumeLayout(false);
             rawFilesPage.ResumeLayout(false);
             tabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
             tabPage1.ResumeLayout(false);
-            contextMenuStripTagsCopy.ResumeLayout(false);
             tabPage3.ResumeLayout(false);
             tabPageMapEnt.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
@@ -573,11 +580,11 @@ namespace Call_of_Duty_FastFile_Editor
         #endregion
 
         private TreeView filesTreeView;
-        private MenuStrip menuStrip1;
+        private MenuStrip menuStripTopToolbar;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem openFastFileToolStripMenuItem;
         private SplitContainer splitContainer1;
-        private StatusStrip statusStrip1;
+        private StatusStrip statusStripBottom;
         private ToolStripStatusLabel loadedFileNameStatusLabel;
         private ToolStripStatusLabel selectedItemStatusLabel;
         private ToolStripStatusLabel toolStripStatusLabel1;
@@ -622,9 +629,9 @@ namespace Call_of_Duty_FastFile_Editor
         private BindingSource bindingSource1;
         private TabPage tabPage1;
         private TabPage tabPage3;
-        private TreeView stringTablesTreeView;
+        private TreeView stringTableTreeView;
         private ListView tagsListView;
-        private ContextMenuStrip contextMenuStripTagsCopy;
+        private ContextMenuStrip universalContextMenu;
         private ToolStripMenuItem copyToolStripMenuItem;
         private TabPage tabPageMapEnt;
         private TreeView treeViewMapEnt;
