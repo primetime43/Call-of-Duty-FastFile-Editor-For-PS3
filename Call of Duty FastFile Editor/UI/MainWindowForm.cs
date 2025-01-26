@@ -854,7 +854,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            // If found, parse the block
+            // Parse entities from that offset
             List<MapEntity> mapTest = MapEntityOperations.ParseMapEntsAtOffset(_openedFastFile.OpenedFastFileZone, offset);
 
             if (mapTest.Count == 0)
@@ -864,22 +864,42 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            // 3) (Optional) Sort mapTest by "classname" alphabetically
+            // Sort by "classname"
             mapTest.Sort((entA, entB) =>
             {
                 entA.Properties.TryGetValue("classname", out string aClass);
                 entB.Properties.TryGetValue("classname", out string bClass);
-
                 aClass ??= "";
                 bClass ??= "";
-
                 return string.Compare(aClass, bClass, StringComparison.OrdinalIgnoreCase);
             });
 
-            // 4) Clear existing TreeView nodes
+            // Clear the TreeView
             treeViewMapEnt.Nodes.Clear();
 
-            // 5) Populate the TreeView
+            // Attempt to get both the map size and its offset
+            var sizeInfo = MapEntityOperations.GetMapDataSizeAndOffset(_openedFastFile.OpenedFastFileZone, mapTest);
+            if (sizeInfo.HasValue)
+            {
+                // Destructure the tuple
+                (int mapSize, int offsetOfSize) = sizeInfo.Value;
+
+                // Create a top-level node for the map size
+                TreeNode sizeNode = new TreeNode($"Map Data Size = {mapSize} bytes (dec)");
+                treeViewMapEnt.Nodes.Add(sizeNode);
+
+                // Create another node for where that size is stored (in hex)
+                string sizeOffsetHex = offsetOfSize.ToString("X");
+                TreeNode sizeOffsetNode = new TreeNode($"Map Size Offset = 0x{sizeOffsetHex}");
+                treeViewMapEnt.Nodes.Add(sizeOffsetNode);
+            }
+            else
+            {
+                // If we can't find the size, optionally show a node or just skip
+                treeViewMapEnt.Nodes.Add("Could not detect map size.");
+            }
+
+            // Now add each entity
             for (int i = 0; i < mapTest.Count; i++)
             {
                 MapEntity entity = mapTest[i];

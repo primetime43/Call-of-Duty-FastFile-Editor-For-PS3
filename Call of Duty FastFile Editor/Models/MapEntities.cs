@@ -305,5 +305,44 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
             return entities;
         }
+
+        /// <summary>
+        /// Attempts to read the .map data size (4 bytes big-endian) located
+        /// immediately before the earliest '{' among all entities.
+        /// Returns a tuple: (mapSize, offsetOfSize).
+        /// If not found/invalid, returns null.
+        /// </summary>
+        public static (int mapSize, int offsetOfSize)? GetMapDataSizeAndOffset(Zone zone, List<MapEntity> entities)
+        {
+            if (zone?.FileData == null || entities == null || entities.Count == 0)
+                return null;
+
+            byte[] data = zone.FileData;
+
+            // 1) Find the earliest offset where a '{' was found
+            int minOffset = int.MaxValue;
+            foreach (var ent in entities)
+            {
+                if (ent.SourceOffset < minOffset)
+                    minOffset = ent.SourceOffset;
+            }
+
+            // The size field is presumably 4 bytes before that offset
+            int sizeOffset = minOffset - 4;
+            if (sizeOffset < 0 || sizeOffset + 3 >= data.Length)
+                return null; // out of range
+
+            // 2) Read 4 bytes big-endian => mapSize
+            int mapSize = (data[sizeOffset] << 24)
+                        | (data[sizeOffset + 1] << 16)
+                        | (data[sizeOffset + 2] << 8)
+                        | (data[sizeOffset + 3]);
+
+            // Basic validity check
+            if (mapSize <= 0 || mapSize > data.Length)
+                return null;
+
+            return (mapSize, sizeOffset);
+        }
     }
 }
