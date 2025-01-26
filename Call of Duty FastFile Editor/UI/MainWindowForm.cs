@@ -874,20 +874,24 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 MapEntity entity = mapTest[i];
 
-                // Use "classname" or a fallback label
+                // Parent label from "classname" or fallback
                 string parentLabel = entity.Properties.TryGetValue("classname", out string classNameVal)
                     ? classNameVal
                     : $"Entity {i}";
 
                 TreeNode parentNode = new TreeNode(parentLabel);
 
-                // For each key-value pair (except "classname"), add a child node
+                // Show offset in hex
+                string offsetHex = entity.SourceOffset.ToString("X");
+                parentNode.Nodes.Add($"Offset = 0x{offsetHex}");
+
+                // Then the key-value pairs
                 foreach (var kvp in entity.Properties)
                 {
-                    if (kvp.Key.Equals("classname", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    parentNode.Nodes.Add(new TreeNode($"{kvp.Key} = {kvp.Value}"));
+                    if (!kvp.Key.Equals("classname", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parentNode.Nodes.Add($"{kvp.Key} = {kvp.Value}");
+                    }
                 }
 
                 treeViewMapEnt.Nodes.Add(parentNode);
@@ -925,6 +929,7 @@ namespace Call_of_Duty_FastFile_Editor
                     FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
                     _hasUnsavedChanges = false; // Reset the flag after saving
                     filesTreeView.Nodes.Clear();
+                    treeViewMapEnt.Nodes.Clear();
                     stringTablesTreeView.Nodes.Clear();
                     tagsListView.Items.Clear();
                     dataGridView1.DataSource = null;

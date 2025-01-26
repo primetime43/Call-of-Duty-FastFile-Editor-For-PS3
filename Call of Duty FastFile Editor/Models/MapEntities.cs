@@ -11,6 +11,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
     public class MapEntity
     {
         /// <summary>
+        /// The file offset where this entity’s '{' was found.
+        /// </summary>
+        public int SourceOffset { get; set; }
+
+        /// <summary>
         /// Stores key-value pairs (e.g. "classname" -> "worldspawn").
         /// </summary>
         public Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
@@ -37,34 +42,27 @@ namespace Call_of_Duty_FastFile_Editor.Models
             if (zoneBytes == null)
                 return results;
 
-            // Check that we can read at least 4 bytes at 'offset'
             if (offset < 0 || offset + 4 > zoneBytes.Length)
                 return results;
 
-            // 1) Read 4 bytes as big-endian
-            int length = (zoneBytes[offset + 0] << 24)
+            // 1) Read 4 bytes as big-endian => length
+            int length = (zoneBytes[offset] << 24)
                        | (zoneBytes[offset + 1] << 16)
                        | (zoneBytes[offset + 2] << 8)
                        | (zoneBytes[offset + 3]);
 
-            // Basic validity checks
-            if (length <= 0 || length > zoneBytes.Length)
+            if (length <= 0 || offset + 4 + length > zoneBytes.Length)
                 return results;
 
+            // 2) Extract the raw chunk of data
             int startOfMapData = offset + 4;
-            int endOfMapData = startOfMapData + length;
-            if (endOfMapData > zoneBytes.Length)
-                return results; // would run off the end
-
-            // 2) Extract the map data bytes
             byte[] mapDataBytes = new byte[length];
             Buffer.BlockCopy(zoneBytes, startOfMapData, mapDataBytes, 0, length);
 
-            // 3) Convert to text (usually ASCII in CoD zone files)
-            string mapText = Encoding.ASCII.GetString(mapDataBytes);
+            // 3) Parse it with our new offset-aware parser
+            //    We pass in baseOffset = startOfMapData so that i=0 in the chunk lines up with offset+4 in the file.
+            results = ParseMapWithOffsets(mapDataBytes, startOfMapData);
 
-            // 4) Parse the map text (blocks { ... })
-            results = ParseMapString(mapText);
             return results;
         }
 
@@ -134,6 +132,86 @@ namespace Call_of_Duty_FastFile_Editor.Models
             }
 
             return -1; // If we exhaust all runs/windows without success
+        }
+
+        private static List<MapEntity> ParseMapWithOffsets(byte[] mapDataBytes, int baseOffset)
+        {
+            // We'll parse the raw chunk, looking for '{' or '}' and building lines in-between.
+            // This gives us exact control over offsets.
+            List<MapEntity> entities = new List<MapEntity>();
+            MapEntity currentEntity = null;
+            bool insideBraces = false;
+
+            // We'll accumulate text for each "line" until we hit '\r' or '\n'
+            // Then we test that line for "key" "value".
+            StringBuilder lineBuffer = new StringBuilder();
+
+            int length = mapDataBytes.Length;
+            for (int i = 0; i < length; i++)
+            {
+                byte b = mapDataBytes[i];
+
+                if (b == '{')
+                {
+                    // Start a new entity right here
+                    currentEntity = new MapEntity
+                    {
+                        SourceOffset = baseOffset + i
+                    };
+                    insideBraces = true;
+                }
+                else if (b == '}')
+                {
+                    // Close out the current entity (if it has properties)
+                    if (currentEntity != null && currentEntity.Properties.Count > 0)
+                    {
+                        entities.Add(currentEntity);
+                    }
+                    currentEntity = null;
+                    insideBraces = false;
+                }
+                else if (b == '\r' || b == '\n')
+                {
+                    // We reached the end of a line
+                    string line = lineBuffer.ToString().Trim();
+                    lineBuffer.Clear();
+
+                    if (insideBraces && currentEntity != null && line.Length > 0)
+                    {
+                        // Attempt a "key" "value" match
+                        var match = LinePattern.Match(line);
+                        if (match.Success)
+                        {
+                            string key = match.Groups[1].Value;
+                            string value = match.Groups[2].Value;
+                            currentEntity.Properties[key] = value;
+                        }
+                    }
+                }
+                else
+                {
+                    // Just accumulate this character for the current line
+                    lineBuffer.Append((char)b);
+                }
+            }
+
+            // At the end of the chunk, if there's a partial line in the buffer, handle it:
+            if (lineBuffer.Length > 0 && insideBraces && currentEntity != null)
+            {
+                string finalLine = lineBuffer.ToString().Trim();
+                if (finalLine.Length > 0)
+                {
+                    var match = LinePattern.Match(finalLine);
+                    if (match.Success)
+                    {
+                        string key = match.Groups[1].Value;
+                        string value = match.Groups[2].Value;
+                        currentEntity.Properties[key] = value;
+                    }
+                }
+            }
+
+            return entities;
         }
 
         private static List<int> FindRunsOfFF(byte[] data, int minRunLength)
