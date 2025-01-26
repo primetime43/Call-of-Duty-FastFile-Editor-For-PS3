@@ -795,13 +795,22 @@ namespace Call_of_Duty_FastFile_Editor
             // Now tagsInfo.TagEntries holds all entries
             foreach (var entry in tagsInfo.TagEntries)
             {
-                // Create a row with 3 columns
+                // Create a row with 3 columns:
+                // 1) Tag
+                // 2) Decimal offset
+                // 3) Hex offset (with 0x prefix)
                 var lvi = new ListViewItem(entry.Tag);
+
+                // Decimal offset
                 lvi.SubItems.Add(entry.OffsetDec.ToString());
-                lvi.SubItems.Add(entry.OffsetHex);
+
+                // Hex offset (for example "0x1AC4AC0")
+                string hexString = $"0x{entry.OffsetDec:X}";
+                lvi.SubItems.Add(hexString);
 
                 tagsListView.Items.Add(lvi);
             }
+
             tagsListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
@@ -841,7 +850,7 @@ namespace Call_of_Duty_FastFile_Editor
             int offset = MapEntityOperations.FindMapHeaderOffsetViaFF(_openedFastFile.OpenedFastFileZone);
             if (offset == -1)
             {
-                MessageBox.Show("No map header found near large FF blocks.");
+                //MessageBox.Show("No map header found near large FF blocks.");
                 return;
             }
 
