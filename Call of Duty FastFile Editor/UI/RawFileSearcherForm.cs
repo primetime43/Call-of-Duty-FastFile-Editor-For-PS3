@@ -38,21 +38,30 @@ namespace Call_of_Duty_FastFile_Editor.UI
 
             if (string.IsNullOrWhiteSpace(searchText))
             {
-                Console.WriteLine("Search text cannot be empty.");
+                MessageBox.Show("Search text cannot be empty.", "Search Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return results;
             }
 
             foreach (var fileNode in _loadedRawFiles)
             {
-                if (!string.IsNullOrEmpty(fileNode.RawFileContent) && fileNode.RawFileContent.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(fileNode.RawFileContent))
                 {
-                    int index = fileNode.RawFileContent.IndexOf(searchText, StringComparison.OrdinalIgnoreCase);
-                    results.Add(new SearchResult
+                    string content = fileNode.RawFileContent;
+                    int startIndex = 0;
+
+                    // Find all occurrences of searchText within the file content
+                    while ((startIndex = content.IndexOf(searchText, startIndex, StringComparison.OrdinalIgnoreCase)) != -1)
                     {
-                        FileName = fileNode.FileName,
-                        Offset = index,
-                        MatchedText = searchText
-                    });
+                        results.Add(new SearchResult
+                        {
+                            FileName = fileNode.FileName,
+                            Offset = startIndex,
+                            MatchedText = searchText
+                        });
+
+                        // Move startIndex forward to continue searching after this match
+                        startIndex += searchText.Length;
+                    }
                 }
             }
 
