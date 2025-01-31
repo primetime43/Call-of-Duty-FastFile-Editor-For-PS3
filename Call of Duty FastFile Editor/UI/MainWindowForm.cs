@@ -794,15 +794,6 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void PopulateTags()
         {
-            tagsListView.View = View.Details;
-            tagsListView.Columns.Clear();
-            tagsListView.Items.Clear();
-            tagsListView.MultiSelect = true;
-            tagsListView.FullRowSelect = true;
-            tagsListView.Columns.Add("Tag", 100);
-            tagsListView.Columns.Add("Offset (Dec)", 100);
-            tagsListView.Columns.Add("Offset (Hex)", 100);
-
             // Fetch the results
             var tagsInfo = TagOperations.FindTags(_openedFastFile.OpenedFastFileZone);
 
@@ -811,6 +802,20 @@ namespace Call_of_Duty_FastFile_Editor
 
             if (tagsInfo == null)
                 return;
+
+            tagsListView.View = View.Details;
+            tagsListView.Columns.Clear();
+            tagsListView.Items.Clear();
+            tagsListView.MultiSelect = true;
+            tagsListView.FullRowSelect = true;
+            tagsListView.Columns.Add("Tag (" + tagsInfo.TagEntries.Count + ")", 100);
+            tagsListView.Columns.Add("Offset (Dec)", 100);
+            tagsListView.Columns.Add("Offset (Hex)", 100);
+
+            // Sort the TagEntries by OffsetDec in ascending order
+            var sortedTagEntries = tagsInfo.TagEntries
+                .OrderBy(entry => entry.OffsetDec)
+                .ToList();
 
             // Now tagsInfo.TagEntries holds all entries
             foreach (var entry in tagsInfo.TagEntries)

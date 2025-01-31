@@ -499,7 +499,6 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.Location = new Point(0, 0);
             tagsListView.Name = "tagsListView";
             tagsListView.Size = new Size(487, 750);
-            tagsListView.Sorting = SortOrder.Ascending;
             tagsListView.TabIndex = 0;
             tagsListView.UseCompatibleStateImageBehavior = false;
             tagsListView.View = View.Details;
