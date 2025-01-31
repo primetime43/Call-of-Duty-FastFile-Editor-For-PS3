@@ -65,7 +65,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void openFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if(_openedFastFile != null)
+            if (_openedFastFile != null)
             {
                 CloseFastFileAndCleanUp();
             }
@@ -408,39 +408,6 @@ namespace Call_of_Duty_FastFile_Editor
                         MessageBox.Show($"Failed to save file: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Shows information about the file structure in a new form.
-        /// </summary>
-        private void fileStructureInfoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (filesTreeView.SelectedNode != null)
-            {
-                if (filesTreeView.SelectedNode.Tag is int position)
-                {
-                    string fileName = filesTreeView.SelectedNode.Text; // Get the selected file name
-                    var selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
-
-                    // Additional logic for handling the selected file node
-                    if (selectedFileNode != null)
-                    {
-                        new FileStructureInfoForm(selectedFileNode).Show();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Selected file node not found in file entry nodes.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-            else
-            {
-                MessageBox.Show("No node is selected.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -1049,6 +1016,50 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 MessageBox.Show($"Failed to close fastfile: {ex.Message}", "Close Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        /// <summary>
+        /// Shows information about the file structure in a new form.
+        /// </summary>
+        private void fileStructureInfoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesTreeView.SelectedNode != null)
+            {
+                if (filesTreeView.SelectedNode.Tag is int position)
+                {
+                    string fileName = filesTreeView.SelectedNode.Text; // Get the selected file name
+                    var selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+
+                    // Additional logic for handling the selected file node
+                    if (selectedFileNode != null)
+                    {
+                        new FileStructureInfoForm(selectedFileNode).Show();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Selected file node not found in file entry nodes.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("No node is selected.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Opens a Form to search for text throughout all of the raw files
+        /// </summary>
+        private void searchRawFileTxtMenuItem_Click(object sender, EventArgs e)
+        {
+            if(rawFileNodes?.Count > 0)
+                new RawFileSearcherForm(rawFileNodes).Show();
+            else
+                MessageBox.Show("No raw files found to search through.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

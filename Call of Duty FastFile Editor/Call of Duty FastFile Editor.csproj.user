@@ -4,6 +4,9 @@
     <Compile Update="UI\FileStructureInfoForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="UI\RawFileSearcherForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="UI\MainWindowForm.cs">
       <SubType>Form</SubType>
     </Compile>
