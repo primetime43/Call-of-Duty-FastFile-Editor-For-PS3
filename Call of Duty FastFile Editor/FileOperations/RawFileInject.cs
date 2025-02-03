@@ -60,48 +60,59 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             }
         }
 
-        // this would be for expanding the size of original raw file content & sizes (not custom raw files)
-        // not yet implemented
-        public static void ExpandAndUpdateFileContent(string zoneFilePath, RawFileNode existingRawFileNode, RawFileNode newRawFileNode, string newContent)
+        /// <summary>
+        /// Increases the size of the raw file entry within the zone file by shifting data,
+        /// writing the new content, updating the raw file node’s MaxSize,
+        /// and then increasing the zone file header’s size by the same delta.
+        /// </summary>
+        /// <param name="zoneFilePath">Full path of the decompressed zone file.</param>
+        /// <param name="rawFileNode">The raw file node to be expanded.</param>
+        /// <param name="newContent">The new raw file content as a byte array.</param>
+        public static void IncreaseSize(string zoneFilePath, RawFileNode rawFileNode, byte[] newContent)
         {
-            int oldSize = newRawFileNode.MaxSize;
+            int oldSize = rawFileNode.MaxSize;
             int newSize = newContent.Length;
 
-            // newSize > oldSize, we must shift subsequent data
-            int difference = newSize - oldSize;
-
-            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            // If the new size is not greater, just update in-place.
+            if (newSize <= oldSize)
             {
-                // move all the data that starts after "rawFileNode.CodeStartPosition + oldSize"
-                // to a position that is 'difference' bytes further.
+                UpdateFileContent(zoneFilePath, rawFileNode, newContent);
+                return;
+            }
 
-                long dataToShiftStart = newRawFileNode.CodeStartPosition + oldSize;
-                long dataToShiftEnd = fs.Length; // shift everything until EOF
-                long dataToShiftLength = dataToShiftEnd - dataToShiftStart;
+            int sizeIncrease = newSize - oldSize;
 
-                // If there's data after the old file chunk:
-                if (dataToShiftLength > 0)
+            // Shift the zone file data (if any) that comes after the current raw file content.
+            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite))
+            {
+                long shiftStart = rawFileNode.CodeStartPosition + oldSize;
+                long bytesToShift = fs.Length - shiftStart;
+                if (bytesToShift > 0)
                 {
-                    // We read that chunk into memory (or do a chunked approach)
-                    fs.Seek(dataToShiftStart, SeekOrigin.Begin);
-                    byte[] tailData = new byte[dataToShiftLength];
-                    fs.Read(tailData, 0, tailData.Length);
+                    // Read the data to be shifted
+                    fs.Seek(shiftStart, SeekOrigin.Begin);
+                    byte[] buffer = new byte[bytesToShift];
+                    fs.Read(buffer, 0, buffer.Length);
 
-                    // Move the stream pointer to where that data now belongs
-                    fs.Seek(dataToShiftStart + difference, SeekOrigin.Begin);
-
-                    // Write the tail data
-                    fs.Write(tailData, 0, tailData.Length);
+                    // Write it back starting at the new shifted position
+                    fs.Seek(shiftStart + sizeIncrease, SeekOrigin.Begin);
+                    fs.Write(buffer, 0, buffer.Length);
                 }
 
-                // Now the file is large enough to hold the bigger chunk
-                // Write the new content
-                fs.Seek(newRawFileNode.CodeStartPosition, SeekOrigin.Begin);
-                //fs.Write(newContent.tob, 0, newContent.Length);
-
-                // Update the 4-byte size in the zone file header
-                //UpdateZoneHeaderSize(zoneFilePath, rawFileNode.StartOfFileHeader, newSize);
+                // Write the new raw file content into its spot.
+                fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
+                fs.Write(newContent, 0, newSize);
             }
+
+            // Update the RawFileNode properties.
+            rawFileNode.MaxSize = newSize;
+            rawFileNode.RawFileBytes = newContent;
+            rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
+
+            // Now update the zone file header’s size.
+            uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
+            uint newZoneSize = currentZoneSize + (uint)sizeIncrease;
+            Zone.WriteZoneFileSize(zoneFilePath, newZoneSize);
         }
 
         // Maybe move this elsewhere

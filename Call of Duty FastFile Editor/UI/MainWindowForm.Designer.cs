@@ -78,6 +78,7 @@ namespace Call_of_Duty_FastFile_Editor
             tabPageMapEnt = new TabPage();
             treeViewMapEnt = new TreeView();
             bindingSource1 = new BindingSource(components);
+            increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -337,7 +338,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // rawFileToolsMenuItem
             // 
-            rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { fileStructureInfoToolStripMenuItem, searchRawFileTxtMenuItem });
+            rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { increaseRawFileSizeToolStripMenuItem, fileStructureInfoToolStripMenuItem, searchRawFileTxtMenuItem });
             rawFileToolsMenuItem.Name = "rawFileToolsMenuItem";
             rawFileToolsMenuItem.Size = new Size(195, 24);
             rawFileToolsMenuItem.Text = "Raw File Tools";
@@ -345,14 +346,14 @@ namespace Call_of_Duty_FastFile_Editor
             // fileStructureInfoToolStripMenuItem
             // 
             fileStructureInfoToolStripMenuItem.Name = "fileStructureInfoToolStripMenuItem";
-            fileStructureInfoToolStripMenuItem.Size = new Size(212, 24);
-            fileStructureInfoToolStripMenuItem.Text = "File Structure";
+            fileStructureInfoToolStripMenuItem.Size = new Size(222, 24);
+            fileStructureInfoToolStripMenuItem.Text = "Raw File Structure";
             fileStructureInfoToolStripMenuItem.Click += fileStructureInfoToolStripMenuItem_Click;
             // 
             // searchRawFileTxtMenuItem
             // 
             searchRawFileTxtMenuItem.Name = "searchRawFileTxtMenuItem";
-            searchRawFileTxtMenuItem.Size = new Size(212, 24);
+            searchRawFileTxtMenuItem.Size = new Size(222, 24);
             searchRawFileTxtMenuItem.Text = "Search Raw File Text";
             searchRawFileTxtMenuItem.Click += searchRawFileTxtMenuItem_Click;
             // 
@@ -560,6 +561,12 @@ namespace Call_of_Duty_FastFile_Editor
             treeViewMapEnt.TabIndex = 2;
             treeViewMapEnt.MouseDown += treeView_MouseDownCopy;
             // 
+            // increaseRawFileSizeToolStripMenuItem
+            // 
+            increaseRawFileSizeToolStripMenuItem.Name = "increaseRawFileSizeToolStripMenuItem";
+            increaseRawFileSizeToolStripMenuItem.Size = new Size(222, 24);
+            increaseRawFileSizeToolStripMenuItem.Text = "Increase Raw File Size";
+            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -652,5 +659,6 @@ namespace Call_of_Duty_FastFile_Editor
         private TabPage tabPageMapEnt;
         private TreeView treeViewMapEnt;
         private ToolStripMenuItem rawFileToolsMenuItem;
+        private ToolStripMenuItem increaseRawFileSizeToolStripMenuItem;
     }
 }

@@ -76,9 +76,9 @@
             maxFileSizeLabel.AutoSize = true;
             maxFileSizeLabel.Location = new Point(12, 195);
             maxFileSizeLabel.Name = "maxFileSizeLabel";
-            maxFileSizeLabel.Size = new Size(98, 20);
+            maxFileSizeLabel.Size = new Size(130, 20);
             maxFileSizeLabel.TabIndex = 3;
-            maxFileSizeLabel.Text = "Max File Size:";
+            maxFileSizeLabel.Text = "Raw File Max Size:";
             // 
             // fileSizePositionLabel
             // 

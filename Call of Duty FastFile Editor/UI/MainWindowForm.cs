@@ -595,7 +595,7 @@ namespace Call_of_Duty_FastFile_Editor
                                 // write the new file content to the zone at the existing offset
                                 // and make sure to append the extra length, so it shouldn't overwrite existing
                                 // code that comes after it. Also, update the size in the header.
-                                RawFileInject.ExpandAndUpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, newRawFileNode, newRawFileNode.RawFileContent);
+                                RawFileInject.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, newRawFileNode.RawFileBytes);
                             }
                             else
                             {
