@@ -97,12 +97,13 @@ namespace Call_of_Duty_FastFile_Editor.IO
         }
 
         /// <summary>
-        /// Extracts the file entries from a FastFile (.ff) zone with their size and name.
+        /// Extracts the raw file entries from the FastFile (.ff) zone with their size and name.
         /// Setting raw file objects to the list of extracted file entries.
+        /// THIS IS USING PATTERN MATCHING (don't use eventually)
         /// </summary>
         /// <param name="zoneFilePath"></param>
         /// <returns></returns>
-        public static List<RawFileNode> ExtractZoneFileEntriesWithSizeAndName(string zoneFilePath)
+        public static List<RawFileNode> ExtractRawFilesSizeAndName(string zoneFilePath)
         {
             List<RawFileNode> rawFileNodes = new List<RawFileNode>();
             byte[] fileData = File.ReadAllBytes(zoneFilePath);

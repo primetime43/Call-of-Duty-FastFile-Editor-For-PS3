@@ -125,7 +125,7 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         ///   [ ASCII filename + 0x00 ]
         ///   [ raw content bytes (size) ]
         /// 
-        /// This matches the format expected by ExtractZoneFileEntriesWithSizeAndName.
+        /// This matches the format expected by ExtractRawFilesSizeAndName.
         /// </summary>
         /// <param name="fileName">e.g. "myfile.gsc" or "myfile.cfg"</param>
         /// <param name="fileContent">Raw content of the file.</param>

@@ -100,8 +100,17 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
-                    _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
-                    rawFileNodes = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles;
+
+                    // Here is where we want to do the Zone Assets mapping
+                    // Instead of only setting the raw data, call LoadZoneAssets() to also map the asset records.
+                    _openedFastFile.OpenedFastFileZone.LoadZoneAssets();
+
+                    Console.Write(_openedFastFile.OpenedFastFileZone.ZoneFileAssets);
+
+                    Console.WriteLine("Zone file decompressed successfully.");
+
+                    //_openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                    //rawFileNodes = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles;
                 }
                 catch (Exception ex)
                 {
@@ -111,14 +120,12 @@ namespace Call_of_Duty_FastFile_Editor
 
                 try
                 {
-                    _openedFastFile.OpenedFastFileZone.SetZoneData();
-                    _openedFastFile.OpenedFastFileZone.SetZoneOffsets();
                     // Move these eventually and change how they're loaded
-                    PopulateTreeView();
+                    //PopulateTreeView();
                     PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
-                    PopulateTags();
-                    PopulateStringTable();
-                    PopulateMapEntities();
+                    //PopulateTags();
+                    //PopulateStringTable();
+                    //PopulateMapEntities();
                 }
                 catch (EndOfStreamException ex)
                 {
@@ -573,7 +580,7 @@ namespace Call_of_Duty_FastFile_Editor
                     string rawFileName = Path.GetFileName(selectedFilePath);
                     byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
-                    RawFileNode newRawFileNode = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(selectedFilePath)[0];
+                    RawFileNode newRawFileNode = FastFileProcessing.ExtractRawFilesSizeAndName(selectedFilePath)[0];
 
                     string actualDiskFileName = Path.GetFileName(selectedFilePath);
                     string rawFileNameFromHeader = newRawFileNode.FileName;
@@ -621,7 +628,7 @@ namespace Call_of_Duty_FastFile_Editor
                             RawFileInject.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
-                            rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
+                            rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
@@ -648,7 +655,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     // 2) Re-extract the entire zone to update rawFileNodes
-                    rawFileNodes = FastFileProcessing.ExtractZoneFileEntriesWithSizeAndName(_openedFastFile.ZoneFilePath);
+                    rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();
@@ -741,7 +748,9 @@ namespace Call_of_Duty_FastFile_Editor
         private void PopulateZoneValuesDataGridView(Zone zone)
         {
             if (zone == null || zone.DecimalValues == null)
-                return;
+            {
+                _openedFastFile.OpenedFastFileZone.SetZoneOffsets();
+            }
 
             // Convert the dictionary to a list of objects with matching property names
             var dataSource = zone.DecimalValues.Select(kvp => new

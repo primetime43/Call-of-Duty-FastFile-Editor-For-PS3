@@ -24,7 +24,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public static List<StringTable> FindCsvStringTables(Zone zone)
         {
-            byte[] zoneBytes = zone.FileData;
+            byte[] zoneBytes = zone.ZoneFileData;
             List<StringTable> tables = new List<StringTable>();
 
             // We'll scan for 0xFF FF FF FF

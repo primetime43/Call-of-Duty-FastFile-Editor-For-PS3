@@ -49,7 +49,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public static Tags? FindTags(Zone zone)
         {
-            byte[] zoneBytes = zone.FileData;
+            byte[] zoneBytes = zone.ZoneFileData;
 
             // 1) Locate the block of 0xFFs
             int blockStart = FindLargeFFBlock(zoneBytes);

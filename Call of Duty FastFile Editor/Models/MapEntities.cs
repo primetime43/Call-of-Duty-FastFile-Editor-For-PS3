@@ -33,12 +33,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
         ///   [length bytes of ASCII text containing { ... }]
         /// Returns the parsed MapEntity objects.
         /// </summary>
-        /// <param name="zone">The zone whose FileData we are scanning.</param>
+        /// <param name="zone">The zone whose ZoneFileData we are scanning.</param>
         /// <param name="offset">Offset where the 4-byte big-endian size is located.</param>
         public static List<MapEntity> ParseMapEntsAtOffset(Zone zone, int offset)
         {
             var results = new List<MapEntity>();
-            byte[] zoneBytes = zone.FileData;
+            byte[] zoneBytes = zone.ZoneFileData;
             if (zoneBytes == null)
                 return results;
 
@@ -68,10 +68,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
         public static int FindMapHeaderOffsetViaFF(Zone zone)
         {
-            if (zone?.FileData == null)
+            if (zone?.ZoneFileData == null)
                 return -1;
 
-            byte[] data = zone.FileData;
+            byte[] data = zone.ZoneFileData;
             int fileLength = data.Length;
 
             // 1) Find large runs of 0xFF (say, >= 32 in a row).
@@ -314,10 +314,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public static (int mapSize, int offsetOfSize)? GetMapDataSizeAndOffset(Zone zone, List<MapEntity> entities)
         {
-            if (zone?.FileData == null || entities == null || entities.Count == 0)
+            if (zone?.ZoneFileData == null || entities == null || entities.Count == 0)
                 return null;
 
-            byte[] data = zone.FileData;
+            byte[] data = zone.ZoneFileData;
 
             // 1) Find the earliest offset where a '{' was found
             int minOffset = int.MaxValue;

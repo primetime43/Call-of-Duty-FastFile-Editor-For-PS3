@@ -1,17 +1,29 @@
-﻿using Call_of_Duty_FastFile_Editor.Services;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Text;
-
+using Call_of_Duty_FastFile_Editor.Services;
 
 namespace Call_of_Duty_FastFile_Editor.Models
-{    
+{
     public class Zone
     {
-        public string ZoneFilePath;
+        public Zone(string zoneFilePath)
+        {
+            this.ZoneFilePath = zoneFilePath;
+        }
+
+        // The full path to the zone file.
+        public string ZoneFilePath { get; private set; }
+
         /// <summary>
-        /// Binary data of the zone file
+        /// Binary data of the zone file.
         /// </summary>
-        public byte[] FileData { get; private set; }
+        public byte[] ZoneFileData { get; private set; }
+
+        // Various zone header properties.
         public uint ZoneFileSize { get; set; }
         public uint Unknown1 { get; set; }
         public uint RecordCount { get; set; }
@@ -26,11 +38,22 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint Unknown11 { get; set; }
         public List<uint> TagPtrs { get; set; } = new List<uint>();
 
+        /// <summary>
+        /// A convenience method to load zone data and then map the assets.
+        /// </summary>
+        public void LoadZoneAssets()
+        {
+            SetZoneData();
+            MapZoneAssets();
+        }
+
+        // For display or debugging purposes.
         public Dictionary<string, uint>? DecimalValues { get; private set; }
 
+        // The asset mapping container.
         public ZoneFileAssets ZoneFileAssets { get; set; } = new ZoneFileAssets();
 
-        // Mapping of property names to their respective offsets
+        // Mapping of property names to their offsets (using your Constants).
         private readonly Dictionary<string, int> _zonePropertyOffsets = new Dictionary<string, int>
         {
             { "ZoneFileSize", Constants.ZoneFile.ZoneSizeOffset },
@@ -48,8 +71,15 @@ namespace Call_of_Duty_FastFile_Editor.Models
         };
 
         /// <summary>
-        /// Sets the values of locations in the zone based off the offsets from Constants
-        /// Rename maybe?
+        /// Reads all bytes from the zone file and stores them in ZoneFileData.
+        /// </summary>
+        public void SetZoneData()
+        {
+            this.ZoneFileData = File.ReadAllBytes(ZoneFilePath);
+        }
+
+        /// <summary>
+        /// Reads header values from the zone file using offsets from your Constants.
         /// </summary>
         public void SetZoneOffsets()
         {
@@ -62,21 +92,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
             this.Unknown6 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown6Offset, this);
             this.Unknown7 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown7Offset, this);
             this.Unknown8 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown8Offset, this);
-            //this.TagCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset, this);
             this.TagCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset, this);
-            //this.RecordCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset, this);
             this.Unknown10 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown10Offset, this);
             this.Unknown11 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown11Offset, this);
 
             SetDecimalValues();
-        }
-
-        /// <summary>
-        /// Sets the bytes from the zone to the FileData property
-        /// </summary>
-        public void SetZoneData()
-        {
-            this.FileData = File.ReadAllBytes(ZoneFilePath);
         }
 
         private void SetDecimalValues()
@@ -99,33 +119,74 @@ namespace Call_of_Duty_FastFile_Editor.Models
         }
 
         /// <summary>
-        /// Provides a formatted string of all relevant properties with their decimal values
+        /// Maps asset records from the zone file data.
+        /// The asset pool is stored at the start of the zone file. The RecordCount property (set from the header)
+        /// tells you how many 8‑byte records to read. Each record consists of 4 bytes for the asset type and 4 bytes for additional data.
         /// </summary>
-        /// <returns></returns>
-        public override string ToString()
+        private void MapZoneAssets()
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"ZoneFileSize: {ZoneFileSize}");
-            sb.AppendLine($"Unknown1: {Unknown1}");
-            sb.AppendLine($"RecordCount: {RecordCount}");
-            sb.AppendLine($"Unknown3: {Unknown3}");
-            sb.AppendLine($"Unknown4: {Unknown4}");
-            sb.AppendLine($"Unknown5: {Unknown5}");
-            sb.AppendLine($"Unknown6: {Unknown6}");
-            sb.AppendLine($"Unknown7: {Unknown7}");
-            sb.AppendLine($"Unknown8: {Unknown8}");
-            sb.AppendLine($"TagCount: {TagCount}");
-            sb.AppendLine($"Unknown10: {Unknown10}");
-            sb.AppendLine($"Unknown11: {Unknown11}");
+            if (ZoneFileAssets.ZoneAssetsPool == null)
+                ZoneFileAssets.ZoneAssetsPool = new List<ZoneAssetRecord>();
 
-            return sb.ToString();
+            byte[] data = ZoneFileData;
+            int maxIndex = data.Length - 8; // Enough room for 8 bytes
+
+            for (int i = 0; i <= maxIndex; i++)
+            {
+                // 1) Read the first 4 bytes as big-endian
+                //    (e.g. 00 00 00 22 => rawfile = 0x22)
+                uint rawValue = Utilities.ReadUInt32AtOffset(i, this, isBigEndian: true);
+
+                // 2) See if rawValue matches a valid ZoneFileAssetType
+                //    We cast uint -> int so Enum.IsDefined finds the same integral value
+                if (!Enum.IsDefined(typeof(ZoneFileAssetType), (int)rawValue))
+                    continue;
+
+                // 3) Check the next 4 bytes for FF FF FF FF
+                byte[] paddingBytes = Utilities.GetBytesAtOffset(i + 4, this, 4);
+                bool isPadding =
+                    paddingBytes[0] == 0xFF &&
+                    paddingBytes[1] == 0xFF &&
+                    paddingBytes[2] == 0xFF &&
+                    paddingBytes[3] == 0xFF;
+                if (!isPadding)
+                    continue;
+
+                // If we get here, we have:
+                // [4 bytes => AssetType (big-endian)] + [4 bytes => FF FF FF FF]
+                ZoneAssetRecord record = new ZoneAssetRecord
+                {
+                    AssetType = (ZoneFileAssetType)(int)rawValue,
+                    AdditionalData = 0,
+                    Offset = i
+                };
+
+                ZoneFileAssets.ZoneAssetsPool.Add(record);
+
+                // 4) Skip past these 8 bytes so we don't re‑match overlapping data
+                i += 7; // The for-loop increments by 1, so total skip is 8
+            }
+
+            // Group by type for a per-type count
+            var groupByType = ZoneFileAssets.ZoneAssetsPool
+                .GroupBy(r => r.AssetType)
+                .Select(g => new { AssetType = g.Key, Count = g.Count() });
+
+            // Print a line for each asset type
+            foreach (var group in groupByType)
+            {
+                Debug.WriteLine($"[MapZoneAssets] AssetType {group.AssetType} => {group.Count} record(s).");
+            }
+
+            // Print total
+            Debug.WriteLine($"[MapZoneAssets] Found {ZoneFileAssets.ZoneAssetsPool.Count} asset record(s) total.");
         }
 
         /// <summary>
-        /// Retrieves the offset for a given zone property name.
+        /// Retrieves the offset for a given zone property name in hexadecimal format.
         /// </summary>
         /// <param name="zoneName">The name of the zone property.</param>
-        /// <returns>A string representing the offset in hexadecimal format (e.g., "0x00").</returns>
+        /// <returns>Hexadecimal string (e.g., "0x00") or "N/A" if not found.</returns>
         public string GetZoneOffset(string zoneName)
         {
             if (_zonePropertyOffsets.TryGetValue(zoneName, out int offset))
@@ -148,7 +209,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 fs.Seek(Constants.ZoneFile.ZoneSizeOffset, SeekOrigin.Begin);
                 byte[] sizeBytes = new byte[4];
                 fs.Read(sizeBytes, 0, sizeBytes.Length);
-                // The size is stored in big-endian; reverse if the system is little-endian.
+                // The size is stored in big-endian; reverse if necessary.
                 if (BitConverter.IsLittleEndian)
                     Array.Reverse(sizeBytes);
                 return BitConverter.ToUInt32(sizeBytes, 0);
@@ -160,13 +221,33 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public static void WriteZoneFileSize(string zoneFilePath, uint newZoneSize)
         {
-            // Convert to big-endian.
             byte[] sizeBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((int)newZoneSize));
             using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Write))
             {
                 fs.Seek(Constants.ZoneFile.ZoneSizeOffset, SeekOrigin.Begin);
                 fs.Write(sizeBytes, 0, sizeBytes.Length);
             }
+        }
+
+        /// <summary>
+        /// Returns a formatted string containing the zone header information.
+        /// </summary>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"ZoneFileSize: {ZoneFileSize}");
+            sb.AppendLine($"Unknown1: {Unknown1}");
+            sb.AppendLine($"RecordCount: {RecordCount}");
+            sb.AppendLine($"Unknown3: {Unknown3}");
+            sb.AppendLine($"Unknown4: {Unknown4}");
+            sb.AppendLine($"Unknown5: {Unknown5}");
+            sb.AppendLine($"Unknown6: {Unknown6}");
+            sb.AppendLine($"Unknown7: {Unknown7}");
+            sb.AppendLine($"Unknown8: {Unknown8}");
+            sb.AppendLine($"TagCount: {TagCount}");
+            sb.AppendLine($"Unknown10: {Unknown10}");
+            sb.AppendLine($"Unknown11: {Unknown11}");
+            return sb.ToString();
         }
     }
 }

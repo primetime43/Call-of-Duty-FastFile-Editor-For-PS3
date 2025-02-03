@@ -48,8 +48,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 throw new FileNotFoundException($"The file '{filePath}' does not exist.", filePath);
 
             // Initialize Zone
-            this.OpenedFastFileZone = new Zone();
-            this.OpenedFastFileZone.ZoneFilePath = this.ZoneFilePath;
+            this.OpenedFastFileZone = new Zone(this.ZoneFilePath);
 
             // Initialize FastFileHeader
             this.OpenedFastFileHeader = new FastFileHeader(filePath);
