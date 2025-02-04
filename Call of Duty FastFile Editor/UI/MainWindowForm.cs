@@ -101,9 +101,30 @@ namespace Call_of_Duty_FastFile_Editor
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
 
-                    // Here is where we want to do the Zone Assets mapping
-                    // Instead of only setting the raw data, call LoadZoneAssetsPool() to also map the asset records.
-                    _openedFastFile.OpenedFastFileZone.LoadZoneAssetsPool();
+                    _openedFastFile.OpenedFastFileZone.SetZoneData();
+
+                    // 2) Map the pool + get end offset
+                    int endOffset = _openedFastFile.OpenedFastFileZone.MapZoneAssetsPoolAndGetEndOffset();
+                    // (This also populates _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool)
+
+                    // 3) If we found the pool end offset, parse everything after that
+                    if (endOffset >= 0)
+                    {
+                        int contentStart = endOffset + 8; // jump past the 8 FF bytes
+                        var blocks = _openedFastFile.OpenedFastFileZone.ExtractDataBlocksAfterPool(contentStart);
+
+                        // Now `blocks` has each chunk of data until the next 8xFF or EOF
+                        // You can loop them or store them in a UI list
+                        // e.g., debug:
+                        foreach (var block in blocks)
+                        {
+                            Debug.WriteLine(
+                                $"Block from 0x{block.StartOffset:X} to 0x{block.EndOffset:X}, size {block.Content.Length} bytes."
+                            );
+                            // block.Content is the raw data
+                        }
+                    }
+
                     LoadAssetPoolIntoListView();
 
                     Console.WriteLine("Zone file decompressed successfully.");

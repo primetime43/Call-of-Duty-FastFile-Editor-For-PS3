@@ -38,15 +38,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint Unknown11 { get; set; }
         public List<uint> TagPtrs { get; set; } = new List<uint>();
 
-        /// <summary>
-        /// A convenience method to load zone data and then map the assets.
-        /// </summary>
-        public void LoadZoneAssetsPool()
-        {
-            SetZoneData();
-            MapZoneAssetsPool();
-        }
-
         // For display or debugging purposes.
         public Dictionary<string, uint>? DecimalValues { get; private set; }
 
@@ -119,33 +110,28 @@ namespace Call_of_Duty_FastFile_Editor.Models
         }
 
         /// <summary>
-        /// Maps asset records from the zone file data.
-        /// The asset pool is stored at the start of the zone file. The RecordCount property (set from the header)
-        /// tells you how many 8‑byte records to read. Each record consists of 4 bytes for the asset type and 4 bytes for additional data.
+        /// Like MapZoneAssetsPool, but also returns offset of the 8 consecutive FF bytes that end the pool.
+        /// Returns -1 if it never found the end.
         /// </summary>
-        private void MapZoneAssetsPool()
+        public int MapZoneAssetsPoolAndGetEndOffset()
         {
             if (ZoneFileAssets.ZoneAssetsPool == null)
                 ZoneFileAssets.ZoneAssetsPool = new List<ZoneAssetRecord>();
-
-            // Clear old if needed
             ZoneFileAssets.ZoneAssetsPool.Clear();
 
             byte[] data = ZoneFileData;
             int fileLen = data.Length;
-
-            // We'll walk 'i' manually so we can skip different amounts
             int i = 0;
-
-            // Flag to know if we've found any valid asset record yet
             bool foundAnyAsset = false;
 
-            // We only need to scan while there's enough room for at least 8 bytes
+            // We'll track "endOfPoolOffset" as soon as we detect 8xFF
+            int endOfPoolOffset = -1;
+
             while (i <= fileLen - 8)
             {
-                // If we've already found at least 1 record, check if the next 8 are all FF
                 if (foundAnyAsset)
                 {
+                    // Check if next 8 bytes are all FF
                     byte[] next8 = Utilities.GetBytesAtOffset(i, this, 8);
                     bool allFF = true;
                     for (int j = 0; j < 8; j++)
@@ -156,28 +142,25 @@ namespace Call_of_Duty_FastFile_Editor.Models
                             break;
                         }
                     }
-
-                    // If the next 8 bytes are all 0xFF, end the scan
                     if (allFF)
                     {
-                        Debug.WriteLine("Encountered 8 consecutive FF bytes. Ending asset scan here.");
+                        Debug.WriteLine("Encountered 8 consecutive FF bytes. Asset pool ends here.");
+                        endOfPoolOffset = i; // This is where the pool ended
                         break;
                     }
                 }
 
-                // Read the first 4 bytes as big-endian
+                // Try reading 4 bytes as big-endian => asset type
                 uint rawValue = Utilities.ReadUInt32AtOffset(i, this, isBigEndian: true);
                 int assetTypeInt = (int)rawValue;
 
-                // Check if it matches a valid enum entry
                 if (!Enum.IsDefined(typeof(ZoneFileAssetType), assetTypeInt))
                 {
-                    // Not a valid asset; skip forward by 1 byte and keep looking
                     i++;
                     continue;
                 }
 
-                // If it's a valid asset type, check the next 4 bytes for FF FF FF FF
+                // Next 4 bytes should be FF FF FF FF
                 byte[] paddingBytes = Utilities.GetBytesAtOffset(i + 4, this, 4);
                 bool hasPadding =
                     paddingBytes[0] == 0xFF &&
@@ -187,7 +170,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
                 if (hasPadding)
                 {
-                    // We found a valid "AssetType + FF FF FF FF" record
+                    // We found a valid "AssetType + FF FF FF FF"
                     var record = new ZoneAssetRecord
                     {
                         AssetType = (ZoneFileAssetType)assetTypeInt,
@@ -197,19 +180,15 @@ namespace Call_of_Duty_FastFile_Editor.Models
                     ZoneFileAssets.ZoneAssetsPool.Add(record);
 
                     foundAnyAsset = true;
-
-                    // Jump past these 8 bytes
-                    i += 8;
+                    i += 8; // skip this record
                 }
                 else
                 {
-                    // The first 4 bytes matched an asset type, but the next 4
-                    // weren't FF FF FF FF => not a complete record
                     i++;
                 }
             }
 
-            // Group by type for per-type counts
+            // Print debugging info
             var groupByType = ZoneFileAssets.ZoneAssetsPool
                 .GroupBy(r => r.AssetType)
                 .Select(g => new { AssetType = g.Key, Count = g.Count() });
@@ -218,8 +197,108 @@ namespace Call_of_Duty_FastFile_Editor.Models
             {
                 Debug.WriteLine($"[MapZoneAssetsPool] AssetType {group.AssetType} => {group.Count} record(s).");
             }
-
             Debug.WriteLine($"[MapZoneAssetsPool] Found {ZoneFileAssets.ZoneAssetsPool.Count} asset record(s) total.");
+
+            return endOfPoolOffset;
+        }
+
+        /// <summary>
+        /// After we know where the asset pool ended, we can parse
+        /// everything *after* that offset in separate data blocks
+        /// that each end at 8 consecutive FF.
+        /// </summary>
+        public List<ZoneDataBlock> ExtractDataBlocksAfterPool(int startOffset)
+        {
+            List<ZoneDataBlock> blocks = new List<ZoneDataBlock>();
+
+            byte[] data = ZoneFileData;
+            int fileLen = data.Length;
+            int currentPos = startOffset;
+
+            while (currentPos < fileLen)
+            {
+                // If not enough space left for 8 bytes, the rest is one final block
+                if (currentPos > fileLen - 8)
+                {
+                    var finalBlock = new ZoneDataBlock
+                    {
+                        StartOffset = currentPos,
+                        EndOffset = fileLen - 1,
+                        Content = Utilities.GetBytesAtOffset(currentPos, this, fileLen - currentPos)
+                    };
+                    blocks.Add(finalBlock);
+                    break;
+                }
+
+                // Check next 8 bytes for all 0xFF
+                byte[] next8 = Utilities.GetBytesAtOffset(currentPos, this, 8);
+                bool allFF = true;
+                for (int i = 0; i < 8; i++)
+                {
+                    if (next8[i] != 0xFF)
+                    {
+                        allFF = false;
+                        break;
+                    }
+                }
+
+                if (allFF)
+                {
+                    // We found 8xFF with no preceding data chunk => skip it or break
+                    // We'll skip it and keep scanning
+                    currentPos += 8;
+                    continue;
+                }
+
+                // This is the start of a new data block
+                int blockStart = currentPos;
+                int blockEnd = -1;
+
+                // Move forward until we see 8 FF or run out of file
+                while (currentPos <= fileLen - 8)
+                {
+                    byte[] check8 = Utilities.GetBytesAtOffset(currentPos, this, 8);
+                    bool foundTerminator = true;
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if (check8[j] != 0xFF)
+                        {
+                            foundTerminator = false;
+                            break;
+                        }
+                    }
+                    if (foundTerminator)
+                    {
+                        // block ends right before these 8 FF
+                        blockEnd = currentPos - 1;
+                        break;
+                    }
+                    currentPos++;
+                }
+
+                // If blockEnd is still -1, we never found 8xFF => block goes to the end
+                if (blockEnd == -1)
+                    blockEnd = fileLen - 1;
+
+                int length = (blockEnd - blockStart + 1);
+                byte[] blockData = Utilities.GetBytesAtOffset(blockStart, this, length);
+
+                var block = new ZoneDataBlock
+                {
+                    StartOffset = blockStart,
+                    EndOffset = blockEnd,
+                    Content = blockData
+                };
+                blocks.Add(block);
+
+                // Move currentPos just past the 8 FF, if it exists
+                if (blockEnd < fileLen - 8)
+                    currentPos = blockEnd + 1 + 8;
+                else
+                    currentPos = fileLen;
+            }
+
+            return blocks;
         }
 
         /// <summary>
@@ -290,4 +369,15 @@ namespace Call_of_Duty_FastFile_Editor.Models
             return sb.ToString();
         }
     }
+
+    /// <summary>
+    /// Represents a chunk of data that lies between two 8xFF markers.
+    /// </summary>
+    public class ZoneDataBlock
+    {
+        public int StartOffset { get; set; }
+        public int EndOffset { get; set; }
+        public byte[] Content { get; set; }
+    }
+
 }
