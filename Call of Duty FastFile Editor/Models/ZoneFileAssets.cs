@@ -7,6 +7,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
     {
         public List<ZoneAssetRecord>? ZoneAssetsPool { get; set; } = new List<ZoneAssetRecord>();
 
+        // A dictionary: key = asset type, value = list of records of that type
+        public Dictionary<ZoneFileAssetType, List<ZoneAssetRecord>> AssetsByType { get; set; }
+            = new Dictionary<ZoneFileAssetType, List<ZoneAssetRecord>>();
+
         public List<StringTable> StringTables { get; set; } = new List<StringTable>();
         public List<RawFileNode> RawFiles { get; set; } = new List<RawFileNode>();
         public Tags? Tags { get; set; } = new Tags();
@@ -17,6 +21,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public ZoneFileAssetType AssetType { get; set; }
         public int AdditionalData { get; set; }
         public int Offset { get; set; }
+        public int DataStartOffset { get; set; }
+        public int DataEndOffset { get; set; }
+        public string Name { get; set; }
+        public string Content { get; set; }
+        public int Size { get; set; }
+        public byte[] RawDataBytes { get; set; }
     }
 
     public enum ZoneFileAssetType

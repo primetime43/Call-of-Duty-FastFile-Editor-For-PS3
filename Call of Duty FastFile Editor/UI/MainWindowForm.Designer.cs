@@ -586,7 +586,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             assetPoolListView.Location = new Point(-4, 0);
             assetPoolListView.Name = "assetPoolListView";
-            assetPoolListView.Size = new Size(939, 534);
+            assetPoolListView.Size = new Size(1446, 753);
             assetPoolListView.TabIndex = 0;
             assetPoolListView.UseCompatibleStateImageBehavior = false;
             // 

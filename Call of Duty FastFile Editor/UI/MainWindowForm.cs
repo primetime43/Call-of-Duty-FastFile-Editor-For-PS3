@@ -107,23 +107,7 @@ namespace Call_of_Duty_FastFile_Editor
                     int endOffset = _openedFastFile.OpenedFastFileZone.MapZoneAssetsPoolAndGetEndOffset();
                     // (This also populates _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool)
 
-                    // 3) If we found the pool end offset, parse everything after that
-                    if (endOffset >= 0)
-                    {
-                        int contentStart = endOffset + 8; // jump past the 8 FF bytes
-                        var blocks = _openedFastFile.OpenedFastFileZone.ExtractDataBlocksAfterPool(contentStart);
-
-                        // Now `blocks` has each chunk of data until the next 8xFF or EOF
-                        // You can loop them or store them in a UI list
-                        // e.g., debug:
-                        foreach (var block in blocks)
-                        {
-                            Debug.WriteLine(
-                                $"Block from 0x{block.StartOffset:X} to 0x{block.EndOffset:X}, size {block.Content.Length} bytes."
-                            );
-                            // block.Content is the raw data
-                        }
-                    }
+                    _openedFastFile.OpenedFastFileZone.ScanForAssetData(endOffset);
 
                     LoadAssetPoolIntoListView();
 
@@ -1105,31 +1089,55 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Items.Clear();
             assetPoolListView.Columns.Clear();
 
-            // 2) Make sure we can see details
+            // 2) Use "Details" view with full-row select
             assetPoolListView.View = View.Details;
             assetPoolListView.FullRowSelect = true;
             assetPoolListView.GridLines = true;
 
-            // 3) Add columns (adjust widths and text as desired)
-            assetPoolListView.Columns.Add("Asset Type", 120);
-            assetPoolListView.Columns.Add("Offset (Hex)", 100);
+            // 3) Create columns for all the info you want to see
+            //    Adjust widths / text as you wish
+            assetPoolListView.Columns.Add("Asset Type", 100);
+            assetPoolListView.Columns.Add("Asset Pool Offset (Hex)", 80);
+            assetPoolListView.Columns.Add("Data Start (Hex)", 100);
+            assetPoolListView.Columns.Add("Data End (Hex)", 100);
+            assetPoolListView.Columns.Add("Size", 60);
+            assetPoolListView.Columns.Add("Name", 120);
+            assetPoolListView.Columns.Add("Content Snippet", 200); // optional
 
-            // 4) Loop through each ZoneAssetRecord and add to list
+            // 4) Populate a row (ListViewItem) for each record
             foreach (var record in _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool)
             {
-                // The first column is the main item text
+                // First column: AssetType
                 var lvi = new ListViewItem(record.AssetType.ToString());
 
-                // Add sub-items for the remaining columns
+                // Second column: Offset in hex
                 lvi.SubItems.Add($"0x{record.Offset:X}");
 
-                // (If you have AdditionalData or anything else, add more subitems)
-                // lvi.SubItems.Add(record.AdditionalData.ToString());
+                // Third & Fourth columns: data start/end in hex
+                lvi.SubItems.Add($"0x{record.DataStartOffset:X}");
+                lvi.SubItems.Add($"0x{record.DataEndOffset:X}");
 
+                // Fifth column: size
+                lvi.SubItems.Add(record.Size.ToString());
+
+                // Sixth column: Name (if you parse a name somewhere)
+                lvi.SubItems.Add(record.Name ?? string.Empty);
+
+                // Seventh column: Entire content, no truncation
+                if (!string.IsNullOrEmpty(record.Content))
+                {
+                    lvi.SubItems.Add(record.Content);
+                }
+                else
+                {
+                    lvi.SubItems.Add(string.Empty);
+                }
+
+                // Finally, add the row to the list
                 assetPoolListView.Items.Add(lvi);
             }
 
-            // 5) (Optional) Auto-resize columns to fit content
+            // 5) Auto-resize columns to fit header size or content
             assetPoolListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
     }
