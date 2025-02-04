@@ -128,57 +128,97 @@ namespace Call_of_Duty_FastFile_Editor.Models
             if (ZoneFileAssets.ZoneAssetsPool == null)
                 ZoneFileAssets.ZoneAssetsPool = new List<ZoneAssetRecord>();
 
+            // Clear old if needed
+            ZoneFileAssets.ZoneAssetsPool.Clear();
+
             byte[] data = ZoneFileData;
-            int maxIndex = data.Length - 8; // Enough room for 8 bytes
+            int fileLen = data.Length;
 
-            for (int i = 0; i <= maxIndex; i++)
+            // We'll walk 'i' manually so we can skip different amounts
+            int i = 0;
+
+            // Flag to know if we've found any valid asset record yet
+            bool foundAnyAsset = false;
+
+            // We only need to scan while there's enough room for at least 8 bytes
+            while (i <= fileLen - 8)
             {
-                // 1) Read the first 4 bytes as big-endian
-                //    (e.g. 00 00 00 22 => rawfile = 0x22)
+                // If we've already found at least 1 record, check if the next 8 are all FF
+                if (foundAnyAsset)
+                {
+                    byte[] next8 = Utilities.GetBytesAtOffset(i, this, 8);
+                    bool allFF = true;
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if (next8[j] != 0xFF)
+                        {
+                            allFF = false;
+                            break;
+                        }
+                    }
+
+                    // If the next 8 bytes are all 0xFF, end the scan
+                    if (allFF)
+                    {
+                        Debug.WriteLine("Encountered 8 consecutive FF bytes. Ending asset scan here.");
+                        break;
+                    }
+                }
+
+                // Read the first 4 bytes as big-endian
                 uint rawValue = Utilities.ReadUInt32AtOffset(i, this, isBigEndian: true);
+                int assetTypeInt = (int)rawValue;
 
-                // 2) See if rawValue matches a valid ZoneFileAssetType
-                //    We cast uint -> int so Enum.IsDefined finds the same integral value
-                if (!Enum.IsDefined(typeof(ZoneFileAssetType), (int)rawValue))
+                // Check if it matches a valid enum entry
+                if (!Enum.IsDefined(typeof(ZoneFileAssetType), assetTypeInt))
+                {
+                    // Not a valid asset; skip forward by 1 byte and keep looking
+                    i++;
                     continue;
+                }
 
-                // 3) Check the next 4 bytes for FF FF FF FF
+                // If it's a valid asset type, check the next 4 bytes for FF FF FF FF
                 byte[] paddingBytes = Utilities.GetBytesAtOffset(i + 4, this, 4);
-                bool isPadding =
+                bool hasPadding =
                     paddingBytes[0] == 0xFF &&
                     paddingBytes[1] == 0xFF &&
                     paddingBytes[2] == 0xFF &&
                     paddingBytes[3] == 0xFF;
-                if (!isPadding)
-                    continue;
 
-                // If we get here, we have:
-                // [4 bytes => AssetType (big-endian)] + [4 bytes => FF FF FF FF]
-                ZoneAssetRecord record = new ZoneAssetRecord
+                if (hasPadding)
                 {
-                    AssetType = (ZoneFileAssetType)(int)rawValue,
-                    AdditionalData = 0,
-                    Offset = i
-                };
+                    // We found a valid "AssetType + FF FF FF FF" record
+                    var record = new ZoneAssetRecord
+                    {
+                        AssetType = (ZoneFileAssetType)assetTypeInt,
+                        AdditionalData = 0,
+                        Offset = i
+                    };
+                    ZoneFileAssets.ZoneAssetsPool.Add(record);
 
-                ZoneFileAssets.ZoneAssetsPool.Add(record);
+                    foundAnyAsset = true;
 
-                // 4) Skip past these 8 bytes so we don't re‑match overlapping data
-                i += 7; // The for-loop increments by 1, so total skip is 8
+                    // Jump past these 8 bytes
+                    i += 8;
+                }
+                else
+                {
+                    // The first 4 bytes matched an asset type, but the next 4
+                    // weren't FF FF FF FF => not a complete record
+                    i++;
+                }
             }
 
-            // Group by type for a per-type count
+            // Group by type for per-type counts
             var groupByType = ZoneFileAssets.ZoneAssetsPool
                 .GroupBy(r => r.AssetType)
                 .Select(g => new { AssetType = g.Key, Count = g.Count() });
 
-            // Print a line for each asset type
             foreach (var group in groupByType)
             {
                 Debug.WriteLine($"[MapZoneAssets] AssetType {group.AssetType} => {group.Count} record(s).");
             }
 
-            // Print total
             Debug.WriteLine($"[MapZoneAssets] Found {ZoneFileAssets.ZoneAssetsPool.Count} asset record(s) total.");
         }
 
