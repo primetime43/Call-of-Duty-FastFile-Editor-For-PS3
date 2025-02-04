@@ -102,10 +102,9 @@ namespace Call_of_Duty_FastFile_Editor
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
 
                     // Here is where we want to do the Zone Assets mapping
-                    // Instead of only setting the raw data, call LoadZoneAssets() to also map the asset records.
-                    _openedFastFile.OpenedFastFileZone.LoadZoneAssets();
-
-                    Console.Write(_openedFastFile.OpenedFastFileZone.ZoneFileAssets);
+                    // Instead of only setting the raw data, call LoadZoneAssetsPool() to also map the asset records.
+                    _openedFastFile.OpenedFastFileZone.LoadZoneAssetsPool();
+                    LoadAssetPoolIntoListView();
 
                     Console.WriteLine("Zone file decompressed successfully.");
 
@@ -1069,6 +1068,48 @@ namespace Call_of_Duty_FastFile_Editor
                 new RawFileSearcherForm(rawFileNodes).Show();
             else
                 MessageBox.Show("No raw files found to search through.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private void LoadAssetPoolIntoListView()
+        {
+            // Make sure we have a valid zone and a populated asset pool
+            if (_openedFastFile == null ||
+                _openedFastFile.OpenedFastFileZone == null ||
+                _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool == null)
+            {
+                return;
+            }
+
+            // 1) Clear existing items and columns
+            assetPoolListView.Items.Clear();
+            assetPoolListView.Columns.Clear();
+
+            // 2) Make sure we can see details
+            assetPoolListView.View = View.Details;
+            assetPoolListView.FullRowSelect = true;
+            assetPoolListView.GridLines = true;
+
+            // 3) Add columns (adjust widths and text as desired)
+            assetPoolListView.Columns.Add("Asset Type", 120);
+            assetPoolListView.Columns.Add("Offset (Hex)", 100);
+
+            // 4) Loop through each ZoneAssetRecord and add to list
+            foreach (var record in _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool)
+            {
+                // The first column is the main item text
+                var lvi = new ListViewItem(record.AssetType.ToString());
+
+                // Add sub-items for the remaining columns
+                lvi.SubItems.Add($"0x{record.Offset:X}");
+
+                // (If you have AdditionalData or anything else, add more subitems)
+                // lvi.SubItems.Add(record.AdditionalData.ToString());
+
+                assetPoolListView.Items.Add(lvi);
+            }
+
+            // 5) (Optional) Auto-resize columns to fit content
+            assetPoolListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
     }
 }

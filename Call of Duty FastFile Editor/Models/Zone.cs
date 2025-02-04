@@ -41,10 +41,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// <summary>
         /// A convenience method to load zone data and then map the assets.
         /// </summary>
-        public void LoadZoneAssets()
+        public void LoadZoneAssetsPool()
         {
             SetZoneData();
-            MapZoneAssets();
+            MapZoneAssetsPool();
         }
 
         // For display or debugging purposes.
@@ -123,7 +123,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// The asset pool is stored at the start of the zone file. The RecordCount property (set from the header)
         /// tells you how many 8‑byte records to read. Each record consists of 4 bytes for the asset type and 4 bytes for additional data.
         /// </summary>
-        private void MapZoneAssets()
+        private void MapZoneAssetsPool()
         {
             if (ZoneFileAssets.ZoneAssetsPool == null)
                 ZoneFileAssets.ZoneAssetsPool = new List<ZoneAssetRecord>();
@@ -216,10 +216,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
             foreach (var group in groupByType)
             {
-                Debug.WriteLine($"[MapZoneAssets] AssetType {group.AssetType} => {group.Count} record(s).");
+                Debug.WriteLine($"[MapZoneAssetsPool] AssetType {group.AssetType} => {group.Count} record(s).");
             }
 
-            Debug.WriteLine($"[MapZoneAssets] Found {ZoneFileAssets.ZoneAssetsPool.Count} asset record(s) total.");
+            Debug.WriteLine($"[MapZoneAssetsPool] Found {ZoneFileAssets.ZoneAssetsPool.Count} asset record(s) total.");
         }
 
         /// <summary>

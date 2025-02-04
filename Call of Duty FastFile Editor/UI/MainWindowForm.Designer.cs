@@ -53,6 +53,7 @@ namespace Call_of_Duty_FastFile_Editor
             modernWarfareToolStripMenuItem = new ToolStripMenuItem();
             patchmpffToolStripMenuItem = new ToolStripMenuItem();
             rawFileToolsMenuItem = new ToolStripMenuItem();
+            increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
             fileStructureInfoToolStripMenuItem = new ToolStripMenuItem();
             searchRawFileTxtMenuItem = new ToolStripMenuItem();
             saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
@@ -77,8 +78,9 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView = new TreeView();
             tabPageMapEnt = new TabPage();
             treeViewMapEnt = new TreeView();
+            assetPoolTabPage = new TabPage();
+            assetPoolListView = new ListView();
             bindingSource1 = new BindingSource(components);
-            increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -94,6 +96,7 @@ namespace Call_of_Duty_FastFile_Editor
             tabPage1.SuspendLayout();
             tabPage3.SuspendLayout();
             tabPageMapEnt.SuspendLayout();
+            assetPoolTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             SuspendLayout();
             // 
@@ -343,6 +346,12 @@ namespace Call_of_Duty_FastFile_Editor
             rawFileToolsMenuItem.Size = new Size(195, 24);
             rawFileToolsMenuItem.Text = "Raw File Tools";
             // 
+            // increaseRawFileSizeToolStripMenuItem
+            // 
+            increaseRawFileSizeToolStripMenuItem.Name = "increaseRawFileSizeToolStripMenuItem";
+            increaseRawFileSizeToolStripMenuItem.Size = new Size(222, 24);
+            increaseRawFileSizeToolStripMenuItem.Text = "Increase Raw File Size";
+            // 
             // fileStructureInfoToolStripMenuItem
             // 
             fileStructureInfoToolStripMenuItem.Name = "fileStructureInfoToolStripMenuItem";
@@ -447,6 +456,7 @@ namespace Call_of_Duty_FastFile_Editor
             tabControl1.Controls.Add(tabPage1);
             tabControl1.Controls.Add(tabPage3);
             tabControl1.Controls.Add(tabPageMapEnt);
+            tabControl1.Controls.Add(assetPoolTabPage);
             tabControl1.Dock = DockStyle.Fill;
             tabControl1.Location = new Point(0, 28);
             tabControl1.Name = "tabControl1";
@@ -561,11 +571,24 @@ namespace Call_of_Duty_FastFile_Editor
             treeViewMapEnt.TabIndex = 2;
             treeViewMapEnt.MouseDown += treeView_MouseDownCopy;
             // 
-            // increaseRawFileSizeToolStripMenuItem
+            // assetPoolTabPage
             // 
-            increaseRawFileSizeToolStripMenuItem.Name = "increaseRawFileSizeToolStripMenuItem";
-            increaseRawFileSizeToolStripMenuItem.Size = new Size(222, 24);
-            increaseRawFileSizeToolStripMenuItem.Text = "Increase Raw File Size";
+            assetPoolTabPage.Controls.Add(assetPoolListView);
+            assetPoolTabPage.Location = new Point(4, 24);
+            assetPoolTabPage.Name = "assetPoolTabPage";
+            assetPoolTabPage.Padding = new Padding(3);
+            assetPoolTabPage.Size = new Size(1442, 749);
+            assetPoolTabPage.TabIndex = 5;
+            assetPoolTabPage.Text = "Asset Pool";
+            assetPoolTabPage.UseVisualStyleBackColor = true;
+            // 
+            // assetPoolListView
+            // 
+            assetPoolListView.Location = new Point(-4, 0);
+            assetPoolListView.Name = "assetPoolListView";
+            assetPoolListView.Size = new Size(939, 534);
+            assetPoolListView.TabIndex = 0;
+            assetPoolListView.UseCompatibleStateImageBehavior = false;
             // 
             // MainWindowForm
             // 
@@ -594,6 +617,7 @@ namespace Call_of_Duty_FastFile_Editor
             tabPage1.ResumeLayout(false);
             tabPage3.ResumeLayout(false);
             tabPageMapEnt.ResumeLayout(false);
+            assetPoolTabPage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -660,5 +684,7 @@ namespace Call_of_Duty_FastFile_Editor
         private TreeView treeViewMapEnt;
         private ToolStripMenuItem rawFileToolsMenuItem;
         private ToolStripMenuItem increaseRawFileSizeToolStripMenuItem;
+        private TabPage assetPoolTabPage;
+        private ListView assetPoolListView;
     }
 }
