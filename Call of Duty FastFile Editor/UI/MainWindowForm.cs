@@ -121,82 +121,113 @@ namespace Call_of_Duty_FastFile_Editor
                     _rawFileNodes = new List<RawFileNode>();
 
                     bool previousRecordWasParsed = false;
-                    // For each raw asset record, extract the corresponding raw file node.
+                    int indexOfLastRawFileParsed = 0;
+
                     for (int i = 0; i < _zoneAssetRecords.Count; i++)
                     {
-
-                        if (_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile)
+                        //Debug.WriteLine($"Current record is {_zoneAssetRecords[i].AssetType}");
+                        //Debug.WriteLine($"Previous record is {_zoneAssetRecords[0+i].AssetType}");
+                        if (_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile && i == 0)
                         {
-                            if (i == 0)
+                            // Parse off the location of the asset pool end offset
+                            try
                             {
-                                try
-                                {
-                                    RawFileNode node = RawFileParser.ExtractRawFileNodeNoPattern(_openedFastFile, _openedFastFile.OpenedFastFileZone.AssetPoolEndOffset);
-                                    _rawFileNodes.Add(node);
+                                RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(_openedFastFile, _openedFastFile.OpenedFastFileZone.AssetPoolEndOffset);
+                                _rawFileNodes.Add(node);
 
-                                    // update _zoneAssetRecords at index i with the extracted raw file node
-                                    var assetRecord = _zoneAssetRecords[i];
-                                    assetRecord.HeaderStartOffset = node.StartOfFileHeader;
-                                    assetRecord.HeaderEndOffset = node.EndOfFileHeader;
-                                    assetRecord.AssetDataStartPosition = node.CodeStartPosition;
-                                    assetRecord.AssetDataEndOffset = node.CodeEndPosition;
-                                    assetRecord.Name = node.FileName;
-                                    assetRecord.RawDataBytes = node.RawFileBytes;
-                                    assetRecord.Size = node.MaxSize;
-                                    assetRecord.Content = node.RawFileContent;
+                                // update _zoneAssetRecords at index i with the extracted raw file node
+                                var assetRecord = _zoneAssetRecords[i];
+                                assetRecord.HeaderStartOffset = node.StartOfFileHeader;
+                                assetRecord.HeaderEndOffset = node.EndOfFileHeader;
+                                assetRecord.AssetDataStartPosition = node.CodeStartPosition;
+                                assetRecord.AssetDataEndOffset = node.CodeEndPosition;
+                                assetRecord.Name = node.FileName;
+                                assetRecord.RawDataBytes = node.RawFileBytes;
+                                assetRecord.Size = node.MaxSize;
+                                assetRecord.Content = node.RawFileContent;
 
-                                    _zoneAssetRecords[i] = assetRecord;
-                                    previousRecordWasParsed = true;
+                                _zoneAssetRecords[i] = assetRecord;
+                                previousRecordWasParsed = true;
+                                indexOfLastRawFileParsed = i;
 
-                                    Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
-                                }
-                                catch (Exception ex)
-                                {
-                                    Debug.WriteLine($"Failed to extract raw file node at offset 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: {ex.Message}");
-                                }
+                                Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Failed to extract raw file node at offset 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: {ex.Message}");
+                            }
+                        }
+                        else if (_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile && _zoneAssetRecords[i - 1].AssetType == ZoneFileAssetType.rawfile)
+                        {
+                            // Previous asset was a raw file so parse off the location of data end offset of that asset record
+                            try
+                            {
+                                int previousRecordEndOffset = _zoneAssetRecords[i - 1].AssetDataEndOffset;
+                                RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(_openedFastFile, previousRecordEndOffset);
+                                _rawFileNodes.Add(node);
+
+                                // update _zoneAssetRecords at index i with the extracted raw file node
+                                var assetRecord = _zoneAssetRecords[i];
+                                assetRecord.HeaderStartOffset = node.StartOfFileHeader;
+                                assetRecord.HeaderEndOffset = node.EndOfFileHeader;
+                                assetRecord.AssetDataStartPosition = node.CodeStartPosition;
+                                assetRecord.AssetDataEndOffset = node.CodeEndPosition;
+                                assetRecord.Name = node.FileName;
+                                assetRecord.RawDataBytes = node.RawFileBytes;
+                                assetRecord.Size = node.MaxSize;
+                                assetRecord.Content = node.RawFileContent;
+
+                                _zoneAssetRecords[i] = assetRecord;
+                                previousRecordWasParsed = true;
+                                indexOfLastRawFileParsed = i;
+
+                                Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Failed to extract raw file node at offset 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: {ex.Message}");
+                            }
+                        }
+                        else if (_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile && _zoneAssetRecords[i - 1].AssetType != ZoneFileAssetType.rawfile)
+                        {
+                            // Previous asset was not a raw file so parse off the location of the last raw file we've parsed
+                            // Usees pattern matching to get back on track
+
+                            // so this will mean the previous record wasn't parsed, so find the next raw file with pattern to get back on track
+                            // this should allow me to bypass xanim for now until I figure out how to parse it
+                            // Start searching for it from the end of the last raw file that was parsed
+                            int lastRawFileRecordEndOffset = _zoneAssetRecords[indexOfLastRawFileParsed].AssetDataEndOffset;
+                            RawFileNode node = RawFileParser.ExtractSingleRawFileNodeWithPattern(_openedFastFile.ZoneFilePath, lastRawFileRecordEndOffset);
+
+                            if (node != null)
+                            {
+                                _rawFileNodes.Add(node);
+                                // update _zoneAssetRecords at index i with the extracted raw file node
+                                var assetRecord = _zoneAssetRecords[i];
+                                assetRecord.HeaderStartOffset = node.StartOfFileHeader;
+                                assetRecord.HeaderEndOffset = node.EndOfFileHeader;
+                                assetRecord.AssetDataStartPosition = node.CodeStartPosition;
+                                assetRecord.AssetDataEndOffset = node.CodeEndPosition;
+                                assetRecord.Name = node.FileName;
+                                assetRecord.RawDataBytes = node.RawFileBytes;
+                                assetRecord.Size = node.MaxSize;
+                                assetRecord.Content = node.RawFileContent;
+
+                                _zoneAssetRecords[i] = assetRecord;
+                                previousRecordWasParsed = true;
+                                indexOfLastRawFileParsed = i;
                             }
                             else
                             {
-                                // here it should be the difference between the current and previous record's AssetDataEndOffset
-
-                                try
-                                {
-                                    RawFileNode node = RawFileParser.ExtractRawFileNodeNoPattern(_openedFastFile, _zoneAssetRecords[i-1].AssetDataEndOffset);
-                                    _rawFileNodes.Add(node);
-
-                                    // update _zoneAssetRecords at index i with the extracted raw file node
-                                    var assetRecord = _zoneAssetRecords[i];
-                                    assetRecord.HeaderStartOffset = node.StartOfFileHeader;
-                                    assetRecord.HeaderEndOffset = node.EndOfFileHeader;
-                                    assetRecord.AssetDataStartPosition = node.CodeStartPosition;
-                                    assetRecord.AssetDataEndOffset = node.CodeEndPosition;
-                                    assetRecord.Name = node.FileName;
-                                    assetRecord.RawDataBytes = node.RawFileBytes;
-                                    assetRecord.Size = node.MaxSize;
-                                    assetRecord.Content = node.RawFileContent;
-
-                                    _zoneAssetRecords[i] = assetRecord;
-                                    previousRecordWasParsed = true;
-
-                                    Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
-                                }
-                                catch (Exception ex)
-                                {
-                                    Debug.WriteLine($"Failed to extract raw file node at offset 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: {ex.Message}");
-                                }
+                                // failed to extract raw file node with pattern
+                                previousRecordWasParsed = false;
                             }
-                        }
-                        else if(_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile && !previousRecordWasParsed)
-                        {
-                            // so this will mean the previous record wasn't parsed, so find the next raw file with pattern to get back on track
-                            // this should allow me to bypass xanim for now until I figure out how to parse it
-                            //RawFileParser.GetRawFilesWithPattern(_openedFastFile.ZoneFilePath, out _rawFileNodes, );
                         }
                         else
                         {
+                            // skipped asset record as we don't know how to parse it yet
                             previousRecordWasParsed = false;
                         }
-                        
                     }
 
                     //FastFileProcessing.GetRawFilesWithPattern(_openedFastFile.ZoneFilePath, out _rawFileNodes);
@@ -205,7 +236,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                     Console.WriteLine("Zone file decompressed successfully.");
 
-                    //_openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                    //_openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = FastFileProcessing.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
                     //_rawFileNodes = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles;
                 }
                 catch (Exception ex)
@@ -676,7 +707,7 @@ namespace Call_of_Duty_FastFile_Editor
                     string rawFileName = Path.GetFileName(selectedFilePath);
                     byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
-                    RawFileNode newRawFileNode = RawFileParser.ExtractRawFilesSizeAndName(selectedFilePath)[0];
+                    RawFileNode newRawFileNode = RawFileParser.ExtractAllRawFilesSizeAndName(selectedFilePath)[0];
 
                     string actualDiskFileName = Path.GetFileName(selectedFilePath);
                     string rawFileNameFromHeader = newRawFileNode.FileName;
@@ -724,7 +755,7 @@ namespace Call_of_Duty_FastFile_Editor
                             RawFileInject.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
-                            _rawFileNodes = RawFileParser.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                            _rawFileNodes = RawFileParser.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
@@ -751,7 +782,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     // 2) Re-extract the entire zone to update _rawFileNodes
-                    _rawFileNodes = RawFileParser.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                    _rawFileNodes = RawFileParser.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();

@@ -9,13 +9,13 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
     public static class RawFileParser
     {
         #region Structure Parsing
-        public static RawFileNode ExtractRawFileNodeNoPattern(FastFile openedFastFile, int offset)
+        public static RawFileNode ExtractSingleRawFileNodeNoPattern(FastFile openedFastFile, int offset)
         {
-            Debug.WriteLine($"[ExtractRawFileNodeNoPattern] Starting raw file scan at offset 0x{offset:X}.");
+            Debug.WriteLine($"[ExtractSingleRawFileNodeNoPattern] Starting raw file scan at offset 0x{offset:X}.");
 
             RawFileNode node = new RawFileNode();
             byte[] fileData = openedFastFile.OpenedFastFileZone.ZoneFileData;
-            Debug.WriteLine($"[ExtractRawFileNodeNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
+            Debug.WriteLine($"[ExtractSingleRawFileNodeNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
 
 
             for (int idx = 0; idx < openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool.Count; idx++)
@@ -90,15 +90,105 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         #region Pattern Parsing
 
         /// <summary>
-        /// startOffset is where to start the search for the pattern
-        /// Helps us get back on track to skip items I don't yet know how to parse
+        /// Scans the zone file (at zoneFilePath) starting at startOffset for the first raw file entry
+        /// that matches one of the defined patterns. When found, extracts its size, file name, content,
+        /// and returns a RawFileNode. If no match is found, returns null.
         /// </summary>
-        /// <param name="startOffset"></param>
-        /// <returns></returns>
-        public static void GetRawFilesWithPattern(string zoneFilePath, out List<RawFileNode> rawFiles, int startOffset)
+        /// <param name="zoneFilePath">Path to the zone file.</param>
+        /// <param name="startOffset">
+        /// The offset in the zone file at which to start scanning for the raw file header.
+        /// (Pass 0 to search from the beginning.)
+        /// </param>
+        /// <returns>The first matching RawFileNode or null if none is found.</returns>
+        public static RawFileNode ExtractSingleRawFileNodeWithPattern(string zoneFilePath, int startOffset = 0)
         {
-            List<RawFileNode> rawFileNodes = ExtractRawFilesSizeAndName(zoneFilePath);
-            rawFiles = rawFileNodes.Select(rawFileNode => new RawFileNode(rawFileNode.FileName, rawFileNode.RawFileBytes)).ToList();
+            byte[] fileData = File.ReadAllBytes(zoneFilePath);
+            Debug.WriteLine($"[ExtractSingleRawFileNodeWithPattern] Read file '{zoneFilePath}' ({fileData.Length} bytes).");
+            byte[][] patterns = Constants.RawFiles.FileNamePatterns;
+
+            using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(fileData), Encoding.Default))
+            {
+                foreach (var pattern in patterns)
+                {
+                    for (int i = startOffset; i <= fileData.Length - pattern.Length; i++)
+                    {
+                        bool match = true;
+                        for (int j = 0; j < pattern.Length; j++)
+                        {
+                            if (fileData[i + j] != pattern[j])
+                            {
+                                match = false;
+                                break;
+                            }
+                        }
+                        if (!match)
+                            continue;
+
+                        int patternIndex = i;
+                        Debug.WriteLine($"[ExtractSingleRawFileNodeWithPattern] Pattern found at offset 0x{patternIndex:X}.");
+
+                        // Example struture working backwards
+                        // FF FF FF FF NamePointer (start of header)
+                        // 00 00 00 00 Size - sizePosition
+                        // 00 00 00 00 DataPointer - this is what ffffPositionBeforeName represents
+                        // Name (null-terminated) - so we're working backwards from here
+
+                        // Move backwards to locate a sequence of 4 FF bytes before the name.
+                        int ffffPositionBeforeName = patternIndex - 1;
+                        while (ffffPositionBeforeName >= 4 &&
+                               !(fileData[ffffPositionBeforeName] == 0xFF &&
+                                 fileData[ffffPositionBeforeName - 1] == 0xFF &&
+                                 fileData[ffffPositionBeforeName - 2] == 0xFF &&
+                                 fileData[ffffPositionBeforeName - 3] == 0xFF))
+                        {
+                            ffffPositionBeforeName--;
+                        }
+
+                        if (ffffPositionBeforeName < 4 || fileData[ffffPositionBeforeName + 1] == 0x00)
+                        {
+                            Debug.WriteLine($"[ExtractSingleRawFileNodeWithPattern] Invalid FF sequence at offset 0x{ffffPositionBeforeName:X}. Continuing.");
+                            continue;
+                        }
+
+                        // The file size (maxSize) is stored just before the 4-FF sequence.
+                        int sizePosition = ffffPositionBeforeName - 7;
+                        if (sizePosition < 0)
+                        {
+                            Debug.WriteLine($"[ExtractSingleRawFileNodeWithPattern] Size position invalid (sizePosition = {sizePosition}). Continuing.");
+                            continue;
+                        }
+
+                        int startOfHeaderPosition = sizePosition - 4; // FF FF FF FF before the size position raw file name pointer
+
+                        binaryReader.BaseStream.Position = sizePosition;
+                        int maxSize = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
+                        Debug.WriteLine($"[ExtractSingleRawFileNodeWithPattern] Found size = {maxSize} at offset 0x{sizePosition:X}.");
+
+                        // The file name is assumed to start immediately after the 4-FF sequence.
+                        int fileNameStart = ffffPositionBeforeName + 1;
+                        string fileName = ExtractFullFileName(fileData, fileNameStart);
+                        Debug.WriteLine($"[ExtractSingleRawFileNodeWithPattern] Extracted name: '{fileName}' at offset 0x{fileNameStart:X}.");
+
+                        if (!string.IsNullOrEmpty(fileName) && !fileName.Contains("\x00"))
+                        {
+                            string fileContent = ReadFileContentAfterName(zoneFilePath, patternIndex, maxSize);
+                            byte[] fileBytes = ExtractBinaryContent(zoneFilePath, patternIndex, maxSize);
+
+                            return new RawFileNode
+                            {
+                                PatternIndexPosition = patternIndex,
+                                MaxSize = maxSize,
+                                StartOfFileHeader = startOfHeaderPosition,
+                                FileName = fileName,
+                                RawFileContent = fileContent,
+                                RawFileBytes = fileBytes
+                            };
+                        }
+                    }
+                }
+            }
+            Debug.WriteLine("[ExtractSingleRawFileNodeWithPattern] No matching raw file node found.");
+            return null;
         }
 
         /// <summary>
@@ -108,7 +198,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         /// </summary>
         /// <param name="zoneFilePath"></param>
         /// <returns></returns>
-        public static List<RawFileNode> ExtractRawFilesSizeAndName(string zoneFilePath)
+        public static List<RawFileNode> ExtractAllRawFilesSizeAndName(string zoneFilePath)
         {
             List<RawFileNode> rawFileNodes = new List<RawFileNode>();
             byte[] fileData = File.ReadAllBytes(zoneFilePath);
