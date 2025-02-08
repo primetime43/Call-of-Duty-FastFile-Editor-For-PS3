@@ -21,6 +21,19 @@ namespace Call_of_Duty_FastFile_Editor
         private TreeNode _previousSelectedNode;
         private bool _hasUnsavedChanges = false;
 
+
+        /// <summary>
+        /// List of file entry nodes extracted from the zone file.
+        /// </summary>
+        private List<RawFileNode> _rawFileNodes;
+
+        /// <summary>
+        /// FastFile instance representing the opened Fast File.
+        /// </summary>
+        private FastFile _openedFastFile;
+
+        private List<ZoneAssetRecord> _zoneAssetRecords;
+
         public MainWindowForm()
         {
             InitializeComponent();
@@ -49,16 +62,6 @@ namespace Call_of_Duty_FastFile_Editor
                 Clipboard.SetText(_rightClickedItemText);
             }
         }
-
-        /// <summary>
-        /// List of file entry nodes extracted from the zone file.
-        /// </summary>
-        private List<RawFileNode> rawFileNodes;
-
-        /// <summary>
-        /// FastFile instance representing the opened Fast File.
-        /// </summary>
-        private FastFile _openedFastFile;
 
         /// <summary>
         /// Opens a Fast File, decompresses it, extracts file entries, and populates the TreeView.
@@ -104,17 +107,54 @@ namespace Call_of_Duty_FastFile_Editor
                     _openedFastFile.OpenedFastFileZone.SetZoneData();
 
                     // 2) Map the pool + get end offset
-                    int endOffset = _openedFastFile.OpenedFastFileZone.MapZoneAssetsPoolAndGetEndOffset();
+                    _openedFastFile.OpenedFastFileZone.MapZoneAssetsPoolAndGetEndOffset();
                     // (This also populates _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool)
 
-                    _openedFastFile.OpenedFastFileZone.ScanForAssetData(endOffset);
+                    //_openedFastFile.OpenedFastFileZone.ScanForAssetData(endOffset); // this doesn't work correctly
+
+                    _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool;
+
+                    FastFileProcessing.ExtractRawFileNodesNoPattern(_openedFastFile);
+
+                    //FastFileProcessing.GetRawFiles(_openedFastFile.ZoneFilePath, out _rawFileNodes);
+
+                    int rawFileIndex = 0;
+
+                    for (int i = 0; i < _zoneAssetRecords.Count && rawFileIndex < _rawFileNodes.Count; i++)
+                    {
+                        // Only update records that are rawfile assets
+                        if (_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile)
+                        {
+                            // Get the corresponding raw file node.
+                            RawFileNode rawNode = _rawFileNodes[rawFileIndex];
+
+                            // Create a copy of the asset record
+                            var assetRecord = _zoneAssetRecords[i];
+
+                            // Update the asset record with the new values
+                            assetRecord.Name = rawNode.FileName;
+                            assetRecord.RawDataBytes = rawNode.RawFileBytes;
+                            assetRecord.Size = rawNode.MaxSize; // or rawNode.RawFileBytes.Length if preferred
+                            assetRecord.Content = rawNode.RawFileContent;
+
+                            // Optionally, update additional fields if needed:
+                            // assetRecord.DataStartOffset = rawNode.StartOfFileHeader;
+                            // assetRecord.DataEndOffset = rawNode.CodeEndPosition; // if that makes sense
+
+                            // Assign the updated record back to the list
+                            _zoneAssetRecords[i] = assetRecord;
+
+                            rawFileIndex++;
+                        }
+                    }
+
 
                     LoadAssetPoolIntoListView();
 
                     Console.WriteLine("Zone file decompressed successfully.");
 
                     //_openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
-                    //rawFileNodes = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles;
+                    //_rawFileNodes = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles;
                 }
                 catch (Exception ex)
                 {
@@ -165,7 +205,7 @@ namespace Call_of_Duty_FastFile_Editor
             // Clear existing nodes to avoid duplication
             filesTreeView.Nodes.Clear();
 
-            var treeNodes = rawFileNodes.Select(node =>
+            var treeNodes = _rawFileNodes.Select(node =>
             {
                 var treeNode = new TreeNode(node.FileName)
                 {
@@ -195,7 +235,7 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     if (_previousSelectedNode != null)
                     {
-                        var previousSelectedNodeData = rawFileNodes
+                        var previousSelectedNodeData = _rawFileNodes
                             .FirstOrDefault(node => node.PatternIndexPosition == (int)_previousSelectedNode.Tag);
 
                         if (previousSelectedNodeData != null)
@@ -204,7 +244,7 @@ namespace Call_of_Duty_FastFile_Editor
                                 filesTreeView,              // TreeView control
                                 _openedFastFile.FfFilePath,                 // Path to the Fast File (.ff)
                                 _openedFastFile.ZoneFilePath,               // Path to the decompressed zone file
-                                rawFileNodes,             // List of RawFileNode objects
+                                _rawFileNodes,             // List of RawFileNode objects
                                 textEditorControl1.Text,    // Updated text from the editor
                                 _openedFastFile                     // FastFile instance
                             );
@@ -229,7 +269,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (e.Node.Tag is int position)
             {
                 string fileName = e.Node.Text; // Get the selected file name
-                var selectedNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                var selectedNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                 int maxSize = selectedNode?.MaxSize ?? 0;
 
                 if (selectedNode != null)
@@ -258,7 +298,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             if (filesTreeView.SelectedNode?.Tag is int position)
             {
-                var selectedNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                var selectedNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
                 if (selectedNode != null)
                 {
                     int maxSize = selectedNode.MaxSize;
@@ -339,7 +379,7 @@ namespace Call_of_Duty_FastFile_Editor
                     filesTreeView,                // TreeView control
                     _openedFastFile.FfFilePath,                   // Path to the Fast File (.ff)
                     _openedFastFile.ZoneFilePath,                 // Path to the decompressed zone file
-                    rawFileNodes,               // List of RawFileNode objects
+                    _rawFileNodes,               // List of RawFileNode objects
                     textEditorControl1.Text,      // Updated text from the editor
                     _openedFastFile                       // FastFile instance
                 );
@@ -386,7 +426,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            var selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            var selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -592,7 +632,7 @@ namespace Call_of_Duty_FastFile_Editor
                     int newFileMaxSize = newRawFileNode.MaxSize;
 
                     // 1) Check if file name already exists
-                    RawFileNode existingNode = rawFileNodes
+                    RawFileNode existingNode = _rawFileNodes
                         .FirstOrDefault(node => node.FileName.Equals(rawFileNameFromHeader, StringComparison.OrdinalIgnoreCase));
 
                     if (existingNode != null)
@@ -632,7 +672,7 @@ namespace Call_of_Duty_FastFile_Editor
                             RawFileInject.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
-                            rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                            _rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
@@ -658,8 +698,8 @@ namespace Call_of_Duty_FastFile_Editor
                         }
                     }
 
-                    // 2) Re-extract the entire zone to update rawFileNodes
-                    rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                    // 2) Re-extract the entire zone to update _rawFileNodes
+                    _rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();
@@ -698,7 +738,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            RawFileNode selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -736,14 +776,14 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            RawFileNode selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+            RawFileNode selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            RawFileOperations.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, rawFileNodes, _openedFastFile);
+            RawFileOperations.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _rawFileNodes, _openedFastFile);
         }
 
         /// <summary>
@@ -766,7 +806,7 @@ namespace Call_of_Duty_FastFile_Editor
             }).ToList();
 
             // Assign the data source to the DataGridView
-            dataGridView1.DataSource = dataSource;
+            zoneInfoDataGridView.DataSource = dataSource;
         }
 
         /// <summary>
@@ -941,7 +981,7 @@ namespace Call_of_Duty_FastFile_Editor
                 ListViewHitTestInfo hit = lv.HitTest(e.Location);
                 if (hit.Item != null)
                 {
-                    _rightClickedItemText = hit.Item.Text;  // or subItem text
+                    _rightClickedItemText = hit.SubItem.Text;
                 }
                 else
                 {
@@ -1007,7 +1047,7 @@ namespace Call_of_Duty_FastFile_Editor
                     treeViewMapEnt.Nodes.Clear();
                     stringTableTreeView.Nodes.Clear();
                     tagsListView.Items.Clear();
-                    dataGridView1.DataSource = null;
+                    zoneInfoDataGridView.DataSource = null;
                     textEditorControl1.ResetText();
 
                     try
@@ -1041,7 +1081,7 @@ namespace Call_of_Duty_FastFile_Editor
                 if (filesTreeView.SelectedNode.Tag is int position)
                 {
                     string fileName = filesTreeView.SelectedNode.Text; // Get the selected file name
-                    var selectedFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                    var selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
 
                     // Additional logic for handling the selected file node
                     if (selectedFileNode != null)
@@ -1069,8 +1109,8 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void searchRawFileTxtMenuItem_Click(object sender, EventArgs e)
         {
-            if(rawFileNodes?.Count > 0)
-                new RawFileSearcherForm(rawFileNodes).Show();
+            if(_rawFileNodes?.Count > 0)
+                new RawFileSearcherForm(_rawFileNodes).Show();
             else
                 MessageBox.Show("No raw files found to search through.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
@@ -1124,14 +1164,14 @@ namespace Call_of_Duty_FastFile_Editor
                 lvi.SubItems.Add(record.Name ?? string.Empty);
 
                 // Seventh column: Entire content, no truncation
-                if (!string.IsNullOrEmpty(record.Content))
+                /*if (!string.IsNullOrEmpty(record.Content))
                 {
                     lvi.SubItems.Add(record.Content);
                 }
                 else
                 {
                     lvi.SubItems.Add(string.Empty);
-                }
+                }*/
 
                 // Finally, add the row to the list
                 assetPoolListView.Items.Add(lvi);

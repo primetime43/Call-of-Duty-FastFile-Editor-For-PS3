@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Security.Policy;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.Services;
 
@@ -43,6 +44,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
         // The asset mapping container.
         public ZoneFileAssets ZoneFileAssets { get; set; } = new ZoneFileAssets();
+
+        public int AssetPoolStartOffset { get; private set; }
+        public int AssetPoolEndOffset { get; private set; }
 
         // Mapping of property names to their offsets (using your Constants).
         private readonly Dictionary<string, int> _zonePropertyOffsets = new Dictionary<string, int>
@@ -110,10 +114,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         }
 
         /// <summary>
-        /// Like MapZoneAssetsPool, but also returns offset of the 8 consecutive FF bytes that end the pool.
-        /// Returns -1 if it never found the end.
+        /// Finds the start and end of the asset pool in the zone file.
+        /// Catalogs the asset records and their order.
         /// </summary>
-        public int MapZoneAssetsPoolAndGetEndOffset()
+        public void MapZoneAssetsPoolAndGetEndOffset()
         {
             if (ZoneFileAssets.ZoneAssetsPool == null)
                 ZoneFileAssets.ZoneAssetsPool = new List<ZoneAssetRecord>();
@@ -123,83 +127,82 @@ namespace Call_of_Duty_FastFile_Editor.Models
             int fileLen = data.Length;
             int i = 0;
             bool foundAnyAsset = false;
-
-            // We'll track "endOfPoolOffset" as soon as we detect 8xFF
-            int endOfPoolOffset = -1;
+            int assetPoolStart = -1;  // We'll capture the first valid asset record offset here.
+            int endOfPoolOffset = -1; // Termination marker offset.
 
             while (i <= fileLen - 8)
             {
+                // Read the next 8-byte block.
+                byte[] block = Utilities.GetBytesAtOffset(i, this, 8);
+
+                // Only check for termination marker if we've found at least one asset.
                 if (foundAnyAsset)
                 {
-                    // Check if next 8 bytes are all FF
-                    byte[] next8 = Utilities.GetBytesAtOffset(i, this, 8);
-                    bool allFF = true;
-                    for (int j = 0; j < 8; j++)
+                    if (block[0] == 0xFF && block[1] == 0xFF && block[2] == 0xFF && block[3] == 0xFF)
                     {
-                        if (next8[j] != 0xFF)
-                        {
-                            allFF = false;
-                            break;
-                        }
-                    }
-                    if (allFF)
-                    {
-                        Debug.WriteLine("Encountered 8 consecutive FF bytes. Asset pool ends here.");
-                        endOfPoolOffset = i; // This is where the pool ended
+                        Debug.WriteLine($"[Offset {i}] Termination marker found: first 4 bytes are all FF. Ending asset pool.");
+                        endOfPoolOffset = i;
                         break;
                     }
                 }
 
-                // Try reading 4 bytes as big-endian => asset type
-                uint rawValue = Utilities.ReadUInt32AtOffset(i, this, isBigEndian: true);
-                int assetTypeInt = (int)rawValue;
+                // Try reading the asset type from the first 4 bytes.
+                int assetTypeInt = (int)Utilities.ReadUInt32AtOffset(i, this, isBigEndian: true);
 
+                // If the asset type isn’t defined in our enum, advance one byte.
                 if (!Enum.IsDefined(typeof(ZoneFileAssetType), assetTypeInt))
                 {
                     i++;
                     continue;
                 }
 
-                // Next 4 bytes should be FF FF FF FF
+                // Next 4 bytes should be padding (FF FF FF FF).
                 byte[] paddingBytes = Utilities.GetBytesAtOffset(i + 4, this, 4);
-                bool hasPadding =
+                bool paddingValid =
                     paddingBytes[0] == 0xFF &&
                     paddingBytes[1] == 0xFF &&
                     paddingBytes[2] == 0xFF &&
                     paddingBytes[3] == 0xFF;
-
-                if (hasPadding)
+                if (!paddingValid)
                 {
-                    // We found a valid "AssetType + FF FF FF FF"
-                    var record = new ZoneAssetRecord
-                    {
-                        AssetType = (ZoneFileAssetType)assetTypeInt,
-                        AdditionalData = 0,
-                        Offset = i
-                    };
-                    ZoneFileAssets.ZoneAssetsPool.Add(record);
-
-                    foundAnyAsset = true;
-                    i += 8; // skip this record
-                }
-                else
-                {
+                    Debug.WriteLine($"[Offset {i}] Padding bytes are not all FF. Advancing one byte.");
                     i++;
+                    continue;
                 }
+
+                // If this is the first valid asset record, record its offset.
+                if (!foundAnyAsset)
+                {
+                    assetPoolStart = i;
+                }
+
+                Debug.WriteLine($"[Offset {i}] Found valid asset record: AssetType = {assetTypeInt}.");
+                var record = new ZoneAssetRecord
+                {
+                    AssetType = (ZoneFileAssetType)assetTypeInt,
+                    AdditionalData = 0,
+                    Offset = i
+                };
+                ZoneFileAssets.ZoneAssetsPool.Add(record);
+                foundAnyAsset = true;
+                i += 8; // Skip the 8-byte block for this record.
             }
 
-            // Print debugging info
+            // Set the Zone's asset pool offsets.
+            this.AssetPoolStartOffset = assetPoolStart;
+            this.AssetPoolEndOffset = endOfPoolOffset;
+
+            // Print debugging info.
             var groupByType = ZoneFileAssets.ZoneAssetsPool
                 .GroupBy(r => r.AssetType)
                 .Select(g => new { AssetType = g.Key, Count = g.Count() });
-
             foreach (var group in groupByType)
             {
                 Debug.WriteLine($"[MapZoneAssetsPool] AssetType {group.AssetType} => {group.Count} record(s).");
             }
             Debug.WriteLine($"[MapZoneAssetsPool] Found {ZoneFileAssets.ZoneAssetsPool.Count} asset record(s) total.");
-
-            return endOfPoolOffset; //eventually don't return this and just store it here
+            Debug.WriteLine($"[MapZoneAssetsPool] Asset pool start offset: 0x{AssetPoolStartOffset:X}");
+            Debug.WriteLine($"[MapZoneAssetsPool] Asset pool end offset: 0x{AssetPoolEndOffset:X}");
         }
 
         public void ScanForAssetData(int assetPoolEndOffset)

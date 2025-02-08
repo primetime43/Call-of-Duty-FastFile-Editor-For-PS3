@@ -9,6 +9,16 @@ namespace Call_of_Duty_FastFile_Editor.Services
 {
     public static class Utilities
     {
+        public static int ReadInt32BigEndian(BinaryReader br)
+        {
+            byte[] bytes = br.ReadBytes(4);
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(bytes);
+            }
+            return BitConverter.ToInt32(bytes, 0);
+        }
+
         /// <summary>
         /// Helper method to read a UInt32 at a specific offset. Can specify endianness.
         /// </summary>

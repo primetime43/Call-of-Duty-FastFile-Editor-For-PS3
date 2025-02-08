@@ -1,5 +1,5 @@
-﻿using Call_of_Duty_FastFile_Editor.Models;
-using Call_of_Duty_FastFile_Editor.Services;
+﻿using Call_of_Duty_FastFile_Editor.Services;
+using System;
 using System.Net;
 using System.Text;
 
@@ -10,6 +10,16 @@ namespace Call_of_Duty_FastFile_Editor.Models
     /// </summary>
     public class RawFileNode
     {
+        public RawFileNode() { }
+
+        // Constructor that initializes the necessary properties.
+        public RawFileNode(string name, byte[] buffer)
+        {
+            FileName = name;
+            RawFileBytes = buffer;
+            MaxSize = buffer.Length;  // Use MaxSize consistently
+        }
+
         /// <summary>
         /// Generates the raw file header consisting of the file size (big-endian) and padding (FF FF FF FF).
         /// </summary>
@@ -61,10 +71,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// <summary>
         /// Gets the position where the code starts, calculated as StartOfFileHeader + 8 + FileName.Length + 1.
         /// </summary>
-        public int CodeStartPosition
-        {
-            get => StartOfFileHeader + 8 + (FileName?.Length ?? 0) + 1;
-        }
+        public int CodeStartPosition => StartOfFileHeader + 8 + (FileName?.Length ?? 0) + 1;
 
         /// <summary>
         /// The name of the file.
@@ -103,17 +110,5 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
             return result;
         }
-
-        /*private static string IntToHexBigEndian(int value)
-        {
-            // Convert the int to a byte array (little-endian by default)
-            byte[] bytes = BitConverter.GetBytes(value);
-
-            // Reverse the byte array to switch to big-endian
-            Array.Reverse(bytes);
-
-            // Convert the byte array to a hexadecimal string
-            return BitConverter.ToString(bytes).Replace("-", "");
-        }*/
     }
 }

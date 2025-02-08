@@ -5,6 +5,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
 {
     public class ZoneFileAssets
     {
+        // the order is imporant because thats the order they appear in the zone file
         public List<ZoneAssetRecord>? ZoneAssetsPool { get; set; } = new List<ZoneAssetRecord>();
 
         // A dictionary: key = asset type, value = list of records of that type

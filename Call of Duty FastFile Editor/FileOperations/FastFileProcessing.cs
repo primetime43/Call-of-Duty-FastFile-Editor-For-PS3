@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -94,6 +95,122 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 // Write the final 2-byte sequence
                 binaryWriter.Write(new byte[2] { 0, 1 });
             }
+        }
+
+        public static List<RawFileNode> ExtractRawFileNodesNoPattern(FastFile openedFastFile)
+        {
+            List<RawFileNode> rawFileNodes = new List<RawFileNode>();
+            byte[] fileData = File.ReadAllBytes(openedFastFile.ZoneFilePath);
+            Debug.WriteLine($"[ExtractRawFileNodesNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
+
+            // Start reading raw file headers at AssetPoolEndOffset.
+            int offset = openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
+            Debug.WriteLine($"[ExtractRawFileNodesNoPattern] Starting raw file scan at offset 0x{offset:X}.");
+
+            for (int idx = 0; idx < openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool.Count; idx++)
+            {
+                // Ensure we have at least 12 bytes for the header.
+                if (offset > fileData.Length - 12)
+                {
+                    Debug.WriteLine($"[RawFile {idx}] Not enough bytes remaining for a header at offset 0x{offset:X}.");
+                    break;
+                }
+
+                // --- Read the 12-byte header ---
+                // Bytes 0-3: Marker. Must be 0xFFFFFFFF.
+                uint marker = ReadUInt32BigEndian(fileData, offset);
+                if (marker != 0xFFFFFFFF)
+                {
+                    Debug.WriteLine($"[RawFile {idx}] Unexpected marker at offset 0x{offset:X}: 0x{marker:X}. Stopping extraction.");
+                    break;
+                }
+                // Bytes 4-7: Data length. (This field holds the size of the file data.)
+                int dataLength = (int)ReadUInt32BigEndian(fileData, offset + 4);
+                // Bytes 8-11: Name pointer. If -1, the file name is inline.
+                int namePointer = (int)ReadUInt32BigEndian(fileData, offset + 8);
+                Debug.WriteLine($"[RawFile {idx}] Header at offset 0x{offset:X}: dataLength = {dataLength}, namePointer = {namePointer}");
+
+                // Record where this header started.
+                RawFileNode node = new RawFileNode();
+                node.StartOfFileHeader = offset;
+                node.MaxSize = dataLength; // Use dataLength as the file's size.
+
+                // Advance offset past the 12-byte header.
+                offset += 12;
+
+                // --- Process the file name ---
+                if (namePointer == -1)
+                {
+                    // Inline file name: read a null-terminated UTF8 string.
+                    string inlineName = ReadNullTerminatedString(fileData, offset);
+                    node.FileName = inlineName;
+                    Debug.WriteLine($"[RawFile {idx}] Inline name read: '{inlineName}'.");
+                    // Determine the number of bytes read (including the null terminator).
+                    int nameByteCount = Encoding.UTF8.GetByteCount(inlineName) + 1;
+                    offset += nameByteCount;
+                }
+                else
+                {
+                    Debug.WriteLine($"[RawFile {idx}] Name pointer is {namePointer} (external).");
+                    node.FileName = "[External]";
+                }
+
+                // --- Process the file data ---
+                if (dataLength >= 0 && offset + dataLength <= fileData.Length)
+                {
+                    byte[] rawBytes = new byte[dataLength];
+                    Array.Copy(fileData, offset, rawBytes, 0, dataLength);
+                    node.RawFileBytes = rawBytes;
+                    node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
+                    Debug.WriteLine($"[RawFile {idx}] Inline file data read: {rawBytes.Length} bytes.");
+                }
+                else
+                {
+                    Debug.WriteLine($"[RawFile {idx}] Data length is {dataLength} or exceeds file length; skipping file data read.");
+                    node.RawFileBytes = new byte[0];
+                    node.RawFileContent = string.Empty;
+                }
+                offset += dataLength; // Advance offset past the file data.
+
+                rawFileNodes.Add(node);
+            }
+
+            Debug.WriteLine($"[ExtractRawFileNodesNoPattern] Extraction complete. Total raw file nodes extracted: {rawFileNodes.Count}.");
+            return rawFileNodes;
+        }
+
+        /// <summary>
+        /// Reads a 4-byte unsigned integer from the given byte array at the specified offset in big-endian order.
+        /// </summary>
+        private static uint ReadUInt32BigEndian(byte[] data, int offset)
+        {
+            byte[] bytes = new byte[4];
+            Array.Copy(data, offset, bytes, 0, 4);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(bytes);
+            return BitConverter.ToUInt32(bytes, 0);
+        }
+
+        /// <summary>
+        /// Reads a null-terminated UTF8 string from the given byte array starting at the specified offset.
+        /// </summary>
+        private static string ReadNullTerminatedString(byte[] data, int offset)
+        {
+            List<byte> byteList = new List<byte>();
+            while (offset < data.Length)
+            {
+                byte b = data[offset++];
+                if (b == 0)
+                    break;
+                byteList.Add(b);
+            }
+            return Encoding.UTF8.GetString(byteList.ToArray());
+        }
+
+        public static void GetRawFiles(string zoneFilePath, out List<RawFileNode> rawFiles)
+        {
+            List<RawFileNode> rawFileNodes = ExtractRawFilesSizeAndName(zoneFilePath);
+            rawFiles = rawFileNodes.Select(rawFileNode => new RawFileNode(rawFileNode.FileName, rawFileNode.RawFileBytes)).ToList();
         }
 
         /// <summary>
