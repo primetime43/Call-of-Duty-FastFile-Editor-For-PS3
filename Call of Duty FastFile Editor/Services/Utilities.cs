@@ -123,11 +123,39 @@ namespace Call_of_Duty_FastFile_Editor.Services
         }
 
         /// <summary>
+        /// Reads a 4-byte unsigned integer from the given byte array at the specified offset in big-endian order.
+        /// </summary>
+        public static uint ReadUInt32BigEndian(byte[] data, int offset)
+        {
+            byte[] bytes = new byte[4];
+            Array.Copy(data, offset, bytes, 0, 4);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(bytes);
+            return BitConverter.ToUInt32(bytes, 0);
+        }
+
+        /// <summary>
+        /// Reads a null-terminated UTF8 string from the given byte array starting at the specified offset.
+        /// </summary>
+        public static string ReadNullTerminatedString(byte[] data, int offset)
+        {
+            List<byte> byteList = new List<byte>();
+            while (offset < data.Length)
+            {
+                byte b = data[offset++];
+                if (b == 0)
+                    break;
+                byteList.Add(b);
+            }
+            return Encoding.UTF8.GetString(byteList.ToArray());
+        }
+
+        /// <summary>
         /// Helper method to read a string until a null terminator starting at a specific offset
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
-        private static string ReadNullTerminatedString(BinaryReader reader)
+        /*private static string ReadNullTerminatedString(BinaryReader reader)
         {
             List<byte> bytes = new List<byte>();
             try
@@ -144,6 +172,6 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 throw;
             }
             return Encoding.UTF8.GetString(bytes.ToArray());
-        }
+        }*/
     }
 }

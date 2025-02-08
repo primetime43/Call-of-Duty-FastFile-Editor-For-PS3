@@ -12,6 +12,7 @@ using Call_of_Duty_FastFile_Editor.Services;
 using System;
 using System.ComponentModel;
 using System.Xml.Linq;
+using Call_of_Duty_FastFile_Editor.ZoneParsers;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -119,16 +120,18 @@ namespace Call_of_Duty_FastFile_Editor
                     byte[] zoneData = _openedFastFile.OpenedFastFileZone.ZoneFileData;
                     _rawFileNodes = new List<RawFileNode>();
 
+                    bool previousRecordWasParsed = false;
                     // For each raw asset record, extract the corresponding raw file node.
                     for (int i = 0; i < _zoneAssetRecords.Count; i++)
                     {
+
                         if (_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile)
                         {
                             if (i == 0)
                             {
                                 try
                                 {
-                                    RawFileNode node = FastFileProcessing.ExtractRawFileNodeNoPattern(_openedFastFile, _openedFastFile.OpenedFastFileZone.AssetPoolEndOffset);
+                                    RawFileNode node = RawFileParser.ExtractRawFileNodeNoPattern(_openedFastFile, _openedFastFile.OpenedFastFileZone.AssetPoolEndOffset);
                                     _rawFileNodes.Add(node);
 
                                     // update _zoneAssetRecords at index i with the extracted raw file node
@@ -143,6 +146,7 @@ namespace Call_of_Duty_FastFile_Editor
                                     assetRecord.Content = node.RawFileContent;
 
                                     _zoneAssetRecords[i] = assetRecord;
+                                    previousRecordWasParsed = true;
 
                                     Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
                                 }
@@ -157,7 +161,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                                 try
                                 {
-                                    RawFileNode node = FastFileProcessing.ExtractRawFileNodeNoPattern(_openedFastFile, _zoneAssetRecords[i-1].AssetDataEndOffset);
+                                    RawFileNode node = RawFileParser.ExtractRawFileNodeNoPattern(_openedFastFile, _zoneAssetRecords[i-1].AssetDataEndOffset);
                                     _rawFileNodes.Add(node);
 
                                     // update _zoneAssetRecords at index i with the extracted raw file node
@@ -172,6 +176,7 @@ namespace Call_of_Duty_FastFile_Editor
                                     assetRecord.Content = node.RawFileContent;
 
                                     _zoneAssetRecords[i] = assetRecord;
+                                    previousRecordWasParsed = true;
 
                                     Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
                                 }
@@ -181,9 +186,20 @@ namespace Call_of_Duty_FastFile_Editor
                                 }
                             }
                         }
+                        else if(_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile && !previousRecordWasParsed)
+                        {
+                            // so this will mean the previous record wasn't parsed, so find the next raw file with pattern to get back on track
+                            // this should allow me to bypass xanim for now until I figure out how to parse it
+                            //RawFileParser.GetRawFilesWithPattern(_openedFastFile.ZoneFilePath, out _rawFileNodes, );
+                        }
+                        else
+                        {
+                            previousRecordWasParsed = false;
+                        }
+                        
                     }
 
-                    //FastFileProcessing.GetRawFiles(_openedFastFile.ZoneFilePath, out _rawFileNodes);
+                    //FastFileProcessing.GetRawFilesWithPattern(_openedFastFile.ZoneFilePath, out _rawFileNodes);
 
                     LoadAssetPoolIntoListView();
 
@@ -660,7 +676,7 @@ namespace Call_of_Duty_FastFile_Editor
                     string rawFileName = Path.GetFileName(selectedFilePath);
                     byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
-                    RawFileNode newRawFileNode = FastFileProcessing.ExtractRawFilesSizeAndName(selectedFilePath)[0];
+                    RawFileNode newRawFileNode = RawFileParser.ExtractRawFilesSizeAndName(selectedFilePath)[0];
 
                     string actualDiskFileName = Path.GetFileName(selectedFilePath);
                     string rawFileNameFromHeader = newRawFileNode.FileName;
@@ -708,7 +724,7 @@ namespace Call_of_Duty_FastFile_Editor
                             RawFileInject.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
-                            _rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                            _rawFileNodes = RawFileParser.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
@@ -735,7 +751,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     // 2) Re-extract the entire zone to update _rawFileNodes
-                    _rawFileNodes = FastFileProcessing.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+                    _rawFileNodes = RawFileParser.ExtractRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();
