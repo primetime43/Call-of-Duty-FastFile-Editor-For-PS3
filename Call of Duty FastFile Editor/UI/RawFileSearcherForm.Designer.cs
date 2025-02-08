@@ -68,7 +68,7 @@
             resultsListView.FullRowSelect = true;
             resultsListView.GridLines = true;
             resultsListView.Columns.Add("File Name", 200);
-            resultsListView.Columns.Add("Character Position Offset", 100);
+            resultsListView.Columns.Add("Character Position AssetPoolRecordOffset", 100);
             resultsListView.Columns.Add("Matched Text", 250);
             resultsListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right; // Expands when resized
 

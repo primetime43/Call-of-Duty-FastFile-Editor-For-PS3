@@ -20,10 +20,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
     public struct ZoneAssetRecord
     {
         public ZoneFileAssetType AssetType { get; set; }
+        public int HeaderStartOffset { get; set; }
+        public int HeaderEndOffset { get; set; }
         public int AdditionalData { get; set; }
-        public int Offset { get; set; }
-        public int DataStartOffset { get; set; }
-        public int DataEndOffset { get; set; }
+        public int AssetPoolRecordOffset { get; set; }
+        public int AssetDataStartPosition { get; set; }
+        public int AssetDataEndOffset { get; set; }
         public string Name { get; set; }
         public string Content { get; set; }
         public int Size { get; set; }

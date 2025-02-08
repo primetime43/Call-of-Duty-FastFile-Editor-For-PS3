@@ -106,7 +106,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
             if (resultsListView.Columns.Count > 0)
             {
                 resultsListView.Columns[0].Width = (int)(formWidth * 0.4); // 40% width for File Name
-                resultsListView.Columns[1].Width = (int)(formWidth * 0.2); // 20% width for Offset
+                resultsListView.Columns[1].Width = (int)(formWidth * 0.2); // 20% width for AssetPoolRecordOffset
                 resultsListView.Columns[2].Width = (int)(formWidth * 0.4); // 40% width for Matched Text
             }
         }

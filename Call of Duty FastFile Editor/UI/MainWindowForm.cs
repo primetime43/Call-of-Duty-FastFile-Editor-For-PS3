@@ -11,6 +11,7 @@ using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.Services;
 using System;
 using System.ComponentModel;
+using System.Xml.Linq;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -114,40 +115,75 @@ namespace Call_of_Duty_FastFile_Editor
 
                     _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool;
 
-                    FastFileProcessing.ExtractRawFileNodesNoPattern(_openedFastFile);
+                    // Read the entire zone file data once.
+                    byte[] zoneData = _openedFastFile.OpenedFastFileZone.ZoneFileData;
+                    _rawFileNodes = new List<RawFileNode>();
 
-                    //FastFileProcessing.GetRawFiles(_openedFastFile.ZoneFilePath, out _rawFileNodes);
-
-                    int rawFileIndex = 0;
-
-                    for (int i = 0; i < _zoneAssetRecords.Count && rawFileIndex < _rawFileNodes.Count; i++)
+                    // For each raw asset record, extract the corresponding raw file node.
+                    for (int i = 0; i < _zoneAssetRecords.Count; i++)
                     {
-                        // Only update records that are rawfile assets
                         if (_zoneAssetRecords[i].AssetType == ZoneFileAssetType.rawfile)
                         {
-                            // Get the corresponding raw file node.
-                            RawFileNode rawNode = _rawFileNodes[rawFileIndex];
+                            if (i == 0)
+                            {
+                                try
+                                {
+                                    RawFileNode node = FastFileProcessing.ExtractRawFileNodeNoPattern(_openedFastFile, _openedFastFile.OpenedFastFileZone.AssetPoolEndOffset);
+                                    _rawFileNodes.Add(node);
 
-                            // Create a copy of the asset record
-                            var assetRecord = _zoneAssetRecords[i];
+                                    // update _zoneAssetRecords at index i with the extracted raw file node
+                                    var assetRecord = _zoneAssetRecords[i];
+                                    assetRecord.HeaderStartOffset = node.StartOfFileHeader;
+                                    assetRecord.HeaderEndOffset = node.EndOfFileHeader;
+                                    assetRecord.AssetDataStartPosition = node.CodeStartPosition;
+                                    assetRecord.AssetDataEndOffset = node.CodeEndPosition;
+                                    assetRecord.Name = node.FileName;
+                                    assetRecord.RawDataBytes = node.RawFileBytes;
+                                    assetRecord.Size = node.MaxSize;
+                                    assetRecord.Content = node.RawFileContent;
 
-                            // Update the asset record with the new values
-                            assetRecord.Name = rawNode.FileName;
-                            assetRecord.RawDataBytes = rawNode.RawFileBytes;
-                            assetRecord.Size = rawNode.MaxSize; // or rawNode.RawFileBytes.Length if preferred
-                            assetRecord.Content = rawNode.RawFileContent;
+                                    _zoneAssetRecords[i] = assetRecord;
 
-                            // Optionally, update additional fields if needed:
-                            // assetRecord.DataStartOffset = rawNode.StartOfFileHeader;
-                            // assetRecord.DataEndOffset = rawNode.CodeEndPosition; // if that makes sense
+                                    Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Debug.WriteLine($"Failed to extract raw file node at offset 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: {ex.Message}");
+                                }
+                            }
+                            else
+                            {
+                                // here it should be the difference between the current and previous record's AssetDataEndOffset
 
-                            // Assign the updated record back to the list
-                            _zoneAssetRecords[i] = assetRecord;
+                                try
+                                {
+                                    RawFileNode node = FastFileProcessing.ExtractRawFileNodeNoPattern(_openedFastFile, _zoneAssetRecords[i-1].AssetDataEndOffset);
+                                    _rawFileNodes.Add(node);
 
-                            rawFileIndex++;
+                                    // update _zoneAssetRecords at index i with the extracted raw file node
+                                    var assetRecord = _zoneAssetRecords[i];
+                                    assetRecord.HeaderStartOffset = node.StartOfFileHeader;
+                                    assetRecord.HeaderEndOffset = node.EndOfFileHeader;
+                                    assetRecord.AssetDataStartPosition = node.CodeStartPosition;
+                                    assetRecord.AssetDataEndOffset = node.CodeEndPosition;
+                                    assetRecord.Name = node.FileName;
+                                    assetRecord.RawDataBytes = node.RawFileBytes;
+                                    assetRecord.Size = node.MaxSize;
+                                    assetRecord.Content = node.RawFileContent;
+
+                                    _zoneAssetRecords[i] = assetRecord;
+
+                                    Debug.WriteLine($"Extracted raw file node from asset record at 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: FileName = '{node.FileName}'");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Debug.WriteLine($"Failed to extract raw file node at offset 0x{_zoneAssetRecords[i].AssetPoolRecordOffset:X}: {ex.Message}");
+                                }
+                            }
                         }
                     }
 
+                    //FastFileProcessing.GetRawFiles(_openedFastFile.ZoneFilePath, out _rawFileNodes);
 
                     LoadAssetPoolIntoListView();
 
@@ -165,7 +201,7 @@ namespace Call_of_Duty_FastFile_Editor
                 try
                 {
                     // Move these eventually and change how they're loaded
-                    //PopulateTreeView();
+                    PopulateTreeView();
                     PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
                     //PopulateTags();
                     //PopulateStringTable();
@@ -269,7 +305,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (e.Node.Tag is int position)
             {
                 string fileName = e.Node.Text; // Get the selected file name
-                var selectedNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                var selectedNode = _rawFileNodes.FirstOrDefault(node => node.FileName == fileName);
                 int maxSize = selectedNode?.MaxSize ?? 0;
 
                 if (selectedNode != null)
@@ -829,8 +865,8 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.MultiSelect = true;
             tagsListView.FullRowSelect = true;
             tagsListView.Columns.Add("Tag (" + tagsInfo.TagEntries.Count + ")", 100);
-            tagsListView.Columns.Add("Offset (Dec)", 100);
-            tagsListView.Columns.Add("Offset (Hex)", 100);
+            tagsListView.Columns.Add("AssetPoolRecordOffset (Dec)", 100);
+            tagsListView.Columns.Add("AssetPoolRecordOffset (Hex)", 100);
 
             // Sort the TagEntries by OffsetDec in ascending order
             var sortedTagEntries = tagsInfo.TagEntries
@@ -935,7 +971,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                 // Create another node for where that size is stored (in hex)
                 string sizeOffsetHex = offsetOfSize.ToString("X");
-                TreeNode sizeOffsetNode = new TreeNode($"Map Size Offset = 0x{sizeOffsetHex}");
+                TreeNode sizeOffsetNode = new TreeNode($"Map Size AssetPoolRecordOffset = 0x{sizeOffsetHex}");
                 treeViewMapEnt.Nodes.Add(sizeOffsetNode);
             }
             else
@@ -958,7 +994,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                 // Show offset in hex
                 string offsetHex = entity.SourceOffset.ToString("X");
-                parentNode.Nodes.Add($"Offset = 0x{offsetHex}");
+                parentNode.Nodes.Add($"AssetPoolRecordOffset = 0x{offsetHex}");
 
                 // Then the key-value pairs
                 foreach (var kvp in entity.Properties)
@@ -1137,9 +1173,11 @@ namespace Call_of_Duty_FastFile_Editor
             // 3) Create columns for all the info you want to see
             //    Adjust widths / text as you wish
             assetPoolListView.Columns.Add("Asset Type", 100);
-            assetPoolListView.Columns.Add("Asset Pool Offset (Hex)", 80);
-            assetPoolListView.Columns.Add("Data Start (Hex)", 100);
-            assetPoolListView.Columns.Add("Data End (Hex)", 100);
+            assetPoolListView.Columns.Add("AssetPoolRecordOffset", 80);
+            assetPoolListView.Columns.Add("Header Start", 100);
+            assetPoolListView.Columns.Add("Header End", 100);
+            assetPoolListView.Columns.Add("Data Start", 100);
+            assetPoolListView.Columns.Add("Data End", 100);
             assetPoolListView.Columns.Add("Size", 60);
             assetPoolListView.Columns.Add("Name", 120);
             assetPoolListView.Columns.Add("Content Snippet", 200); // optional
@@ -1150,17 +1188,21 @@ namespace Call_of_Duty_FastFile_Editor
                 // First column: AssetType
                 var lvi = new ListViewItem(record.AssetType.ToString());
 
-                // Second column: Offset in hex
-                lvi.SubItems.Add($"0x{record.Offset:X}");
+                // Second column: AssetPoolRecordOffset in hex
+                lvi.SubItems.Add($"0x{record.AssetPoolRecordOffset:X}");
 
-                // Third & Fourth columns: data start/end in hex
-                lvi.SubItems.Add($"0x{record.DataStartOffset:X}");
-                lvi.SubItems.Add($"0x{record.DataEndOffset:X}");
+                // Third & Fourth columns
+                lvi.SubItems.Add($"0x{record.HeaderStartOffset:X}");
+                lvi.SubItems.Add($"0x{record.HeaderEndOffset:X}");
 
-                // Fifth column: size
-                lvi.SubItems.Add(record.Size.ToString());
+                // Fifth & Sixth columns
+                lvi.SubItems.Add($"0x{record.AssetDataStartPosition:X}");
+                lvi.SubItems.Add($"0x{record.AssetDataEndOffset:X}");
 
-                // Sixth column: Name (if you parse a name somewhere)
+                // Seventh column
+                lvi.SubItems.Add($"0x{record.Size:X}");
+
+                // Eighth column
                 lvi.SubItems.Add(record.Name ?? string.Empty);
 
                 // Seventh column: Entire content, no truncation

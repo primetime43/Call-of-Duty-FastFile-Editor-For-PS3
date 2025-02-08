@@ -97,15 +97,14 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
         }
 
-        public static List<RawFileNode> ExtractRawFileNodesNoPattern(FastFile openedFastFile)
+        public static RawFileNode ExtractRawFileNodeNoPattern(FastFile openedFastFile, int offset)
         {
-            List<RawFileNode> rawFileNodes = new List<RawFileNode>();
-            byte[] fileData = File.ReadAllBytes(openedFastFile.ZoneFilePath);
-            Debug.WriteLine($"[ExtractRawFileNodesNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
+            Debug.WriteLine($"[ExtractRawFileNodeNoPattern] Starting raw file scan at offset 0x{offset:X}.");
 
-            // Start reading raw file headers at AssetPoolEndOffset.
-            int offset = openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
-            Debug.WriteLine($"[ExtractRawFileNodesNoPattern] Starting raw file scan at offset 0x{offset:X}.");
+            RawFileNode node = new RawFileNode();
+            byte[] fileData = openedFastFile.OpenedFastFileZone.ZoneFileData;
+            Debug.WriteLine($"[ExtractRawFileNodeNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
+
 
             for (int idx = 0; idx < openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool.Count; idx++)
             {
@@ -131,7 +130,6 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 Debug.WriteLine($"[RawFile {idx}] Header at offset 0x{offset:X}: dataLength = {dataLength}, namePointer = {namePointer}");
 
                 // Record where this header started.
-                RawFileNode node = new RawFileNode();
                 node.StartOfFileHeader = offset;
                 node.MaxSize = dataLength; // Use dataLength as the file's size.
 
@@ -171,13 +169,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
                     node.RawFileContent = string.Empty;
                 }
                 offset += dataLength; // Advance offset past the file data.
-
-                rawFileNodes.Add(node);
             }
 
-            Debug.WriteLine($"[ExtractRawFileNodesNoPattern] Extraction complete. Total raw file nodes extracted: {rawFileNodes.Count}.");
-            return rawFileNodes;
+            return node;
         }
+
 
         /// <summary>
         /// Reads a 4-byte unsigned integer from the given byte array at the specified offset in big-endian order.

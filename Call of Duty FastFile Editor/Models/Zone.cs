@@ -140,7 +140,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 {
                     if (block[0] == 0xFF && block[1] == 0xFF && block[2] == 0xFF && block[3] == 0xFF)
                     {
-                        Debug.WriteLine($"[Offset {i}] Termination marker found: first 4 bytes are all FF. Ending asset pool.");
+                        Debug.WriteLine($"[AssetPoolRecordOffset {i}] Termination marker found: first 4 bytes are all FF. Ending asset pool.");
                         endOfPoolOffset = i;
                         break;
                     }
@@ -165,7 +165,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                     paddingBytes[3] == 0xFF;
                 if (!paddingValid)
                 {
-                    Debug.WriteLine($"[Offset {i}] Padding bytes are not all FF. Advancing one byte.");
+                    Debug.WriteLine($"[AssetPoolRecordOffset {i}] Padding bytes are not all FF. Advancing one byte.");
                     i++;
                     continue;
                 }
@@ -176,12 +176,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
                     assetPoolStart = i;
                 }
 
-                Debug.WriteLine($"[Offset {i}] Found valid asset record: AssetType = {assetTypeInt}.");
+                Debug.WriteLine($"[AssetPoolRecordOffset {i}] Found valid asset record: AssetType = {assetTypeInt}.");
                 var record = new ZoneAssetRecord
                 {
                     AssetType = (ZoneFileAssetType)assetTypeInt,
                     AdditionalData = 0,
-                    Offset = i
+                    AssetPoolRecordOffset = i
                 };
                 ZoneFileAssets.ZoneAssetsPool.Add(record);
                 foundAnyAsset = true;
@@ -245,15 +245,15 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 if(ZoneFileAssets.ZoneAssetsPool[i].AssetType == ZoneFileAssetType.localize)
                     record.Content = Encoding.UTF8.GetString(block.Content);
 
-                record.DataStartOffset = block.StartOffset;
-                record.DataEndOffset = block.EndOffset;
+                record.AssetDataStartPosition = block.StartOffset;
+                record.AssetDataEndOffset = block.EndOffset;
 
                 // Keep the original asset type, do NOT overwrite record.AssetType
                 record.AssetType = ZoneFileAssets.ZoneAssetsPool[i].AssetType; // Remove or comment out this line
 
                 ZoneFileAssets.ZoneAssetsPool[i] = record;
 
-                Debug.WriteLine($"[ScanForAssetData] Asset[{i}] {record.AssetType}, dataLen={record.Size}, offset=0x{record.DataStartOffset:X}-0x{record.DataEndOffset:X}");
+                Debug.WriteLine($"[ScanForAssetData] Asset[{i}] {record.AssetType}, dataLen={record.Size}, offset=0x{record.AssetDataStartPosition:X}-0x{record.AssetDataEndOffset:X}");
             }
 
             BuildAssetsByTypeMap();

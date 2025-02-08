@@ -34,7 +34,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// Returns the parsed MapEntity objects.
         /// </summary>
         /// <param name="zone">The zone whose ZoneFileData we are scanning.</param>
-        /// <param name="offset">Offset where the 4-byte big-endian size is located.</param>
+        /// <param name="offset">AssetPoolRecordOffset where the 4-byte big-endian size is located.</param>
         public static List<MapEntity> ParseMapEntsAtOffset(Zone zone, int offset)
         {
             var results = new List<MapEntity>();

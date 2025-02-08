@@ -69,9 +69,16 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int StartOfFileHeader { get; set; }
 
         /// <summary>
-        /// Gets the position where the code starts, calculated as StartOfFileHeader + 8 + FileName.Length + 1.
+        /// Gets the position where the code starts, calculated as StartOfFileHeader + 12 + FileName.Length + 1.
+        /// 12 comes from FF FF FF FF name pointer, 4 bytes for data length, and FF FF FF FF for data pointer
         /// </summary>
-        public int CodeStartPosition => StartOfFileHeader + 8 + (FileName?.Length ?? 0) + 1;
+        public int CodeStartPosition => StartOfFileHeader + 12 + (FileName?.Length ?? 0) + 1;
+
+        /// <summary>
+        /// Where the data ends
+        /// Includes null byte
+        /// </summary>
+        public int EndOfFileHeader => CodeStartPosition - 1;
 
         /// <summary>
         /// The name of the file.
@@ -79,9 +86,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string FileName { get; set; }
 
         /// <summary>
-        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize.
+        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize + 1 for the null byte.
+        /// Includes null byte
         /// </summary>
-        public int CodeEndPosition => CodeStartPosition + MaxSize;
+        public int CodeEndPosition => CodeStartPosition + MaxSize + 1;
 
         /// <summary>
         /// The content of the file as a string.
