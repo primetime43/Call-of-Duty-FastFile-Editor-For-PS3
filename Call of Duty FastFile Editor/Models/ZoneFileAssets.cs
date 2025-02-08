@@ -22,7 +22,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public ZoneFileAssetType AssetType { get; set; }
         public int HeaderStartOffset { get; set; }
         public int HeaderEndOffset { get; set; }
-        public int AdditionalData { get; set; }
         public int AssetPoolRecordOffset { get; set; }
         public int AssetDataStartPosition { get; set; }
         public int AssetDataEndOffset { get; set; }
