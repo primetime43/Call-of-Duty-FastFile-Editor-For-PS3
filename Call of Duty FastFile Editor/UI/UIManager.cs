@@ -29,7 +29,7 @@
             currentSizeLabel.Visible = true;
         }
 
-        public static void SetTreeNodeColors(TreeView treeView)
+        public static void SetRawFileTreeNodeColors(TreeView treeView)
         {
             foreach (TreeNode node in treeView.Nodes)
             {

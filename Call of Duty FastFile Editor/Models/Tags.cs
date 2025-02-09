@@ -15,6 +15,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string OffsetHex { get; set; }
     }
 
+    // Eventually rewrite this to use the asset pool start offset to get the tags
     public static class TagOperations
     {
         /// <summary>

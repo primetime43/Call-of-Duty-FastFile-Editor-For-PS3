@@ -123,43 +123,23 @@ namespace Call_of_Duty_FastFile_Editor
                     // Find the asset pool, parse it, and set it to the Zone object
                     _openedFastFile.OpenedFastFileZone.GetSetZoneAssetPool();
 
-                    // Set the zone asset records to this form's field
-                    _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords;
-
-                    // Anything that needs to be displayed for the asset pool view tab should be loaded here
-
-                    // Process the asset records to get the raw file nodes and set them to this form's field
-                    // move this eventually
-                    _rawFileNodes = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords);
-                    // At this point we should know the location of the asset pool start
-                    // So we can go back one from the start and there be a null byte, then the tags end starts there
-                    PopulateTags();
-
-                    LoadAssetPoolIntoListView();
+                    // Here is where the asset records actual data is parsed throughout the zone
+                    LoadAssetRecordsData();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to decompress FastFile: {ex.Message}", "Decompression Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Failed to parse zone: {ex.Message}", "Zone Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 try
                 {
-                    // Move these eventually and change how they're loaded
-                    PopulateRawFilesTreeView();
-                    PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
-
-                    //PopulateStringTable();
-                    //PopulateMapEntities();
-                }
-                catch (EndOfStreamException ex)
-                {
-                    MessageBox.Show($"Deserialization failed: {ex.Message}", "Deserialization Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    // Load all the parsed data from the zone file to the UI
+                    LoadZoneDataToUI();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to deserialize zone file: {ex.Message}", "Deserialization Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Loading data failed: {ex.Message}", "Data Loading Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
@@ -168,9 +148,51 @@ namespace Call_of_Duty_FastFile_Editor
                 MessageBox.Show("Invalid FastFile!\n\nThe FastFile you have selected is not a valid PS3 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
                 return;
             }
+            EnableUI_Elements();
+        }
 
-            UIManager.SetTreeNodeColors(filesTreeView);
+        /// <summary>
+        /// Parses and processes the asset records from the opened Fast File's zone.
+        /// </summary>
+        private void LoadAssetRecordsData()
+        {
+            // Set the zone asset records to this form's field
+            _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords;
 
+            // Anything that needs to be displayed for the asset pool view tab should be loaded here
+
+            // Process the asset records to get the raw file nodes and set them to this form's field
+            _rawFileNodes = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords);
+
+            // REWRITE EVENTUALLY. At this point we should know the location of the asset pool start
+            // So we can go back one from the start and there be a null byte, then the tags end starts there
+            PopulateTags();
+        }
+
+        /// <summary>
+        /// Loads all parsed zone data into the UI components for display.
+        /// </summary>
+        private void LoadZoneDataToUI()
+        {
+            // Load the asset pool into the ListView
+            // The data LoadAssetRecordsData gets
+            LoadAssetPoolIntoListView();
+
+            // Load the raw files into the TreeView
+            LoadRawFilesTreeView();
+
+            // Load the values parsed from the zone header (tag count, asset record count)
+            LoadZoneHeaderValues(_openedFastFile.OpenedFastFileZone);
+
+            //PopulateStringTable();
+            //PopulateMapEntities();
+        }
+
+        /// <summary>
+        /// Once all data has been loaded to the UI, show UI elements that were previously hidden/disabled.
+        /// </summary>
+        private void EnableUI_Elements()
+        {
             // Enable relevant menu items
             saveRawFileToolStripMenuItem.Enabled = true;
             renameRawFileToolStripMenuItem.Enabled = true;
@@ -181,7 +203,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Populates the TreeView with TreeNodes corresponding to RawFileNodes.
         /// </summary>
-        private void PopulateRawFilesTreeView()
+        private void LoadRawFilesTreeView()
         {
             // Clear existing nodes to avoid duplication
             filesTreeView.Nodes.Clear();
@@ -196,6 +218,7 @@ namespace Call_of_Duty_FastFile_Editor
             }).ToArray();
 
             filesTreeView.Nodes.AddRange(treeNodes);
+            UIManager.SetRawFileTreeNodeColors(filesTreeView);
         }
 
         /// <summary>
@@ -657,8 +680,8 @@ namespace Call_of_Duty_FastFile_Editor
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
-                            PopulateRawFilesTreeView();
-                            UIManager.SetTreeNodeColors(filesTreeView);
+                            LoadRawFilesTreeView();
+                            UIManager.SetRawFileTreeNodeColors(filesTreeView);
 
                             //_hasUnsavedChanges = true;
 
@@ -684,10 +707,10 @@ namespace Call_of_Duty_FastFile_Editor
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();
-                    PopulateRawFilesTreeView();
+                    LoadRawFilesTreeView();
 
                     // Optionally re-apply any color or style
-                    UIManager.SetTreeNodeColors(filesTreeView);
+                    UIManager.SetRawFileTreeNodeColors(filesTreeView);
 
                     // 4) Indicate changes
                     //_hasUnsavedChanges = true;
@@ -770,7 +793,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Populates the DataGridView with Zone decimal values.
         /// </summary>
-        private void PopulateZoneValuesDataGridView(Zone zone)
+        private void LoadZoneHeaderValues(Zone zone)
         {
             if (zone == null || zone.DecimalValues == null)
             {
@@ -1101,17 +1124,17 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            // 1) Clear existing items and columns
+            // Clear existing items and columns
             assetPoolListView.Items.Clear();
             assetPoolListView.Columns.Clear();
 
-            // 2) Use "Details" view with full-row select
+            // Use "Details" view with full-row select
             assetPoolListView.View = View.Details;
             assetPoolListView.FullRowSelect = true;
             assetPoolListView.GridLines = true;
 
-            // 3) Create columns for all the info you want to see
-            //    Adjust widths / text as you wish
+            // Columns that are going to be on the list view
+            assetPoolListView.Columns.Add($"Index ({_zoneAssetRecords.Count})", 100);
             assetPoolListView.Columns.Add("Asset Type", 100);
             assetPoolListView.Columns.Add("AssetPoolRecordOffset", 80);
             assetPoolListView.Columns.Add("Header Start", 100);
@@ -1123,7 +1146,8 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Columns.Add("Content Snippet", 200);
 
             // Place the asset pool itself at the top
-            var pool = new ListViewItem("Asset Pool");
+            var pool = new ListViewItem("");
+            pool.SubItems.Add("Asset Pool");
             pool.SubItems.Add($"0x{_openedFastFile.OpenedFastFileZone.AssetPoolStartOffset:X}");
             pool.SubItems.Add(string.Empty);
             pool.SubItems.Add(string.Empty);
@@ -1133,11 +1157,14 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Items.Add(pool);
 
 
-            // 4) Populate a row (ListViewItem) for each record
-            foreach (var record in _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords)
+            // Populate a row (ListViewItem) for each record
+            int index = 1;
+            foreach (var record in _zoneAssetRecords)
             {
+                var lvi = new ListViewItem(index.ToString());
+
                 // First column: AssetType
-                var lvi = new ListViewItem(record.AssetType.ToString());
+                lvi.SubItems.Add(record.AssetType.ToString());
 
                 // Second column: AssetPoolRecordOffset in hex
                 lvi.SubItems.Add($"0x{record.AssetPoolRecordOffset:X}");
@@ -1168,9 +1195,10 @@ namespace Call_of_Duty_FastFile_Editor
 
                 // Finally, add the row to the list
                 assetPoolListView.Items.Add(lvi);
+                index++;
             }
 
-            // 5) Auto-resize columns to fit header size or content
+            // Auto-resize columns to fit header size or content
             assetPoolListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
     }

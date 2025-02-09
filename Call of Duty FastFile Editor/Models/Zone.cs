@@ -23,7 +23,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         // Various zone header properties.
         public uint ZoneFileSize { get; set; }
         public uint Unknown1 { get; set; }
-        public uint RecordCount { get; set; }
+        public uint AssetRecordCount { get; set; }
         public uint Unknown3 { get; set; }
         public uint Unknown4 { get; set; }
         public uint Unknown5 { get; set; }
@@ -48,7 +48,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         {
             { "ZoneFileSize", Constants.ZoneFile.ZoneSizeOffset },
             { "Unknown1", Constants.ZoneFile.Unknown1Offset },
-            { "RecordCount", Constants.ZoneFile.RecordCountOffset },
+            { "AssetRecordCount", Constants.ZoneFile.AssetRecordCountOffset },
             { "Unknown3", Constants.ZoneFile.Unknown3Offset },
             { "Unknown4", Constants.ZoneFile.Unknown4Offset },
             { "Unknown5", Constants.ZoneFile.Unknown5Offset },
@@ -81,7 +81,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         {
             this.ZoneFileSize = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.ZoneSizeOffset, this);
             this.Unknown1 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown1Offset, this);
-            this.RecordCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.RecordCountOffset, this);
+            this.AssetRecordCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.AssetRecordCountOffset, this);
             this.Unknown3 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown3Offset, this);
             this.Unknown4 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown4Offset, this);
             this.Unknown5 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown5Offset, this);
@@ -101,7 +101,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             {
                 { "ZoneFileSize", ZoneFileSize },
                 { "Unknown1", Unknown1 },
-                { "RecordCount", RecordCount },
+                { "AssetRecordCount", AssetRecordCount },
                 { "Unknown3", Unknown3 },
                 { "Unknown4", Unknown4 },
                 { "Unknown5", Unknown5 },
@@ -159,27 +159,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 fs.Seek(Constants.ZoneFile.ZoneSizeOffset, SeekOrigin.Begin);
                 fs.Write(sizeBytes, 0, sizeBytes.Length);
             }
-        }
-
-        /// <summary>
-        /// Returns a formatted string containing the zone header information.
-        /// </summary>
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"ZoneFileSize: {ZoneFileSize}");
-            sb.AppendLine($"Unknown1: {Unknown1}");
-            sb.AppendLine($"RecordCount: {RecordCount}");
-            sb.AppendLine($"Unknown3: {Unknown3}");
-            sb.AppendLine($"Unknown4: {Unknown4}");
-            sb.AppendLine($"Unknown5: {Unknown5}");
-            sb.AppendLine($"Unknown6: {Unknown6}");
-            sb.AppendLine($"Unknown7: {Unknown7}");
-            sb.AppendLine($"Unknown8: {Unknown8}");
-            sb.AppendLine($"TagCount: {TagCount}");
-            sb.AppendLine($"Unknown10: {Unknown10}");
-            sb.AppendLine($"Unknown11: {Unknown11}");
-            return sb.ToString();
         }
     }
 }
