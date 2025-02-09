@@ -38,6 +38,16 @@ namespace Call_of_Duty_FastFile_Editor
         private Tags? _tags;
 
         /// <summary>
+        /// Offset where the assset pool starts in the zone file.
+        /// </summary>
+        private int _assetPoolStartOffset;
+
+        /// <summary>
+        /// Offset where the assset pool ends in the zone file.
+        /// </summary>
+        private int _assetPoolEndOffset;
+
+        /// <summary>
         /// FastFile instance representing the opened Fast File.
         /// </summary>
         private FastFile _openedFastFile;
@@ -158,6 +168,10 @@ namespace Call_of_Duty_FastFile_Editor
         {
             // Set the zone asset records to this form's field
             _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords;
+
+            // Set these so it's shorter/easier to use them later
+            _assetPoolStartOffset = _openedFastFile.OpenedFastFileZone.AssetPoolStartOffset;
+            _assetPoolEndOffset = _openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
 
             // Anything that needs to be displayed for the asset pool view tab should be loaded here
 
@@ -1119,7 +1133,7 @@ namespace Call_of_Duty_FastFile_Editor
             // Make sure we have a valid zone and a populated asset pool
             if (_openedFastFile == null ||
                 _openedFastFile.OpenedFastFileZone == null ||
-                _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords == null)
+                _zoneAssetRecords == null)
             {
                 return;
             }
@@ -1148,11 +1162,12 @@ namespace Call_of_Duty_FastFile_Editor
             // Place the asset pool itself at the top
             var pool = new ListViewItem("");
             pool.SubItems.Add("Asset Pool");
-            pool.SubItems.Add($"0x{_openedFastFile.OpenedFastFileZone.AssetPoolStartOffset:X}");
             pool.SubItems.Add(string.Empty);
             pool.SubItems.Add(string.Empty);
-            pool.SubItems.Add($"0x{_openedFastFile.OpenedFastFileZone.AssetPoolStartOffset:X}");
-            pool.SubItems.Add($"0x{_openedFastFile.OpenedFastFileZone.AssetPoolEndOffset:X}");
+            pool.SubItems.Add(string.Empty);
+            pool.SubItems.Add($"0x{_assetPoolStartOffset:X}");
+            pool.SubItems.Add($"0x{_assetPoolEndOffset:X}");
+            pool.SubItems.Add($"0x{(_assetPoolEndOffset - _assetPoolStartOffset):X}");
 
             assetPoolListView.Items.Add(pool);
 

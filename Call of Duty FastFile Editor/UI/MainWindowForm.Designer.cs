@@ -70,16 +70,16 @@ namespace Call_of_Duty_FastFile_Editor
             universalContextMenu = new ContextMenuStrip(components);
             copyToolStripMenuItem = new ToolStripMenuItem();
             rawFilesPage = new TabPage();
-            zoneFileTabPage = new TabPage();
-            zoneInfoDataGridView = new DataGridView();
-            tabPage1 = new TabPage();
-            tagsListView = new ListView();
-            tabPage3 = new TabPage();
+            stringTablesTabPage = new TabPage();
             stringTableTreeView = new TreeView();
-            tabPageMapEnt = new TabPage();
+            mapEntTabPage = new TabPage();
             treeViewMapEnt = new TreeView();
+            tagsTabPage = new TabPage();
+            tagsListView = new ListView();
             assetPoolTabPage = new TabPage();
             assetPoolListView = new ListView();
+            zoneFileTabPage = new TabPage();
+            zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
@@ -91,12 +91,12 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileInfoTabControl.SuspendLayout();
             universalContextMenu.SuspendLayout();
             rawFilesPage.SuspendLayout();
+            stringTablesTabPage.SuspendLayout();
+            mapEntTabPage.SuspendLayout();
+            tagsTabPage.SuspendLayout();
+            assetPoolTabPage.SuspendLayout();
             zoneFileTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)zoneInfoDataGridView).BeginInit();
-            tabPage1.SuspendLayout();
-            tabPage3.SuspendLayout();
-            tabPageMapEnt.SuspendLayout();
-            assetPoolTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             SuspendLayout();
             // 
@@ -452,11 +452,11 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             zoneFileInfoTabControl.ContextMenuStrip = universalContextMenu;
             zoneFileInfoTabControl.Controls.Add(rawFilesPage);
-            zoneFileInfoTabControl.Controls.Add(zoneFileTabPage);
-            zoneFileInfoTabControl.Controls.Add(tabPage1);
-            zoneFileInfoTabControl.Controls.Add(tabPage3);
-            zoneFileInfoTabControl.Controls.Add(tabPageMapEnt);
+            zoneFileInfoTabControl.Controls.Add(stringTablesTabPage);
+            zoneFileInfoTabControl.Controls.Add(mapEntTabPage);
+            zoneFileInfoTabControl.Controls.Add(tagsTabPage);
             zoneFileInfoTabControl.Controls.Add(assetPoolTabPage);
+            zoneFileInfoTabControl.Controls.Add(zoneFileTabPage);
             zoneFileInfoTabControl.Dock = DockStyle.Fill;
             zoneFileInfoTabControl.Location = new Point(0, 28);
             zoneFileInfoTabControl.Name = "zoneFileInfoTabControl";
@@ -488,6 +488,90 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.Text = "Raw Files";
             rawFilesPage.UseVisualStyleBackColor = true;
             // 
+            // stringTablesTabPage
+            // 
+            stringTablesTabPage.Controls.Add(stringTableTreeView);
+            stringTablesTabPage.Location = new Point(4, 24);
+            stringTablesTabPage.Name = "stringTablesTabPage";
+            stringTablesTabPage.Padding = new Padding(3);
+            stringTablesTabPage.Size = new Size(1442, 749);
+            stringTablesTabPage.TabIndex = 3;
+            stringTablesTabPage.Text = "String Tables";
+            stringTablesTabPage.UseVisualStyleBackColor = true;
+            // 
+            // stringTableTreeView
+            // 
+            stringTableTreeView.ContextMenuStrip = universalContextMenu;
+            stringTableTreeView.Location = new Point(0, 0);
+            stringTableTreeView.Name = "stringTableTreeView";
+            stringTableTreeView.Size = new Size(250, 749);
+            stringTableTreeView.TabIndex = 0;
+            stringTableTreeView.MouseDown += treeView_MouseDownCopy;
+            // 
+            // mapEntTabPage
+            // 
+            mapEntTabPage.Controls.Add(treeViewMapEnt);
+            mapEntTabPage.Location = new Point(4, 24);
+            mapEntTabPage.Name = "mapEntTabPage";
+            mapEntTabPage.Padding = new Padding(3);
+            mapEntTabPage.Size = new Size(1442, 749);
+            mapEntTabPage.TabIndex = 4;
+            mapEntTabPage.Text = "Map Entities";
+            mapEntTabPage.UseVisualStyleBackColor = true;
+            // 
+            // treeViewMapEnt
+            // 
+            treeViewMapEnt.ContextMenuStrip = universalContextMenu;
+            treeViewMapEnt.Location = new Point(0, 0);
+            treeViewMapEnt.Name = "treeViewMapEnt";
+            treeViewMapEnt.Size = new Size(307, 749);
+            treeViewMapEnt.TabIndex = 2;
+            treeViewMapEnt.MouseDown += treeView_MouseDownCopy;
+            // 
+            // tagsTabPage
+            // 
+            tagsTabPage.Controls.Add(tagsListView);
+            tagsTabPage.Location = new Point(4, 24);
+            tagsTabPage.Name = "tagsTabPage";
+            tagsTabPage.Padding = new Padding(3);
+            tagsTabPage.Size = new Size(1442, 749);
+            tagsTabPage.TabIndex = 2;
+            tagsTabPage.Text = "Tags";
+            tagsTabPage.UseVisualStyleBackColor = true;
+            // 
+            // tagsListView
+            // 
+            tagsListView.ContextMenuStrip = universalContextMenu;
+            tagsListView.Location = new Point(0, 0);
+            tagsListView.Name = "tagsListView";
+            tagsListView.Size = new Size(487, 750);
+            tagsListView.TabIndex = 0;
+            tagsListView.UseCompatibleStateImageBehavior = false;
+            tagsListView.View = View.Details;
+            tagsListView.MouseDown += listView_MouseDownCopy;
+            // 
+            // assetPoolTabPage
+            // 
+            assetPoolTabPage.Controls.Add(assetPoolListView);
+            assetPoolTabPage.Location = new Point(4, 24);
+            assetPoolTabPage.Name = "assetPoolTabPage";
+            assetPoolTabPage.Padding = new Padding(3);
+            assetPoolTabPage.Size = new Size(1442, 749);
+            assetPoolTabPage.TabIndex = 5;
+            assetPoolTabPage.Text = "Asset Pool";
+            assetPoolTabPage.UseVisualStyleBackColor = true;
+            // 
+            // assetPoolListView
+            // 
+            assetPoolListView.ContextMenuStrip = universalContextMenu;
+            assetPoolListView.Dock = DockStyle.Fill;
+            assetPoolListView.Location = new Point(3, 3);
+            assetPoolListView.Name = "assetPoolListView";
+            assetPoolListView.Size = new Size(1436, 743);
+            assetPoolListView.TabIndex = 0;
+            assetPoolListView.UseCompatibleStateImageBehavior = false;
+            assetPoolListView.MouseDown += listView_MouseDownCopy;
+            // 
             // zoneFileTabPage
             // 
             zoneFileTabPage.Controls.Add(zoneInfoDataGridView);
@@ -508,89 +592,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.Size = new Size(493, 432);
             zoneInfoDataGridView.TabIndex = 0;
             zoneInfoDataGridView.MouseDown += dataGrid_MouseDownCopy;
-            // 
-            // tabPage1
-            // 
-            tabPage1.Controls.Add(tagsListView);
-            tabPage1.Location = new Point(4, 24);
-            tabPage1.Name = "tabPage1";
-            tabPage1.Padding = new Padding(3);
-            tabPage1.Size = new Size(1442, 749);
-            tabPage1.TabIndex = 2;
-            tabPage1.Text = "Tags";
-            tabPage1.UseVisualStyleBackColor = true;
-            // 
-            // tagsListView
-            // 
-            tagsListView.ContextMenuStrip = universalContextMenu;
-            tagsListView.Location = new Point(0, 0);
-            tagsListView.Name = "tagsListView";
-            tagsListView.Size = new Size(487, 750);
-            tagsListView.TabIndex = 0;
-            tagsListView.UseCompatibleStateImageBehavior = false;
-            tagsListView.View = View.Details;
-            tagsListView.MouseDown += listView_MouseDownCopy;
-            // 
-            // tabPage3
-            // 
-            tabPage3.Controls.Add(stringTableTreeView);
-            tabPage3.Location = new Point(4, 24);
-            tabPage3.Name = "tabPage3";
-            tabPage3.Padding = new Padding(3);
-            tabPage3.Size = new Size(1442, 749);
-            tabPage3.TabIndex = 3;
-            tabPage3.Text = "String Tables";
-            tabPage3.UseVisualStyleBackColor = true;
-            // 
-            // stringTableTreeView
-            // 
-            stringTableTreeView.ContextMenuStrip = universalContextMenu;
-            stringTableTreeView.Location = new Point(0, 0);
-            stringTableTreeView.Name = "stringTableTreeView";
-            stringTableTreeView.Size = new Size(250, 749);
-            stringTableTreeView.TabIndex = 0;
-            stringTableTreeView.MouseDown += treeView_MouseDownCopy;
-            // 
-            // tabPageMapEnt
-            // 
-            tabPageMapEnt.Controls.Add(treeViewMapEnt);
-            tabPageMapEnt.Location = new Point(4, 24);
-            tabPageMapEnt.Name = "tabPageMapEnt";
-            tabPageMapEnt.Padding = new Padding(3);
-            tabPageMapEnt.Size = new Size(1442, 749);
-            tabPageMapEnt.TabIndex = 4;
-            tabPageMapEnt.Text = "Map Entities";
-            tabPageMapEnt.UseVisualStyleBackColor = true;
-            // 
-            // treeViewMapEnt
-            // 
-            treeViewMapEnt.ContextMenuStrip = universalContextMenu;
-            treeViewMapEnt.Location = new Point(0, 0);
-            treeViewMapEnt.Name = "treeViewMapEnt";
-            treeViewMapEnt.Size = new Size(307, 749);
-            treeViewMapEnt.TabIndex = 2;
-            treeViewMapEnt.MouseDown += treeView_MouseDownCopy;
-            // 
-            // assetPoolTabPage
-            // 
-            assetPoolTabPage.Controls.Add(assetPoolListView);
-            assetPoolTabPage.Location = new Point(4, 24);
-            assetPoolTabPage.Name = "assetPoolTabPage";
-            assetPoolTabPage.Padding = new Padding(3);
-            assetPoolTabPage.Size = new Size(1442, 749);
-            assetPoolTabPage.TabIndex = 5;
-            assetPoolTabPage.Text = "Asset Pool";
-            assetPoolTabPage.UseVisualStyleBackColor = true;
-            // 
-            // assetPoolListView
-            // 
-            assetPoolListView.ContextMenuStrip = universalContextMenu;
-            assetPoolListView.Location = new Point(-4, 0);
-            assetPoolListView.Name = "assetPoolListView";
-            assetPoolListView.Size = new Size(1446, 753);
-            assetPoolListView.TabIndex = 0;
-            assetPoolListView.UseCompatibleStateImageBehavior = false;
-            assetPoolListView.MouseDown += listView_MouseDownCopy;
             // 
             // MainWindowForm
             // 
@@ -614,12 +615,12 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileInfoTabControl.ResumeLayout(false);
             universalContextMenu.ResumeLayout(false);
             rawFilesPage.ResumeLayout(false);
+            stringTablesTabPage.ResumeLayout(false);
+            mapEntTabPage.ResumeLayout(false);
+            tagsTabPage.ResumeLayout(false);
+            assetPoolTabPage.ResumeLayout(false);
             zoneFileTabPage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)zoneInfoDataGridView).EndInit();
-            tabPage1.ResumeLayout(false);
-            tabPage3.ResumeLayout(false);
-            tabPageMapEnt.ResumeLayout(false);
-            assetPoolTabPage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -676,13 +677,13 @@ namespace Call_of_Duty_FastFile_Editor
         private TabPage zoneFileTabPage;
         private DataGridView zoneInfoDataGridView;
         private BindingSource bindingSource1;
-        private TabPage tabPage1;
-        private TabPage tabPage3;
+        private TabPage tagsTabPage;
+        private TabPage stringTablesTabPage;
         private TreeView stringTableTreeView;
         private ListView tagsListView;
         private ContextMenuStrip universalContextMenu;
         private ToolStripMenuItem copyToolStripMenuItem;
-        private TabPage tabPageMapEnt;
+        private TabPage mapEntTabPage;
         private TreeView treeViewMapEnt;
         private ToolStripMenuItem rawFileToolsMenuItem;
         private ToolStripMenuItem increaseRawFileSizeToolStripMenuItem;
