@@ -876,7 +876,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView.Nodes.Clear();
 
             // 1) Find all CSV string tables in the zone
-            List<StringTable> csvTables = StringTableOperations.FindCsvStringTables(_openedFastFile.OpenedFastFileZone);
+            List<StringTable> csvTables = StringTableOperations.FindCsvStringTablesWithPattern(_openedFastFile.OpenedFastFileZone);
             if (csvTables == null || csvTables.Count == 0)
                 return;
 

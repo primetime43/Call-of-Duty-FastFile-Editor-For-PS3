@@ -47,6 +47,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
                             previousRecordWasParsed = false;
                         }
                     }
+                    else if (zoneAssetRecords[i].AssetType == ZoneFileAssetType.stringtable && zoneAssetRecords[i - 1].AssetDataEndOffset != 0)
+                    {
+                        int previousRecordEndOffset = zoneAssetRecords[i - 1].AssetDataEndOffset;
+                        StringTable stringTable = StringTableParser.ParseStringTable(openedFastFile, previousRecordEndOffset);
+
+                        // Update the asset record for the string table.
+                        UpdateAssetRecord(zoneAssetRecords, i, stringTable);
+                    }
                     else
                     {
                         previousRecordWasParsed = false;
@@ -61,21 +69,13 @@ namespace Call_of_Duty_FastFile_Editor.Services
             return rawFileNodes;
         }
 
-        private static void UpdateAssetRecord(List<ZoneAssetRecord> zoneAssetRecords, int index, RawFileNode node)
+        private static void UpdateAssetRecord<T>(List<ZoneAssetRecord> zoneAssetRecords, int index, T record) where T : IAssetRecordUpdatable
         {
             var assetRecord = zoneAssetRecords[index];
-            assetRecord.HeaderStartOffset = node.StartOfFileHeader;
-            assetRecord.HeaderEndOffset = node.EndOfFileHeader;
-            assetRecord.AssetDataStartPosition = node.CodeStartPosition;
-            assetRecord.AssetDataEndOffset = node.CodeEndPosition;
-            assetRecord.Name = node.FileName;
-            assetRecord.RawDataBytes = node.RawFileBytes;
-            assetRecord.Size = node.MaxSize;
-            assetRecord.Content = node.RawFileContent;
-
+            record.UpdateAssetRecord(ref assetRecord);
             zoneAssetRecords[index] = assetRecord;
 
-            Debug.WriteLine($"Updated asset record at index {index}: FileName = '{node.FileName}'");
+            Debug.WriteLine($"Updated asset record at index {index}: {assetRecord.Name}");
         }
     }
 }

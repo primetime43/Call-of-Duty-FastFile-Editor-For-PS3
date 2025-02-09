@@ -112,6 +112,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // filesTreeView
             // 
+            filesTreeView.BackColor = SystemColors.ScrollBar;
             filesTreeView.ContextMenuStrip = contextMenuStripRawFiles;
             filesTreeView.Dock = DockStyle.Fill;
             filesTreeView.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);

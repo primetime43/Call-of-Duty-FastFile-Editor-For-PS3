@@ -9,13 +9,17 @@ namespace Call_of_Duty_FastFile_Editor.Services
 {
     public static class Utilities
     {
-        public static int ReadInt32BigEndian(BinaryReader br)
+        public static int ReadInt32BigEndianAtOffset(int offset, Zone loadedZone, bool isBigEndian = true)
         {
-            byte[] bytes = br.ReadBytes(4);
-            if (BitConverter.IsLittleEndian)
-            {
+            if (offset + 4 > loadedZone.ZoneFileData.Length)
+                throw new EndOfStreamException($"Cannot read Int32 at offset 0x{offset:X}, exceeds file length.");
+
+            byte[] bytes = new byte[4];
+            Array.Copy(loadedZone.ZoneFileData, offset, bytes, 0, 4);
+
+            if (isBigEndian)
                 Array.Reverse(bytes);
-            }
+
             return BitConverter.ToInt32(bytes, 0);
         }
 

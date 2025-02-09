@@ -8,7 +8,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
     /// <summary>
     /// Represents a raw file stored within a FastFile, containing metadata and content.
     /// </summary>
-    public class RawFileNode
+    public class RawFileNode : IAssetRecordUpdatable
     {
         public RawFileNode() { }
 
@@ -62,10 +62,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public string MaxSizeHex => Utilities.ConvertToBigEndianHex(MaxSize);
 
-        /// <summary>
-        /// Position where the file header starts. 
-        /// This is also where the size of the file is located.
-        /// </summary>
         public int StartOfFileHeader { get; set; }
 
         /// <summary>
@@ -117,6 +113,18 @@ namespace Call_of_Duty_FastFile_Editor.Models
             result[fileNameBytes.Length] = 0x00;
 
             return result;
+        }
+
+        public void UpdateAssetRecord(ref ZoneAssetRecord assetRecord)
+        {
+            assetRecord.HeaderStartOffset = this.StartOfFileHeader;
+            assetRecord.HeaderEndOffset = this.EndOfFileHeader;
+            assetRecord.AssetDataStartPosition = this.CodeStartPosition;
+            assetRecord.AssetDataEndOffset = this.CodeEndPosition;
+            assetRecord.Name = this.FileName;
+            assetRecord.RawDataBytes = this.RawFileBytes;
+            assetRecord.Size = this.MaxSize;
+            assetRecord.Content = this.RawFileContent;
         }
     }
 }
