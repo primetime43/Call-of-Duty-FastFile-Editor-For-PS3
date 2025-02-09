@@ -5,16 +5,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
 {
     public class ZoneFileAssets
     {
-        // the order is imporant because thats the order they appear in the zone file
-        public List<ZoneAssetRecord>? ZoneAssetsPool { get; set; } = new List<ZoneAssetRecord>();
-
-        // A dictionary: key = asset type, value = list of records of that type
-        public Dictionary<ZoneFileAssetType, List<ZoneAssetRecord>> AssetsByType { get; set; }
-            = new Dictionary<ZoneFileAssetType, List<ZoneAssetRecord>>();
-
-        public List<StringTable> StringTables { get; set; } = new List<StringTable>();
-        public List<RawFileNode> RawFiles { get; set; } = new List<RawFileNode>();
-        public Tags? Tags { get; set; } = new Tags();
+        /// <summary>
+        /// List of asset records in the zone file.
+        /// Parsed from the asset pool.
+        /// Order MUST stay the same as in the zone file.
+        /// </summary>
+        public List<ZoneAssetRecord>? ZoneAssetRecords { get; set; } = new List<ZoneAssetRecord>();
     }
 
     public struct ZoneAssetRecord

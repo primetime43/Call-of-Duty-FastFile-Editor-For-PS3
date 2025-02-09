@@ -15,9 +15,9 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         public void MapZoneAssetsPoolAndGetEndOffset()
         {
-            if (_zone.ZoneFileAssets.ZoneAssetsPool == null)
-                _zone.ZoneFileAssets.ZoneAssetsPool = new List<ZoneAssetRecord>();
-            _zone.ZoneFileAssets.ZoneAssetsPool.Clear();
+            if (_zone.ZoneFileAssets.ZoneAssetRecords == null)
+                _zone.ZoneFileAssets.ZoneAssetRecords = new List<ZoneAssetRecord>();
+            _zone.ZoneFileAssets.ZoneAssetRecords.Clear();
 
             byte[] data = _zone.ZoneFileData;
             int fileLen = data.Length;
@@ -60,7 +60,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                     AssetPoolRecordOffset = i
                 };
 
-                _zone.ZoneFileAssets.ZoneAssetsPool.Add(record);
+                _zone.ZoneFileAssets.ZoneAssetRecords.Add(record);
                 foundAnyAsset = true;
                 i += 8;
             }
@@ -68,7 +68,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             _zone.AssetPoolStartOffset = assetPoolStart;
             _zone.AssetPoolEndOffset = endOfPoolOffset;
 
-            Debug.WriteLine($"[MapZoneAssetsPool] Found {_zone.ZoneFileAssets.ZoneAssetsPool.Count} records.");
+            Debug.WriteLine($"[MapZoneAssetsPool] Found {_zone.ZoneFileAssets.ZoneAssetRecords.Count} records.");
             Debug.WriteLine($"[MapZoneAssetsPool] Start Offset: 0x{_zone.AssetPoolStartOffset:X}");
             Debug.WriteLine($"[MapZoneAssetsPool] End Offset: 0x{_zone.AssetPoolEndOffset:X}");
         }

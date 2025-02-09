@@ -33,7 +33,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint TagCount { get; set; }
         public uint Unknown10 { get; set; }
         public uint Unknown11 { get; set; }
-        public List<uint> TagPtrs { get; set; } = new List<uint>();
 
         // For display or debugging purposes.
         public Dictionary<string, uint>? DecimalValues { get; private set; }
@@ -64,12 +63,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// <summary>
         /// Reads all bytes from the zone file and stores them in ZoneFileData.
         /// </summary>
-        public void SetZoneData()
+        public void GetSetZoneBytes()
         {
             this.ZoneFileData = File.ReadAllBytes(ZoneFilePath);
         }
 
-        public void MapZoneAssetsPoolAndGetEndOffset()
+        public void GetSetZoneAssetPool()
         {
             AssetPoolParser parser = new AssetPoolParser(this);
             parser.MapZoneAssetsPoolAndGetEndOffset();

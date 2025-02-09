@@ -9,9 +9,7 @@ using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.Services;
-using System;
 using System.ComponentModel;
-using System.Xml.Linq;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
 
 namespace Call_of_Duty_FastFile_Editor
@@ -25,15 +23,28 @@ namespace Call_of_Duty_FastFile_Editor
 
 
         /// <summary>
-        /// List of file entry nodes extracted from the zone file.
+        /// List of raw file nodes extracted from the zone file.
         /// </summary>
         private List<RawFileNode> _rawFileNodes;
+
+        /// <summary>
+        /// List of string tables extracted from the zone file.
+        /// </summary>
+        private List<StringTable> _stringTables;
+
+        /// <summary>
+        /// List of tags extracted from the zone file.
+        /// </summary>
+        private Tags? _tags;
 
         /// <summary>
         /// FastFile instance representing the opened Fast File.
         /// </summary>
         private FastFile _openedFastFile;
 
+        /// <summary>
+        /// List of ZoneAssetRecords extracted from the opened Fast File's zone.
+        /// </summary>
         private List<ZoneAssetRecord> _zoneAssetRecords;
 
         public MainWindowForm()
@@ -50,6 +61,7 @@ namespace Call_of_Duty_FastFile_Editor
             universalContextMenu.Opening += universalContextMenu_Opening;
         }
 
+        #region Right Click Context Menu initialization
         private string _rightClickedItemText = string.Empty;
 
         private void universalContextMenu_Opening(object sender, CancelEventArgs e)
@@ -64,9 +76,10 @@ namespace Call_of_Duty_FastFile_Editor
                 Clipboard.SetText(_rightClickedItemText);
             }
         }
+        #endregion
 
         /// <summary>
-        /// Opens a Fast File, decompresses it, extracts file entries, and populates the TreeView.
+        /// Opens a Fast File, decompresses it, extracts data from the zone & displays it.
         /// </summary>
         private void openFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -86,8 +99,6 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            filesTreeView.Nodes.Clear();
-
             try
             {
                 _openedFastFile = new FastFile(openFileDialog.FileName);
@@ -106,29 +117,25 @@ namespace Call_of_Duty_FastFile_Editor
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
 
-                    _openedFastFile.OpenedFastFileZone.SetZoneData();
+                    // Read the byte of the zone file and set them to the Zone object
+                    _openedFastFile.OpenedFastFileZone.GetSetZoneBytes();
 
-                    // 2) Map the pool + get end offset
-                    _openedFastFile.OpenedFastFileZone.MapZoneAssetsPoolAndGetEndOffset();
-                    // (This also populates _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool)
+                    // Find the asset pool, parse it, and set it to the Zone object
+                    _openedFastFile.OpenedFastFileZone.GetSetZoneAssetPool();
 
-                    //_openedFastFile.OpenedFastFileZone.ScanForAssetData(endOffset); // this doesn't work correctly
+                    // Set the zone asset records to this form's field
+                    _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords;
 
-                    _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool;
+                    // Anything that needs to be displayed for the asset pool view tab should be loaded here
 
-                    // Read the entire zone file data once.
-                    byte[] zoneData = _openedFastFile.OpenedFastFileZone.ZoneFileData;
-
+                    // Process the asset records to get the raw file nodes and set them to this form's field
+                    // move this eventually
                     _rawFileNodes = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords);
-
-                    //FastFileProcessing.GetRawFilesWithPattern(_openedFastFile.ZoneFilePath, out _rawFileNodes);
+                    // At this point we should know the location of the asset pool start
+                    // So we can go back one from the start and there be a null byte, then the tags end starts there
+                    PopulateTags();
 
                     LoadAssetPoolIntoListView();
-
-                    Console.WriteLine("Zone file decompressed successfully.");
-
-                    //_openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles = FastFileProcessing.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
-                    //_rawFileNodes = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.RawFiles;
                 }
                 catch (Exception ex)
                 {
@@ -139,9 +146,9 @@ namespace Call_of_Duty_FastFile_Editor
                 try
                 {
                     // Move these eventually and change how they're loaded
-                    PopulateTreeView();
+                    PopulateRawFilesTreeView();
                     PopulateZoneValuesDataGridView(_openedFastFile.OpenedFastFileZone);
-                    //PopulateTags();
+
                     //PopulateStringTable();
                     //PopulateMapEntities();
                 }
@@ -174,7 +181,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Populates the TreeView with TreeNodes corresponding to RawFileNodes.
         /// </summary>
-        private void PopulateTreeView()
+        private void PopulateRawFilesTreeView()
         {
             // Clear existing nodes to avoid duplication
             filesTreeView.Nodes.Clear();
@@ -650,7 +657,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
-                            PopulateTreeView();
+                            PopulateRawFilesTreeView();
                             UIManager.SetTreeNodeColors(filesTreeView);
 
                             //_hasUnsavedChanges = true;
@@ -677,7 +684,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                     // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
                     filesTreeView.Nodes.Clear();
-                    PopulateTreeView();
+                    PopulateRawFilesTreeView();
 
                     // Optionally re-apply any color or style
                     UIManager.SetTreeNodeColors(filesTreeView);
@@ -789,12 +796,9 @@ namespace Call_of_Duty_FastFile_Editor
         private void PopulateTags()
         {
             // Fetch the results
-            var tagsInfo = TagOperations.FindTags(_openedFastFile.OpenedFastFileZone);
+            _tags = TagOperations.FindTags(_openedFastFile.OpenedFastFileZone);
 
-            // Set the opened FastFile's Zone object to hold the tags
-            _openedFastFile.OpenedFastFileZone.ZoneFileAssets.Tags = tagsInfo;
-
-            if (tagsInfo == null)
+            if (_tags == null)
                 return;
 
             tagsListView.View = View.Details;
@@ -802,30 +806,23 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.Items.Clear();
             tagsListView.MultiSelect = true;
             tagsListView.FullRowSelect = true;
-            tagsListView.Columns.Add("Tag (" + tagsInfo.TagEntries.Count + ")", 100);
-            tagsListView.Columns.Add("AssetPoolRecordOffset (Dec)", 100);
-            tagsListView.Columns.Add("AssetPoolRecordOffset (Hex)", 100);
+            tagsListView.Columns.Add("Tag (" + _tags.TagEntries.Count + ")", 100);
+            tagsListView.Columns.Add("Offset", 100);
 
             // Sort the TagEntries by OffsetDec in ascending order
-            var sortedTagEntries = tagsInfo.TagEntries
+            var sortedTagEntries = _tags.TagEntries
                 .OrderBy(entry => entry.OffsetDec)
                 .ToList();
 
             // Now tagsInfo.TagEntries holds all entries
-            foreach (var entry in tagsInfo.TagEntries)
+            foreach (var entry in _tags.TagEntries)
             {
-                // Create a row with 3 columns:
                 // 1) Tag
-                // 2) Decimal offset
-                // 3) Hex offset (with 0x prefix)
+                // 2) Hex offset
                 var lvi = new ListViewItem(entry.Tag);
 
-                // Decimal offset
-                lvi.SubItems.Add(entry.OffsetDec.ToString());
-
                 // Hex offset (for example "0x1AC4AC0")
-                string hexString = $"0x{entry.OffsetDec:X}";
-                lvi.SubItems.Add(hexString);
+                lvi.SubItems.Add("0x"+entry.OffsetHex);
 
                 tagsListView.Items.Add(lvi);
             }
@@ -847,7 +844,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
 
             // Set the opened FastFile's Zone object to hold the string tables
-            _openedFastFile.OpenedFastFileZone.ZoneFileAssets.StringTables = csvTables;
+            _stringTables = csvTables;
 
             // 2) Add each table to the TreeView
             foreach (var table in csvTables)
@@ -1017,12 +1014,7 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
                     _hasUnsavedChanges = false; // Reset the flag after saving
-                    filesTreeView.Nodes.Clear();
-                    treeViewMapEnt.Nodes.Clear();
-                    stringTableTreeView.Nodes.Clear();
-                    tagsListView.Items.Clear();
-                    zoneInfoDataGridView.DataSource = null;
-                    textEditorControl1.ResetText();
+                    CleanUpAndClearUI();
 
                     try
                     {
@@ -1043,6 +1035,16 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 MessageBox.Show($"Failed to close fastfile: {ex.Message}", "Close Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void CleanUpAndClearUI()
+        {
+            filesTreeView.Nodes.Clear();
+            treeViewMapEnt.Nodes.Clear();
+            stringTableTreeView.Nodes.Clear();
+            tagsListView.Items.Clear();
+            zoneInfoDataGridView.DataSource = null;
+            textEditorControl1.ResetText();
         }
 
         /// <summary>
@@ -1094,7 +1096,7 @@ namespace Call_of_Duty_FastFile_Editor
             // Make sure we have a valid zone and a populated asset pool
             if (_openedFastFile == null ||
                 _openedFastFile.OpenedFastFileZone == null ||
-                _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool == null)
+                _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords == null)
             {
                 return;
             }
@@ -1118,10 +1120,21 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Columns.Add("Data End", 100);
             assetPoolListView.Columns.Add("Size", 60);
             assetPoolListView.Columns.Add("Name", 120);
-            assetPoolListView.Columns.Add("Content Snippet", 200); // optional
+            assetPoolListView.Columns.Add("Content Snippet", 200);
+
+            // Place the asset pool itself at the top
+            var pool = new ListViewItem("Asset Pool");
+            pool.SubItems.Add($"0x{_openedFastFile.OpenedFastFileZone.AssetPoolStartOffset:X}");
+            pool.SubItems.Add(string.Empty);
+            pool.SubItems.Add(string.Empty);
+            pool.SubItems.Add($"0x{_openedFastFile.OpenedFastFileZone.AssetPoolStartOffset:X}");
+            pool.SubItems.Add($"0x{_openedFastFile.OpenedFastFileZone.AssetPoolEndOffset:X}");
+
+            assetPoolListView.Items.Add(pool);
+
 
             // 4) Populate a row (ListViewItem) for each record
-            foreach (var record in _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool)
+            foreach (var record in _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords)
             {
                 // First column: AssetType
                 var lvi = new ListViewItem(record.AssetType.ToString());

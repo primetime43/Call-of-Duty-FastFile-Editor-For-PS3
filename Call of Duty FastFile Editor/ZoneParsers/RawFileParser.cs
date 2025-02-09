@@ -18,7 +18,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             Debug.WriteLine($"[ExtractSingleRawFileNodeNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
 
 
-            for (int idx = 0; idx < openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetsPool.Count; idx++)
+            for (int idx = 0; idx < openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords.Count; idx++)
             {
                 // Ensure we have at least 12 bytes for the header.
                 if (offset > fileData.Length - 12)
