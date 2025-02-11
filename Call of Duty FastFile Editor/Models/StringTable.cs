@@ -28,31 +28,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
         public string AdditionalData { get; set; }
 
-        /// <summary>
-        /// Gets the string at the specified row and column.
-        /// </summary>
-        public string GetEntry(int row, int column)
-        {
-            if (Cells == null)
-                throw new InvalidOperationException("Table cells have not been loaded.");
-
-            if (row < 0 || row >= RowCount)
-                throw new ArgumentOutOfRangeException(nameof(row));
-            if (column < 0 || column >= ColumnCount)
-                throw new ArgumentOutOfRangeException(nameof(column));
-
-            // row-major index
-            int index = row * ColumnCount + column;
-            return Cells[index].Text;
-        }
-
         public void UpdateAssetRecord(ref ZoneAssetRecord assetRecord)
         {
-            // For a string table, you might only want to update some fields:
             assetRecord.Name = this.TableName;
-
-            // Optionally, you might store the total number of cells as a size, or leave it 0.
-            assetRecord.Size = this.RowCount * this.ColumnCount;
 
             // Use the new Cells list to build a single string of all cell text
             if (Cells != null)

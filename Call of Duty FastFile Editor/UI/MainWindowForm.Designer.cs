@@ -81,6 +81,7 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage = new TabPage();
             zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
+            stringTableListView = new ListView();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -491,6 +492,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // stringTablesTabPage
             // 
+            stringTablesTabPage.Controls.Add(stringTableListView);
             stringTablesTabPage.Controls.Add(stringTableTreeView);
             stringTablesTabPage.Location = new Point(4, 24);
             stringTablesTabPage.Name = "stringTablesTabPage";
@@ -507,6 +509,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView.Name = "stringTableTreeView";
             stringTableTreeView.Size = new Size(250, 749);
             stringTableTreeView.TabIndex = 0;
+            stringTableTreeView.AfterSelect += stringTableTreeView_AfterSelect;
             stringTableTreeView.MouseDown += treeView_MouseDownCopy;
             // 
             // mapEntTabPage
@@ -593,6 +596,14 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.Size = new Size(493, 432);
             zoneInfoDataGridView.TabIndex = 0;
             zoneInfoDataGridView.MouseDown += dataGrid_MouseDownCopy;
+            // 
+            // stringTableListView
+            // 
+            stringTableListView.Location = new Point(247, 0);
+            stringTableListView.Name = "stringTableListView";
+            stringTableListView.Size = new Size(384, 749);
+            stringTableListView.TabIndex = 1;
+            stringTableListView.UseCompatibleStateImageBehavior = false;
             // 
             // MainWindowForm
             // 
@@ -690,5 +701,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem increaseRawFileSizeToolStripMenuItem;
         private TabPage assetPoolTabPage;
         private ListView assetPoolListView;
+        private ListView stringTableListView;
     }
 }

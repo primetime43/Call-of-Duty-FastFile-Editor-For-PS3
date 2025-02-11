@@ -57,6 +57,8 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private List<ZoneAssetRecord> _zoneAssetRecords;
 
+        private AssetProcessResult _processResult;
+
         public MainWindowForm()
         {
             InitializeComponent();
@@ -175,8 +177,15 @@ namespace Call_of_Duty_FastFile_Editor
 
             // Anything that needs to be displayed for the asset pool view tab should be loaded here
 
-            // Process the asset records to get the raw file nodes and set them to this form's field
-            _rawFileNodes = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords);
+            _processResult = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords);
+
+            // store the typed lists
+            _rawFileNodes = _processResult.RawFileNodes;
+            _stringTables = _processResult.StringTables;
+
+            // also store updated records
+            _zoneAssetRecords = _processResult.UpdatedRecords;
+
 
             // REWRITE EVENTUALLY. At this point we should know the location of the asset pool start
             // So we can go back one from the start and there be a null byte, then the tags end starts there
@@ -198,7 +207,7 @@ namespace Call_of_Duty_FastFile_Editor
             // Load the values parsed from the zone header (tag count, asset record count)
             LoadZoneHeaderValues(_openedFastFile.OpenedFastFileZone);
 
-            //PopulateStringTable();
+            PopulateStringTable();
             //PopulateMapEntities();
         }
 
@@ -859,7 +868,7 @@ namespace Call_of_Duty_FastFile_Editor
                 var lvi = new ListViewItem(entry.Tag);
 
                 // Hex offset (for example "0x1AC4AC0")
-                lvi.SubItems.Add("0x"+entry.OffsetHex);
+                lvi.SubItems.Add("0x" + entry.OffsetHex);
 
                 tagsListView.Items.Add(lvi);
             }
@@ -870,33 +879,26 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Populates the String Table page view with the tables extracted from the zone file.
         /// </summary>
-        /*private void PopulateStringTable()
+        private void PopulateStringTable()
         {
-            // Clear the existing nodes to avoid duplicates
+            // Clear existing nodes
             stringTableTreeView.Nodes.Clear();
 
-            // 1) Find all CSV string tables in the zone
-            List<StringTable> csvTables = StringTable.FindCsvStringTablesWithPattern(_openedFastFile.OpenedFastFileZone);
-            if (csvTables == null || csvTables.Count == 0)
-                return;
 
-            // Set the opened FastFile's Zone object to hold the string tables
-            _stringTables = csvTables;
-
-            // 2) Add each table to the TreeView
-            foreach (var table in csvTables)
+            // For each table, create a node
+            foreach (var table in _stringTables)
             {
-                // Create a parent node with the table name
                 TreeNode tableNode = new TreeNode(table.TableName);
+                // Put the entire StringTable object in Tag
+                tableNode.Tag = table;
 
-                // Add child nodes for RowCount and ColumnCount
-                tableNode.Nodes.Add("Rows: " + table.RowCount);
-                tableNode.Nodes.Add("Columns: " + table.ColumnCount);
+                // Add child nodes for Rows and Columns
+                tableNode.Nodes.Add($"Rows: {table.RowCount}");
+                tableNode.Nodes.Add($"Columns: {table.ColumnCount}");
 
-                // Add this table node to the top-level tree
                 stringTableTreeView.Nodes.Add(tableNode);
             }
-        }*/
+        }
 
         private void PopulateMapEntities()
         {
@@ -1122,7 +1124,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void searchRawFileTxtMenuItem_Click(object sender, EventArgs e)
         {
-            if(_rawFileNodes?.Count > 0)
+            if (_rawFileNodes?.Count > 0)
                 new RawFileSearcherForm(_rawFileNodes).Show();
             else
                 MessageBox.Show("No raw files found to search through.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -1218,6 +1220,45 @@ namespace Call_of_Duty_FastFile_Editor
 
             // Auto-resize columns to fit header size or content
             assetPoolListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
+        private void stringTableTreeView_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            // 1) Clear existing items & columns in the ListView
+            stringTableListView.Items.Clear();
+            stringTableListView.Columns.Clear();
+
+            // 2) Use "Details" view with full-row select
+            stringTableListView.View = View.Details;
+            stringTableListView.FullRowSelect = true;
+            stringTableListView.GridLines = true;
+
+            // 3) Define columns for Index, Offset, and Text
+            //    Feel free to rename or adjust widths as desired
+            stringTableListView.Columns.Add("Index", 60);       // Which cell # in the table
+            stringTableListView.Columns.Add("Offset (Hex)", 100); // The file offset (if you want it)
+            stringTableListView.Columns.Add("Text", 300);
+
+            // Make sure the selected node actually corresponds to a StringTable
+            if (e.Node?.Tag is StringTable selectedTable)
+            {
+                // 4) Populate one row per cell in "Cells"
+                for (int i = 0; i < selectedTable?.Cells?.Count; i++)
+                {
+                    // Each entry in "Cells" is (Offset, Text)
+                    var (offset, text) = selectedTable.Cells[i];
+
+                    // Create a new ListViewItem for this cell
+                    ListViewItem lvi = new ListViewItem(i.ToString());        // 1st column: Index
+                    lvi.SubItems.Add($"0x{offset:X}");                        // 2nd column: Offset in hex
+                    lvi.SubItems.Add(text);                                   // 3rd column: the cell text
+
+                    stringTableListView.Items.Add(lvi);
+                }
+            }
+
+            // 5) Auto-resize columns to fit headers or content
+            stringTableListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
     }
 }
