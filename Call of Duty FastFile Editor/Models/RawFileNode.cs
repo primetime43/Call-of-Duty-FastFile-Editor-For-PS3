@@ -97,6 +97,8 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public byte[] RawFileBytes { get; set; }
 
+        public string AdditionalData { get; set; }
+
         /// <summary>
         /// Updates the file name and returns the byte array representation.
         /// </summary>
@@ -125,6 +127,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             assetRecord.RawDataBytes = this.RawFileBytes;
             assetRecord.Size = this.MaxSize;
             assetRecord.Content = this.RawFileContent;
+            assetRecord.AdditionalData = this.AdditionalData;
         }
     }
 }

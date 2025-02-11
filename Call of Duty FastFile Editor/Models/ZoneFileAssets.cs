@@ -25,6 +25,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string Content { get; set; }
         public int Size { get; set; }
         public byte[] RawDataBytes { get; set; }
+        public string AdditionalData { get; set; }
     }
 
     public enum ZoneFileAssetType

@@ -16,5 +16,10 @@
         /// Position where the file header ends.
         /// </summary>
         int EndOfFileHeader { get; }
+
+        /// <summary>
+        /// Position where the file header ends.
+        /// </summary>
+        int CodeEndPosition { get; }
     }
 }

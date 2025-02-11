@@ -870,13 +870,13 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Populates the String Table page view with the tables extracted from the zone file.
         /// </summary>
-        private void PopulateStringTable()
+        /*private void PopulateStringTable()
         {
             // Clear the existing nodes to avoid duplicates
             stringTableTreeView.Nodes.Clear();
 
             // 1) Find all CSV string tables in the zone
-            List<StringTable> csvTables = StringTableOperations.FindCsvStringTablesWithPattern(_openedFastFile.OpenedFastFileZone);
+            List<StringTable> csvTables = StringTable.FindCsvStringTablesWithPattern(_openedFastFile.OpenedFastFileZone);
             if (csvTables == null || csvTables.Count == 0)
                 return;
 
@@ -896,7 +896,7 @@ namespace Call_of_Duty_FastFile_Editor
                 // Add this table node to the top-level tree
                 stringTableTreeView.Nodes.Add(tableNode);
             }
-        }
+        }*/
 
         private void PopulateMapEntities()
         {
@@ -1128,6 +1128,9 @@ namespace Call_of_Duty_FastFile_Editor
                 MessageBox.Show("No raw files found to search through.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
+        /// <summary>
+        /// Populates the Zone Asset Pool list view from the _zoneAssetRecords
+        /// </summary>
         private void LoadAssetPoolIntoListView()
         {
             // Make sure we have a valid zone and a populated asset pool
@@ -1199,14 +1202,14 @@ namespace Call_of_Duty_FastFile_Editor
                 lvi.SubItems.Add(record.Name ?? string.Empty);
 
                 // Seventh column: Entire content, no truncation
-                /*if (!string.IsNullOrEmpty(record.Content))
+                if (!string.IsNullOrEmpty(record.AdditionalData))
                 {
-                    lvi.SubItems.Add(record.Content);
+                    lvi.SubItems.Add(record.AdditionalData);
                 }
                 else
                 {
                     lvi.SubItems.Add(string.Empty);
-                }*/
+                }
 
                 // Finally, add the row to the list
                 assetPoolListView.Items.Add(lvi);

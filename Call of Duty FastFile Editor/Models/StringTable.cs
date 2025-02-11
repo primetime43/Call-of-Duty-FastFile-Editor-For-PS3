@@ -21,48 +21,60 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int StartOfFileHeader { get; set; }
         public int EndOfFileHeader { get; set; }
 
-        // All cell values stored in row-major order
-        public string[]? Values { get; set; }
+        public int CodeEndPosition { get; set; }
+
+        // Each item is (Offset, Text).
+        public List<(int Offset, string Text)>? Cells { get; set; }
+
+        public string AdditionalData { get; set; }
 
         /// <summary>
         /// Gets the string at the specified row and column.
         /// </summary>
         public string GetEntry(int row, int column)
         {
-            if (Values == null)
-                throw new InvalidOperationException("Table values have not been loaded.");
+            if (Cells == null)
+                throw new InvalidOperationException("Table cells have not been loaded.");
 
             if (row < 0 || row >= RowCount)
-                throw new ArgumentOutOfRangeException(nameof(row), "Row is out of range.");
+                throw new ArgumentOutOfRangeException(nameof(row));
             if (column < 0 || column >= ColumnCount)
-                throw new ArgumentOutOfRangeException(nameof(column), "Column is out of range.");
+                throw new ArgumentOutOfRangeException(nameof(column));
 
-            int index = (ColumnCount * row) + column;
-            return Values[index];
+            // row-major index
+            int index = row * ColumnCount + column;
+            return Cells[index].Text;
         }
 
         public void UpdateAssetRecord(ref ZoneAssetRecord assetRecord)
         {
             // For a string table, you might only want to update some fields:
             assetRecord.Name = this.TableName;
+
             // Optionally, you might store the total number of cells as a size, or leave it 0.
             assetRecord.Size = this.RowCount * this.ColumnCount;
-            // For content, you could join the table values (if loaded) or simply leave it empty.
-            assetRecord.Content = Values != null ? string.Join(", ", Values) : string.Empty;
+
+            // Use the new Cells list to build a single string of all cell text
+            if (Cells != null)
+            {
+                // If you only want the text:
+                assetRecord.Content = string.Join(", ", Cells.Select(c => c.Text));
+
+                // Alternatively, if you want offsets too (in hex):
+                // assetRecord.Content = string.Join("; ", Cells.Select(c => $"0x{c.Offset:X}: {c.Text}"));
+            }
+            else
+            {
+                assetRecord.Content = string.Empty;
+            }
 
             assetRecord.HeaderStartOffset = this.StartOfFileHeader;
             assetRecord.HeaderEndOffset = this.EndOfFileHeader;
-
-            // If you have header offset information in your zone for string tables,
-            // you can update HeaderStartOffset, etc., here as needed.
-            // For now, we set them to 0.
-            assetRecord.AssetDataStartPosition = 0;
-            assetRecord.AssetDataEndOffset = 0;
+            assetRecord.AdditionalData = this.AdditionalData;
+            assetRecord.AssetDataStartPosition = this.CodeStartPosition;
+            assetRecord.AssetDataEndOffset = this.CodeEndPosition;
         }
-    }
 
-    public static class StringTableOperations
-    {
         /// <summary>
         /// Scans the zone file for string table entries that look like:
         /// 
@@ -72,14 +84,18 @@ namespace Call_of_Duty_FastFile_Editor.Models
         ///   [ null-terminated ASCII filename ending in .csv ]
         ///
         /// This is more robust than scanning for ".csv" first.
+        /// TEMP EVENTUALLY DELETE
         /// </summary>
-        public static List<StringTable> FindCsvStringTablesWithPattern(Zone zone)
+        public static StringTable? FindSingleCsvStringTableWithPattern(Zone zone, int startingOffset)
         {
             byte[] zoneBytes = zone.ZoneFileData;
-            List<StringTable> tables = new List<StringTable>();
 
-            // We'll scan for 0xFF FF FF FF
-            for (int i = 0; i < zoneBytes.Length - 4; i++)
+            // Validate the starting offset
+            if (startingOffset < 0 || startingOffset >= zoneBytes.Length)
+                throw new ArgumentOutOfRangeException(nameof(startingOffset), "Starting offset is outside the zone file data range.");
+
+            // Start scanning from the provided offset.
+            for (int i = startingOffset; i < zoneBytes.Length - 4; i++)
             {
                 // Check if these 4 bytes are FF FF FF FF
                 if (zoneBytes[i] == 0xFF &&
@@ -90,41 +106,44 @@ namespace Call_of_Duty_FastFile_Editor.Models
                     int pointerIndex = i;
 
                     // We expect RowCount at (pointerIndex - 8) and ColumnCount at (pointerIndex - 4).
-                    // Make sure we don't go negative:
                     int rowCountOffset = pointerIndex - 8;
                     int colCountOffset = pointerIndex - 4;
                     if (rowCountOffset < 0 || colCountOffset < 0)
                         continue;
 
-                    // Read rowCount/columnCount in big-endian
+                    // Read rowCount and columnCount in big-endian
                     uint rowCountU = Utilities.ReadUInt32AtOffset(rowCountOffset, zone, isBigEndian: true);
                     uint columnCountU = Utilities.ReadUInt32AtOffset(colCountOffset, zone, isBigEndian: true);
 
-                    // Now read the name from pointerIndex+4 (null-terminated)
+                    // Now read the table name from pointerIndex + 4 (null-terminated)
                     int nameStart = pointerIndex + 4;
                     if (nameStart >= zoneBytes.Length)
                         continue;
 
                     string tableName = Utilities.ReadStringAtOffset(nameStart, zone);
 
-                    // Make sure the table name ends with .csv, and has at least one slash in it
-                    // (Based on your requirement that we see strings like "mp/statsTable.csv", etc.)
+                    // Validate that the table name ends with .csv and contains at least one slash.
                     bool looksLikeCsv = tableName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
                                         && tableName.Contains('/');
 
                     if (looksLikeCsv)
                     {
-                        tables.Add(new StringTable
+                        return new StringTable
                         {
                             RowCount = (int)rowCountU,
                             ColumnCount = (int)columnCountU,
                             TableName = tableName
-                        });
+                            // Optionally, you might store the offsets if needed:
+                            // RowCountOffset = rowCountOffset,
+                            // ColumnCountOffset = colCountOffset,
+                            // TableNameOffset = nameStart,
+                        };
                     }
                 }
             }
 
-            return tables;
+            // If no valid string table is found, return null.
+            return null;
         }
     }
 }
