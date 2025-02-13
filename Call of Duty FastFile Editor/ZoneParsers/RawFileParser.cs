@@ -17,70 +17,67 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             byte[] fileData = openedFastFile.OpenedFastFileZone.ZoneFileData;
             Debug.WriteLine($"[ExtractSingleRawFileNodeNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
 
-            // change this. This loop might not be needed since we're getting one at a time
-            for (int idx = 0; idx < openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords.Count; idx++)
+            // Ensure we have enough bytes for the header (12 bytes)
+            if (offset > fileData.Length - 12)
             {
-                // Ensure we have at least 12 bytes for the header.
-                if (offset > fileData.Length - 12)
-                {
-                    Debug.WriteLine($"[RawFile {idx}] Not enough bytes remaining for a header at offset 0x{offset:X}.");
-                    break;
-                }
+                Debug.WriteLine($"[RawFile] Not enough bytes remaining for a header at offset 0x{offset:X}.");
+                return null;
+            }
 
-                // --- Read the 12-byte header ---
-                // Bytes 0-3: Marker. Must be 0xFFFFFFFF.
-                uint marker = Utilities.ReadUInt32BigEndian(fileData, offset);
-                if (marker != 0xFFFFFFFF)
-                {
-                    Debug.WriteLine($"[RawFile {idx}] Unexpected marker at offset 0x{offset:X}: 0x{marker:X}. Stopping extraction.");
-                    break;
-                }
-                // Bytes 4-7: Data length. (This field holds the size of the file data.)
-                int dataLength = (int)Utilities.ReadUInt32BigEndian(fileData, offset + 4);
-                // Bytes 8-11: Name pointer. If -1, the file name is inline.
-                int namePointer = (int)Utilities.ReadUInt32BigEndian(fileData, offset + 8);
-                Debug.WriteLine($"[RawFile {idx}] Header at offset 0x{offset:X}: dataLength = {dataLength}, namePointer = {namePointer}");
+            // Read and validate the first marker (should be 0xFFFFFFFF)
+            uint marker1 = Utilities.ReadUInt32BigEndian(fileData, offset);
+            if (marker1 != 0xFFFFFFFF)
+            {
+                Debug.WriteLine($"[RawFile] Unexpected marker at offset 0x{offset:X}: 0x{marker1:X}.");
+                return null;
+            }
 
-                // Record where this header started.
-                node.StartOfFileHeader = offset;
-                node.MaxSize = dataLength; // Use dataLength as the file's size.
+            // Read the data length (size of the file data)
+            int dataLength = (int)Utilities.ReadUInt32BigEndian(fileData, offset + 4);
+            if (dataLength == 0)
+            {
+                Debug.WriteLine($"[RawFile] dataLength is 0 at offset 0x{offset + 4:X}. Probably not a rawfile. Returning null.");
+                return null;
+            }
 
-                // Advance offset past the 12-byte header.
-                offset += 12;
+            // Read and validate the second marker (should be 0xFFFFFFFF)
+            uint marker2 = Utilities.ReadUInt32BigEndian(fileData, offset + 8);
+            if (marker2 != 0xFFFFFFFF)
+            {
+                Debug.WriteLine($"[RawFile] Unexpected second marker at offset 0x{offset + 8:X}: 0x{marker2:X}.");
+                return null;
+            }
 
-                // --- Process the file name ---
-                if (namePointer == -1)
-                {
-                    // Inline file name: read a null-terminated UTF8 string.
-                    string inlineName = Utilities.ReadNullTerminatedString(fileData, offset);
-                    node.FileName = inlineName;
-                    Debug.WriteLine($"[RawFile {idx}] Inline name read: '{inlineName}'.");
-                    // Determine the number of bytes read (including the null terminator).
-                    int nameByteCount = Encoding.UTF8.GetByteCount(inlineName) + 1;
-                    offset += nameByteCount;
-                }
-                else
-                {
-                    Debug.WriteLine($"[RawFile {idx}] Name pointer is {namePointer} (external).");
-                    node.FileName = "[External]";
-                }
+            // Record the start of the header and file size
+            node.StartOfFileHeader = offset;
+            node.MaxSize = dataLength;
 
-                // --- Process the file data ---
-                if (dataLength >= 0 && offset + dataLength <= fileData.Length)
-                {
-                    byte[] rawBytes = new byte[dataLength];
-                    Array.Copy(fileData, offset, rawBytes, 0, dataLength);
-                    node.RawFileBytes = rawBytes;
-                    node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
-                    Debug.WriteLine($"[RawFile {idx}] Inline file data read: {rawBytes.Length} bytes.");
-                }
-                else
-                {
-                    Debug.WriteLine($"[RawFile {idx}] Data length is {dataLength} or exceeds file length; skipping file data read.");
-                    node.RawFileBytes = new byte[0];
-                    node.RawFileContent = string.Empty;
-                }
-                offset += dataLength; // Advance offset past the file data.
+            // Move past the 12-byte header to read the file name
+            int fileNameOffset = offset + 12;
+            string inlineName = Utilities.ReadNullTerminatedString(fileData, fileNameOffset);
+            node.FileName = inlineName;
+            Debug.WriteLine($"[RawFile] Inline name read: '{inlineName}'.");
+
+            // Calculate the total bytes consumed by the file name (including null terminator)
+            int nameByteCount = Encoding.UTF8.GetByteCount(inlineName) + 1;
+
+            // File data starts immediately after the file name
+            int fileDataOffset = fileNameOffset + nameByteCount;
+
+            // Ensure there's enough data for the file data
+            if (fileDataOffset + dataLength <= fileData.Length)
+            {
+                byte[] rawBytes = new byte[dataLength];
+                Array.Copy(fileData, fileDataOffset, rawBytes, 0, dataLength);
+                node.RawFileBytes = rawBytes;
+                node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
+                Debug.WriteLine($"[RawFile] Inline file data read: {rawBytes.Length} bytes.");
+            }
+            else
+            {
+                Debug.WriteLine($"[RawFile] Data length {dataLength} exceeds available file data; skipping file data read.");
+                node.RawFileBytes = new byte[0];
+                node.RawFileContent = string.Empty;
             }
 
             return node;

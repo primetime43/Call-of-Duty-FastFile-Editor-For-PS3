@@ -55,7 +55,17 @@ namespace Call_of_Duty_FastFile_Editor.Services
                             Debug.WriteLine($"Extracting raw file node from previous record's end offset: {previousRecordEndOffset}");
                             node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, previousRecordEndOffset);
 
-                            assetRecordMethod = "Updated using previous record's end point using no pattern";
+                            // this is a fallback to pattern matching when it has the FF FF FF FF,
+                            // but the raw file's size is zero, hence its probably not a raw file following up right after
+                            if (node == null)
+                            {
+                                node = RawFileParser.ExtractSingleRawFileNodeWithPattern(openedFastFile.ZoneFilePath, lastAssetRecordParsedEndOffset);
+                                assetRecordMethod = "Fell back to pattern matching because raw file header not directly at the end.";
+                            }
+                            else
+                            {
+                                assetRecordMethod = "Updated using previous record's end point using no pattern";
+                            }
                         }
                         else // fallback to pattern matching
                         {
