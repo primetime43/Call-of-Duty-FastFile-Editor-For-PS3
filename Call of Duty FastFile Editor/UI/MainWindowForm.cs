@@ -236,7 +236,7 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 var treeNode = new TreeNode(node.FileName)
                 {
-                    Tag = node.PatternIndexPosition // Associate TreeNode with RawFileNode via Tag
+                    Tag = node // Associate TreeNode with RawFileNode via Tag
                 };
                 return treeNode;
             }).ToArray();
@@ -261,22 +261,16 @@ namespace Call_of_Duty_FastFile_Editor
 
                 if (result == DialogResult.Yes)
                 {
-                    if (_previousSelectedNode != null)
+                    if (_previousSelectedNode != null && _previousSelectedNode.Tag is RawFileNode previousNode)
                     {
-                        var previousSelectedNodeData = _rawFileNodes
-                            .FirstOrDefault(node => node.PatternIndexPosition == (int)_previousSelectedNode.Tag);
-
-                        if (previousSelectedNodeData != null)
-                        {
-                            RawFileOperations.Save(
-                                filesTreeView,              // TreeView control
-                                _openedFastFile.FfFilePath,                 // Path to the Fast File (.ff)
-                                _openedFastFile.ZoneFilePath,               // Path to the decompressed zone file
-                                _rawFileNodes,             // List of RawFileNode objects
-                                textEditorControl1.Text,    // Updated text from the editor
-                                _openedFastFile                     // FastFile instance
-                            );
-                        }
+                        RawFileOperations.Save(
+                            filesTreeView,                // TreeView control
+                            _openedFastFile.FfFilePath,     // Path to the Fast File (.ff)
+                            _openedFastFile.ZoneFilePath,   // Path to the decompressed zone file
+                            _rawFileNodes,                  // List of RawFileNode objects
+                            textEditorControl1.Text,        // Updated text from the editor
+                            _openedFastFile                // FastFile instance
+                        );
                     }
                     _hasUnsavedChanges = false;
                 }
@@ -286,7 +280,7 @@ namespace Call_of_Duty_FastFile_Editor
                     return;
                 }
             }
-            _previousSelectedNode = filesTreeView.SelectedNode; // Save the current node before changing
+            _previousSelectedNode = filesTreeView.SelectedNode; // Save the current node for later use
         }
 
         /// <summary>
@@ -294,28 +288,26 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void filesTreeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            if (e.Node.Tag is int position)
+            if (e.Node.Tag is RawFileNode selectedNode)
             {
-                string fileName = e.Node.Text; // Get the selected file name
-                var selectedNode = _rawFileNodes.FirstOrDefault(node => node.FileName == fileName);
-                int maxSize = selectedNode?.MaxSize ?? 0;
+                string fileName = selectedNode.FileName;
+                int maxSize = selectedNode.MaxSize;
+                string fileContent = selectedNode.RawFileContent ?? string.Empty;
 
-                if (selectedNode != null)
-                {
-                    string fileContent = selectedNode.RawFileContent ?? string.Empty;
-                    textEditorControl1.TextChanged -= textEditorControl1_TextChanged; // Unsubscribe to prevent multiple triggers
-                    textEditorControl1.Text = fileContent;
-                    textEditorControl1.TextChanged += textEditorControl1_TextChanged; // Resubscribe
+                // Update the editor content without triggering multiple events.
+                textEditorControl1.TextChanged -= textEditorControl1_TextChanged;
+                textEditorControl1.Text = fileContent;
+                textEditorControl1.TextChanged += textEditorControl1_TextChanged;
 
-                    UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
-                    UIManager.UpdateStatusStrip(
-                        selectedFileMaxSizeStatusLabel,
-                        selectedFileCurrentSizeStatusLabel,
-                        maxSize,
-                        textEditorControl1.Text.Length
-                    );
-                    _hasUnsavedChanges = false; // Reset the flag after loading new content
-                }
+                // Update UI elements.
+                UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
+                UIManager.UpdateStatusStrip(
+                    selectedFileMaxSizeStatusLabel,
+                    selectedFileCurrentSizeStatusLabel,
+                    maxSize,
+                    textEditorControl1.Text.Length
+                );
+                _hasUnsavedChanges = false; // Reset unsaved flag after loading content
             }
         }
 
@@ -760,21 +752,14 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            if (!(filesTreeView.SelectedNode.Tag is int position))
+            if (!(filesTreeView.SelectedNode.Tag is RawFileNode selectedFileNode))
             {
-                MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            RawFileNode selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
-            if (selectedFileNode == null)
-            {
-                MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Selected node does not have a valid RawFileNode.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             string fileExtension = Path.GetExtension(selectedFileNode.FileName);
-            string validExtensions = ".cfg,.gsc,.str,.vision,.rmb,.csc";
+            string validExtensions = string.Join(",", Constants.RawFiles.FileNamePatternStrings);
 
             RawFileOperations.ExportRawFile(selectedFileNode, fileExtension);
         }
