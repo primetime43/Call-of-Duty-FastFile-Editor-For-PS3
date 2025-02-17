@@ -54,7 +54,6 @@ namespace Call_of_Duty_FastFile_Editor
             patchmpffToolStripMenuItem = new ToolStripMenuItem();
             rawFileToolsMenuItem = new ToolStripMenuItem();
             increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
-            fileStructureInfoToolStripMenuItem = new ToolStripMenuItem();
             searchRawFileTxtMenuItem = new ToolStripMenuItem();
             saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
@@ -71,6 +70,7 @@ namespace Call_of_Duty_FastFile_Editor
             copyToolStripMenuItem = new ToolStripMenuItem();
             rawFilesPage = new TabPage();
             stringTablesTabPage = new TabPage();
+            stringTableListView = new ListView();
             stringTableTreeView = new TreeView();
             mapEntTabPage = new TabPage();
             treeViewMapEnt = new TreeView();
@@ -81,7 +81,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage = new TabPage();
             zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
-            stringTableListView = new ListView();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -343,7 +342,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // rawFileToolsMenuItem
             // 
-            rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { increaseRawFileSizeToolStripMenuItem, fileStructureInfoToolStripMenuItem, searchRawFileTxtMenuItem });
+            rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { increaseRawFileSizeToolStripMenuItem, searchRawFileTxtMenuItem });
             rawFileToolsMenuItem.Name = "rawFileToolsMenuItem";
             rawFileToolsMenuItem.Size = new Size(195, 24);
             rawFileToolsMenuItem.Text = "Raw File Tools";
@@ -353,13 +352,6 @@ namespace Call_of_Duty_FastFile_Editor
             increaseRawFileSizeToolStripMenuItem.Name = "increaseRawFileSizeToolStripMenuItem";
             increaseRawFileSizeToolStripMenuItem.Size = new Size(222, 24);
             increaseRawFileSizeToolStripMenuItem.Text = "Increase Raw File Size";
-            // 
-            // fileStructureInfoToolStripMenuItem
-            // 
-            fileStructureInfoToolStripMenuItem.Name = "fileStructureInfoToolStripMenuItem";
-            fileStructureInfoToolStripMenuItem.Size = new Size(222, 24);
-            fileStructureInfoToolStripMenuItem.Text = "Raw File Structure";
-            fileStructureInfoToolStripMenuItem.Click += fileStructureInfoToolStripMenuItem_Click;
             // 
             // searchRawFileTxtMenuItem
             // 
@@ -502,6 +494,14 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTabPage.Text = "String Tables";
             stringTablesTabPage.UseVisualStyleBackColor = true;
             // 
+            // stringTableListView
+            // 
+            stringTableListView.Location = new Point(247, 0);
+            stringTableListView.Name = "stringTableListView";
+            stringTableListView.Size = new Size(384, 749);
+            stringTableListView.TabIndex = 1;
+            stringTableListView.UseCompatibleStateImageBehavior = false;
+            // 
             // stringTableTreeView
             // 
             stringTableTreeView.ContextMenuStrip = universalContextMenu;
@@ -597,14 +597,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.TabIndex = 0;
             zoneInfoDataGridView.MouseDown += dataGrid_MouseDownCopy;
             // 
-            // stringTableListView
-            // 
-            stringTableListView.Location = new Point(247, 0);
-            stringTableListView.Name = "stringTableListView";
-            stringTableListView.Size = new Size(384, 749);
-            stringTableListView.TabIndex = 1;
-            stringTableListView.UseCompatibleStateImageBehavior = false;
-            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -665,7 +657,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem removeCommentsToolStripMenuItem;
         private ToolStripMenuItem checkSyntaxToolStripMenuItem;
         private ToolStripMenuItem saveFileToPCToolStripMenuItem;
-        private ToolStripMenuItem fileStructureInfoToolStripMenuItem;
         private ToolStripMenuItem searchRawFileTxtMenuItem;
         private ToolStripMenuItem originalFastFilesToolStripMenuItem;
         private ToolStripMenuItem modernWarfareToolStripMenuItem;

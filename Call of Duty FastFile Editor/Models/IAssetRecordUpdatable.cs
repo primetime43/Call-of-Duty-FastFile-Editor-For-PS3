@@ -25,6 +25,6 @@
         /// <summary>
         /// Position where the file header ends.
         /// </summary>
-        int CodeEndPosition { get; }
+        //int RawFileEndPosition { get; }
     }
 }

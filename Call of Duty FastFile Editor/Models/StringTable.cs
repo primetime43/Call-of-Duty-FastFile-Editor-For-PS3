@@ -16,12 +16,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int ColumnCountOffset { get; set; }
         public required string TableName { get; set; }
         public int TableNameOffset { get; set; }
-        public int CodeStartPosition { get; set; }
+        public int DataStartPosition { get; set; }
+        public int DataEndPosition { get; set; }
 
         public int StartOfFileHeader { get; set; }
         public int EndOfFileHeader { get; set; }
 
-        public int CodeEndPosition { get; set; }
 
         // Each item is (Offset, Text).
         public List<(int Offset, string Text)>? Cells { get; set; }
@@ -49,8 +49,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
             assetRecord.HeaderStartOffset = this.StartOfFileHeader;
             assetRecord.HeaderEndOffset = this.EndOfFileHeader;
             assetRecord.AdditionalData = this.AdditionalData;
-            assetRecord.AssetDataStartPosition = this.CodeStartPosition;
-            assetRecord.AssetDataEndOffset = this.CodeEndPosition;
+            assetRecord.AssetDataStartPosition = this.DataStartPosition;
+            assetRecord.AssetDataEndOffset = this.DataEndPosition;
+            assetRecord.AssetRecordEndOffset = this.DataEndPosition + 1;
         }
 
         /// <summary>

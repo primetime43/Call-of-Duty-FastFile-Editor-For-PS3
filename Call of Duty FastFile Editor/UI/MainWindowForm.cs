@@ -1089,39 +1089,6 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
-        /// Shows information about the file structure in a new form.
-        /// </summary>
-        private void fileStructureInfoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (filesTreeView.SelectedNode != null)
-            {
-                if (filesTreeView.SelectedNode.Tag is int position)
-                {
-                    string fileName = filesTreeView.SelectedNode.Text; // Get the selected file name
-                    var selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
-
-                    // Additional logic for handling the selected file node
-                    if (selectedFileNode != null)
-                    {
-                        new FileStructureInfoForm(selectedFileNode).Show();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Selected file node not found in file entry nodes.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-            else
-            {
-                MessageBox.Show("No node is selected.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        /// <summary>
         /// Opens a Form to search for text throughout all of the raw files
         /// </summary>
         private void searchRawFileTxtMenuItem_Click(object sender, EventArgs e)
@@ -1163,6 +1130,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Columns.Add("Data Start", 100);
             assetPoolListView.Columns.Add("Data End", 100);
             assetPoolListView.Columns.Add("Size", 60);
+            assetPoolListView.Columns.Add("Asset Record End", 100);
             assetPoolListView.Columns.Add("Name", 120);
             assetPoolListView.Columns.Add("Content Snippet", 200);
 
@@ -1203,9 +1171,12 @@ namespace Call_of_Duty_FastFile_Editor
                 lvi.SubItems.Add($"0x{record.Size:X}");
 
                 // Eighth column
+                lvi.SubItems.Add($"0x{record.AssetRecordEndOffset:X}");
+
+                // Ninth column
                 lvi.SubItems.Add(record.Name ?? string.Empty);
 
-                // Seventh column: Entire content, no truncation
+                // Tenth column: Entire content, no truncation
                 if (!string.IsNullOrEmpty(record.AdditionalData))
                 {
                     lvi.SubItems.Add(record.AdditionalData);

@@ -17,10 +17,24 @@ namespace Call_of_Duty_FastFile_Editor.Models
     {
         public ZoneFileAssetType AssetType { get; set; }
         public int HeaderStartOffset { get; set; }
+        /// <summary>
+        /// The offset where the header ends before the data. (Includes the null terminator)
+        /// </summary>
         public int HeaderEndOffset { get; set; }
         public int AssetPoolRecordOffset { get; set; }
+        /// <summary>
+        /// The offset where the asset data starts after the header.
+        /// </summary>
         public int AssetDataStartPosition { get; set; }
+        /// <summary>
+        /// The offset where the asset data ends. (Before the null terminator if it has one)
+        /// </summary>
         public int AssetDataEndOffset { get; set; }
+
+        /// <summary>
+        /// The offset where the asset record ends. (After the null terminator if it has one)
+        /// </summary>
+        public int AssetRecordEndOffset { get; set; }
         public string Name { get; set; }
         public string Content { get; set; }
         public int Size { get; set; }

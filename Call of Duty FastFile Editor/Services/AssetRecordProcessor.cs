@@ -30,7 +30,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 try
                 {
                     if (i > 0)
-                        previousRecordEndOffset = zoneAssetRecords[i - 1].AssetDataEndOffset;
+                        previousRecordEndOffset = zoneAssetRecords[i - 1].AssetRecordEndOffset;
 
                     Debug.WriteLine("PreviousRecordEndOffset: " + previousRecordEndOffset + " Index: " + i);
 
@@ -69,7 +69,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         }
                         else // fallback to pattern matching
                         {
-                            lastAssetRecordParsedEndOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetDataEndOffset;
+                            lastAssetRecordParsedEndOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset;
                             node = RawFileParser.ExtractSingleRawFileNodeWithPattern(
                                 openedFastFile.ZoneFilePath,
                                 lastAssetRecordParsedEndOffset
@@ -106,7 +106,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         }
                         else
                         {
-                            lastAssetRecordParsedEndOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetDataEndOffset;
+                            lastAssetRecordParsedEndOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset;
                             Debug.WriteLine($"Extracting string table from last asset record's end offset: {lastAssetRecordParsedEndOffset}");
                             stringTable = StringTable.FindSingleCsvStringTableWithPattern(
                                 openedFastFile.OpenedFastFileZone,

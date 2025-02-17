@@ -55,6 +55,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int CodeStartPosition => StartOfFileHeader + 12 + (FileName?.Length ?? 0) + 1;
 
         /// <summary>
+        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize - 1 to not include the null byte.
+        /// Doesn't includes null byte. This is the offset before the null terminator
+        /// </summary>
+        public int CodeEndPosition => CodeStartPosition + MaxSize - 1;
+
+        /// <summary>
         /// Where the data ends
         /// Includes null byte
         /// </summary>
@@ -67,9 +73,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
         /// <summary>
         /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize + 1 for the null byte.
-        /// Includes null byte
+        /// Includes null byte. This is the offset after the null terminator
         /// </summary>
-        public int CodeEndPosition => CodeStartPosition + MaxSize + 1;
+        public int RawFileEndPosition => CodeStartPosition + MaxSize + 1;
 
         /// <summary>
         /// The content of the file as a string.
@@ -84,21 +90,14 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string AdditionalData { get; set; }
 
         /// <summary>
-        /// Updates the file name and returns the byte array representation.
+        /// Converts the provided new file name to its ASCII byte representation without appending a null terminator.
         /// </summary>
         /// <param name="newFileName">The new file name.</param>
-        /// <returns>Byte array of the new file name with a null terminator.</returns>
+        /// <returns>A byte array representing the new file name without a null terminator.</returns>
         public byte[] GetFileNameBytes(string newFileName)
         {
-            // Convert the new file name to ASCII bytes
-            byte[] fileNameBytes = Encoding.ASCII.GetBytes(newFileName);
-
-            // Append a null terminator
-            byte[] result = new byte[fileNameBytes.Length + 1];
-            Array.Copy(fileNameBytes, result, fileNameBytes.Length);
-            result[fileNameBytes.Length] = 0x00;
-
-            return result;
+            // Convert the new file name to ASCII bytes without adding a null terminator.
+            return Encoding.ASCII.GetBytes(newFileName);
         }
 
         public void UpdateAssetRecord(ref ZoneAssetRecord assetRecord)
@@ -107,6 +106,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             assetRecord.HeaderEndOffset = this.EndOfFileHeader;
             assetRecord.AssetDataStartPosition = this.CodeStartPosition;
             assetRecord.AssetDataEndOffset = this.CodeEndPosition;
+            assetRecord.AssetRecordEndOffset = this.RawFileEndPosition;
             assetRecord.Name = this.FileName;
             assetRecord.RawDataBytes = this.RawFileBytes;
             assetRecord.Size = this.MaxSize;

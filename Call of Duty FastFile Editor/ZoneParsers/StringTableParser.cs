@@ -76,7 +76,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             // CodeStartPosition => first string offset
             int codeStartPos = stringBlockOffset;
 
-            // We'll keep updating CodeEndPosition to the last null terminator read
+            // We'll keep updating DataEndPosition to the last null terminator read
             int codeEndPos = codeStartPos;
 
             int currentStringOffset = stringBlockOffset;
@@ -108,7 +108,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                     fileData[currentStringOffset + 3] == 0xFF &&
                     fileData[currentStringOffset - 1] == 0x00)
                 {
-                    // We found 00 FF FF FF FF, meaning we break right here.
+                    // We found 00 FF FF FF FF, meaning we break right here. (this might not be right. possibly fix)
                     // codeEndPos is already set to the 0 that precedes the FF FF FF FF.
                     break;
                 }
@@ -125,8 +125,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 ColumnCountOffset = startingOffset + 4,
                 TableNameOffset = startingOffset + 16,
 
-                CodeStartPosition = codeStartPos,
-                CodeEndPosition = codeEndPos + 1, // + 1 is the null terminated string
+                DataStartPosition = codeStartPos,
+                DataEndPosition = codeEndPos,
 
                 StartOfFileHeader = startingOffset,
                 EndOfFileHeader = endOfHeader,
