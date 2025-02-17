@@ -3,6 +3,11 @@
     public interface IAssetRecordUpdatable
     {
         /// <summary>
+        /// Static property to hold the currently loaded zone.
+        /// </summary>
+        public static Zone CurrentZone { get; set; }
+
+        /// <summary>
         /// Updates the provided ZoneAssetRecord with data from the implementing object.
         /// </summary>
         void UpdateAssetRecord(ref ZoneAssetRecord assetRecord);

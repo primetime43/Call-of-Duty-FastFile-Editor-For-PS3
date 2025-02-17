@@ -181,6 +181,7 @@ namespace Call_of_Duty_FastFile_Editor
 
             // store the typed lists
             _rawFileNodes = _processResult.RawFileNodes;
+            RawFileNode.CurrentZone = _openedFastFile.OpenedFastFileZone;
             _stringTables = _processResult.StringTables;
 
             // also store updated records
@@ -1083,6 +1084,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView.Nodes.Clear();
             tagsListView.Items.Clear();
             zoneInfoDataGridView.DataSource = null;
+            textEditorControl1.Text = "";
             textEditorControl1.ResetText();
         }
 

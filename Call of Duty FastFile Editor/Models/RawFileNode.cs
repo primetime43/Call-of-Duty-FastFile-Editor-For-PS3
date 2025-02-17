@@ -10,6 +10,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
     /// </summary>
     public class RawFileNode : IAssetRecordUpdatable
     {
+        // Backing field for the header bytes.
+        private byte[] _header;
+
         public RawFileNode() { }
 
         // Constructor that initializes the necessary properties.
@@ -21,30 +24,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
         }
 
         /// <summary>
-        /// Generates the raw file header consisting of the file size (big-endian) and padding (FF FF FF FF).
+        /// Static property to hold the currently loaded zone.
         /// </summary>
-        public byte[] Header
-        {
-            get
-            {
-                // Convert MaxSize to a big-endian byte array
-                byte[] maxSizeBytes = BitConverter.GetBytes(MaxSize);
-                if (BitConverter.IsLittleEndian)
-                {
-                    Array.Reverse(maxSizeBytes);
-                }
+        public static Zone CurrentZone { get; set; }
 
-                // Create the header array with max size and padding
-                byte[] header = new byte[8];
-                Array.Copy(maxSizeBytes, 0, header, 0, 4); // Copy the first 4 bytes for max size
-                for (int i = 4; i < 8; i++)
-                {
-                    header[i] = 0xFF; // Set the last 4 bytes to FF
-                }
-
-                return header;
-            }
-        }
+        public byte[] Header => Utilities.GetBytesAtOffset(StartOfFileHeader, CurrentZone, EndOfFileHeader - StartOfFileHeader);
 
         /// <summary>
         /// The position where one of the patterns was found in the file.
