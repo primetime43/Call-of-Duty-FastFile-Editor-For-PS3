@@ -14,6 +14,12 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
     public class RawFileOperations
     {
+        /// <summary>
+        /// Exports the selected raw file to a stand alone file.
+        /// Includes everything needed from the start of the header to the null terminator at the end of the file (Asset record's end position).
+        /// </summary>
+        /// <param name="exportedRawFile"></param>
+        /// <param name="fileExtension"></param>
         public static void ExportRawFile(RawFileNode exportedRawFile, string fileExtension)
         {
             using (SaveFileDialog saveFileDialog = new SaveFileDialog())
@@ -28,29 +34,13 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                     {
                         string exportPath = saveFileDialog.FileName;
 
-                        using (FileStream fs = new FileStream(exportPath, FileMode.Create, FileAccess.Write))
-                        using (BinaryWriter bw = new BinaryWriter(fs))
-                        {
-                            // Write the header (size and padding)
-                            bw.Write(exportedRawFile.Header);
+                        // Use the current zone data and the positions stored in the RawFileNode.
+                        byte[] zoneData = RawFileNode.CurrentZone.ZoneFileData;
+                        int start = exportedRawFile.StartOfFileHeader;
+                        int length = exportedRawFile.RawFileEndPosition - exportedRawFile.StartOfFileHeader;
+                        byte[] exportBytes = zoneData.Skip(start).Take(length).ToArray();
 
-                            // Write the file name in ASCII
-                            byte[] fileNameBytes = Encoding.ASCII.GetBytes(exportedRawFile.FileName);
-                            bw.Write(fileNameBytes);
-
-                            // Write a null terminator (0x00) after the file name
-                            bw.Write((byte)0x00);
-
-                            // Write the file content
-                            byte[] contentBytes = exportedRawFile.RawFileBytes ?? Encoding.UTF8.GetBytes(exportedRawFile.RawFileContent ?? string.Empty);
-                            bw.Write(contentBytes);
-
-                            // Write padding (00 FF FF FF FF) at the end
-                            //bw.Write(new byte[] { 0x00, 0xFF, 0xFF, 0xFF, 0xFF });
-
-                            // Write padding (00) at the end
-                            bw.Write(new byte[] { 0x00 });
-                        }
+                        File.WriteAllBytes(exportPath, exportBytes);
 
                         MessageBox.Show($"File successfully exported to:\n\n{exportPath}", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
