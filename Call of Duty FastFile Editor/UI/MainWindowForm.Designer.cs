@@ -72,7 +72,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTabPage = new TabPage();
             stringTableListView = new ListView();
             stringTableTreeView = new TreeView();
-            mapEntTabPage = new TabPage();
+            collision_Map_AssetTabPage = new TabPage();
             treeViewMapEnt = new TreeView();
             tagsTabPage = new TabPage();
             tagsListView = new ListView();
@@ -92,7 +92,7 @@ namespace Call_of_Duty_FastFile_Editor
             universalContextMenu.SuspendLayout();
             rawFilesPage.SuspendLayout();
             stringTablesTabPage.SuspendLayout();
-            mapEntTabPage.SuspendLayout();
+            collision_Map_AssetTabPage.SuspendLayout();
             tagsTabPage.SuspendLayout();
             assetPoolTabPage.SuspendLayout();
             zoneFileTabPage.SuspendLayout();
@@ -447,7 +447,7 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileInfoTabControl.ContextMenuStrip = universalContextMenu;
             zoneFileInfoTabControl.Controls.Add(rawFilesPage);
             zoneFileInfoTabControl.Controls.Add(stringTablesTabPage);
-            zoneFileInfoTabControl.Controls.Add(mapEntTabPage);
+            zoneFileInfoTabControl.Controls.Add(collision_Map_AssetTabPage);
             zoneFileInfoTabControl.Controls.Add(tagsTabPage);
             zoneFileInfoTabControl.Controls.Add(assetPoolTabPage);
             zoneFileInfoTabControl.Controls.Add(zoneFileTabPage);
@@ -512,16 +512,16 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView.AfterSelect += stringTableTreeView_AfterSelect;
             stringTableTreeView.MouseDown += treeView_MouseDownCopy;
             // 
-            // mapEntTabPage
+            // collision_Map_AssetTabPage
             // 
-            mapEntTabPage.Controls.Add(treeViewMapEnt);
-            mapEntTabPage.Location = new Point(4, 24);
-            mapEntTabPage.Name = "mapEntTabPage";
-            mapEntTabPage.Padding = new Padding(3);
-            mapEntTabPage.Size = new Size(1442, 749);
-            mapEntTabPage.TabIndex = 4;
-            mapEntTabPage.Text = "Map Entities";
-            mapEntTabPage.UseVisualStyleBackColor = true;
+            collision_Map_AssetTabPage.Controls.Add(treeViewMapEnt);
+            collision_Map_AssetTabPage.Location = new Point(4, 24);
+            collision_Map_AssetTabPage.Name = "collision_Map_AssetTabPage";
+            collision_Map_AssetTabPage.Padding = new Padding(3);
+            collision_Map_AssetTabPage.Size = new Size(1442, 749);
+            collision_Map_AssetTabPage.TabIndex = 4;
+            collision_Map_AssetTabPage.Text = "Collision Map Data";
+            collision_Map_AssetTabPage.UseVisualStyleBackColor = true;
             // 
             // treeViewMapEnt
             // 
@@ -620,7 +620,7 @@ namespace Call_of_Duty_FastFile_Editor
             universalContextMenu.ResumeLayout(false);
             rawFilesPage.ResumeLayout(false);
             stringTablesTabPage.ResumeLayout(false);
-            mapEntTabPage.ResumeLayout(false);
+            collision_Map_AssetTabPage.ResumeLayout(false);
             tagsTabPage.ResumeLayout(false);
             assetPoolTabPage.ResumeLayout(false);
             zoneFileTabPage.ResumeLayout(false);
@@ -686,7 +686,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ListView tagsListView;
         private ContextMenuStrip universalContextMenu;
         private ToolStripMenuItem copyToolStripMenuItem;
-        private TabPage mapEntTabPage;
+        private TabPage collision_Map_AssetTabPage;
         private TreeView treeViewMapEnt;
         private ToolStripMenuItem rawFileToolsMenuItem;
         private ToolStripMenuItem increaseRawFileSizeToolStripMenuItem;

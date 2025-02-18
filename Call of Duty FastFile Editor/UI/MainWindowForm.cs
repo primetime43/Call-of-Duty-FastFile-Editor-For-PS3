@@ -209,7 +209,7 @@ namespace Call_of_Duty_FastFile_Editor
             LoadZoneHeaderValues(_openedFastFile.OpenedFastFileZone);
 
             PopulateStringTable();
-            //PopulateMapEntities();
+            PopulateCollision_Map_Asset_StringData();
         }
 
         /// <summary>
@@ -886,9 +886,9 @@ namespace Call_of_Duty_FastFile_Editor
             }
         }
 
-        private void PopulateMapEntities()
+        private void PopulateCollision_Map_Asset_StringData()
         {
-            int offset = MapEntityOperations.FindMapHeaderOffsetViaFF(_openedFastFile.OpenedFastFileZone);
+            int offset = Collision_Map_Operations.FindCollision_Map_DataOffsetViaFF(_openedFastFile.OpenedFastFileZone);
             if (offset == -1)
             {
                 //MessageBox.Show("No map header found near large FF blocks.");
@@ -896,7 +896,7 @@ namespace Call_of_Duty_FastFile_Editor
             }
 
             // Parse entities from that offset
-            List<MapEntity> mapTest = MapEntityOperations.ParseMapEntsAtOffset(_openedFastFile.OpenedFastFileZone, offset);
+            List<MapEntity> mapTest = Collision_Map_Operations.ParseMapEntsAtOffset(_openedFastFile.OpenedFastFileZone, offset);
 
             if (mapTest.Count == 0)
             {
@@ -919,7 +919,7 @@ namespace Call_of_Duty_FastFile_Editor
             treeViewMapEnt.Nodes.Clear();
 
             // Attempt to get both the map size and its offset
-            var sizeInfo = MapEntityOperations.GetMapDataSizeAndOffset(_openedFastFile.OpenedFastFileZone, mapTest);
+            var sizeInfo = Collision_Map_Operations.GetMapDataSizeAndOffset(_openedFastFile.OpenedFastFileZone, mapTest);
             if (sizeInfo.HasValue)
             {
                 // Destructure the tuple

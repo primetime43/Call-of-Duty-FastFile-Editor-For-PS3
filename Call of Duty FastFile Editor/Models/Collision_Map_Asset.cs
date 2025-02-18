@@ -6,7 +6,10 @@ using System.Text.RegularExpressions;
 namespace Call_of_Duty_FastFile_Editor.Models
 {
     /// <summary>
-    /// Represents a single .map-style block of key-value pairs.
+    /// Still using pattern matching as this is a complicated structure to parse.
+    /// https://codresearch.dev/index.php/Collision_Map_Asset_(WaW)
+    /// This currently gets the text data associated with the collision map, but doesn't parse
+    /// the actual map's structure. TODO: Parse the actual map structure.
     /// </summary>
     public class MapEntity
     {
@@ -21,7 +24,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
     }
 
-    public static class MapEntityOperations
+    public static class Collision_Map_Operations
     {
         // Regex pattern for a line like: "key" "value"
         private static readonly Regex LinePattern =
@@ -61,12 +64,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
             // 3) Parse it with our new offset-aware parser
             //    We pass in baseOffset = startOfMapData so that i=0 in the chunk lines up with offset+4 in the file.
-            results = ParseMapWithOffsets(mapDataBytes, startOfMapData);
+            results = ParseDataMapWithOffsets(mapDataBytes, startOfMapData);
 
             return results;
         }
 
-        public static int FindMapHeaderOffsetViaFF(Zone zone)
+        public static int FindCollision_Map_DataOffsetViaFF(Zone zone)
         {
             if (zone?.ZoneFileData == null)
                 return -1;
@@ -134,7 +137,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             return -1; // If we exhaust all runs/windows without success
         }
 
-        private static List<MapEntity> ParseMapWithOffsets(byte[] mapDataBytes, int baseOffset)
+        private static List<MapEntity> ParseDataMapWithOffsets(byte[] mapDataBytes, int baseOffset)
         {
             // We'll parse the raw chunk, looking for '{' or '}' and building lines in-between.
             // This gives us exact control over offsets.
@@ -248,62 +251,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
             }
 
             return runOffsets;
-        }
-
-        /// <summary>
-        /// Parses .map text with blocks like:
-        /// {
-        ///   "key" "value"
-        ///   ...
-        /// }
-        /// into a list of MapEntity objects.
-        /// </summary>
-        private static List<MapEntity> ParseMapString(string mapText)
-        {
-            var entities = new List<MapEntity>();
-
-            var lines = mapText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-            MapEntity currentEntity = null;
-            bool insideBraces = false;
-
-            foreach (string rawLine in lines)
-            {
-                string line = rawLine.Trim();
-
-                if (line == "{")
-                {
-                    currentEntity = new MapEntity();
-                    insideBraces = true;
-                    continue;
-                }
-
-                if (line == "}")
-                {
-                    // Only add if currentEntity has at least 1 property
-                    if (currentEntity != null && currentEntity.Properties.Count > 0)
-                    {
-                        entities.Add(currentEntity);
-                    }
-                    currentEntity = null;
-                    insideBraces = false;
-                    continue;
-                }
-
-                // Attempt to parse key-value lines only inside braces
-                if (insideBraces && currentEntity != null)
-                {
-                    var match = LinePattern.Match(line);
-                    if (match.Success)
-                    {
-                        string key = match.Groups[1].Value;
-                        string value = match.Groups[2].Value;
-                        currentEntity.Properties[key] = value;
-                    }
-                }
-            }
-
-            return entities;
         }
 
         /// <summary>
