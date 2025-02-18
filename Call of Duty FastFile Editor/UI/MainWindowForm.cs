@@ -870,19 +870,34 @@ namespace Call_of_Duty_FastFile_Editor
             // Clear existing nodes
             stringTableTreeView.Nodes.Clear();
 
-
             // For each table, create a node
             foreach (var table in _stringTables)
             {
-                TreeNode tableNode = new TreeNode(table.TableName);
-                // Put the entire StringTable object in Tag
-                tableNode.Tag = table;
+                TreeNode tableNode = new TreeNode(table.TableName)
+                {
+                    Tag = table // store the StringTable object for later use
+                };
 
                 // Add child nodes for Rows and Columns
                 tableNode.Nodes.Add($"Rows: {table.RowCount}");
                 tableNode.Nodes.Add($"Columns: {table.ColumnCount}");
 
+                // Add an extra node showing where the CSV text was found.
+                // For example, you can display the file header start offset.
+                tableNode.Nodes.Add($"Found at offset: 0x{table.StartOfFileHeader:X}");
+
                 stringTableTreeView.Nodes.Add(tableNode);
+            }
+        }
+
+        private void stringTableTreeView_BeforeSelect(object sender, TreeViewCancelEventArgs e)
+        {
+            // Cancel selection for child nodes with specific text
+            if (e.Node.Text.StartsWith("Rows:") ||
+                e.Node.Text.StartsWith("Columns:") ||
+                e.Node.Text.StartsWith("Found at offset:"))
+            {
+                e.Cancel = true;
             }
         }
 

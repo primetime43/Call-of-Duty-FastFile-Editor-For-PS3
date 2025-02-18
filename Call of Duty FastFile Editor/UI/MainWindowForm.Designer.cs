@@ -509,6 +509,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView.Name = "stringTableTreeView";
             stringTableTreeView.Size = new Size(250, 749);
             stringTableTreeView.TabIndex = 0;
+            stringTableTreeView.BeforeSelect += stringTableTreeView_BeforeSelect;
             stringTableTreeView.AfterSelect += stringTableTreeView_AfterSelect;
             stringTableTreeView.MouseDown += treeView_MouseDownCopy;
             // 
