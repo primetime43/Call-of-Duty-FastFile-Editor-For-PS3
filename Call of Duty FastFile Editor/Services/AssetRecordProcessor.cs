@@ -3,6 +3,7 @@ using Call_of_Duty_FastFile_Editor.ZoneParsers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace Call_of_Duty_FastFile_Editor.Services
 {
@@ -10,12 +11,12 @@ namespace Call_of_Duty_FastFile_Editor.Services
     {
         /// <summary>
         /// Processes the given zone asset records, extracting various asset types
-        /// (like RawFileNode, StringTable, etc.) and returning them in an AssetProcessResult.
+        /// (like RawFileNode, StringTable, etc.) and returning them in an ZoneAssetRecords.
         /// </summary>
-        public static AssetProcessResult ProcessAssetRecords(FastFile openedFastFile, List<ZoneAssetRecord> zoneAssetRecords)
+        public static ZoneAssetRecords ProcessAssetRecords(FastFile openedFastFile, List<ZoneAssetRecord> zoneAssetRecords)
         {
             // Create a result container to hold raw files, string tables, etc.
-            AssetProcessResult result = new AssetProcessResult();
+            ZoneAssetRecords result = new ZoneAssetRecords();
 
             bool previousRecordWasParsed = false;
             int indexOfLastAssetRecordParsed = 0;
@@ -123,6 +124,48 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
                             UpdateAssetRecord(zoneAssetRecords, i, stringTable, assetRecordMethod);
                             indexOfLastAssetRecordParsed = i;
+                            previousRecordWasParsed = true;
+                        }
+                        else
+                        {
+                            previousRecordWasParsed = false;
+                            assetRecordMethod = "Previous record was not parsed";
+                        }
+                    }
+                    else if (zoneAssetRecords[i].AssetType == ZoneFileAssetType.localize)
+                    {
+                        int startingOffset;
+                        LocalizedEntry localizedEntry;
+                        int nextOffset;
+
+                        // previous record is known, can use pattern
+                        if (previousRecordEndOffset > 0)
+                        {
+                            startingOffset = previousRecordEndOffset;
+                            // Call the tuple-returning method using the computed offset.
+                            (localizedEntry, nextOffset) = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
+                            assetRecordMethod = "Updated using previous record's end point using no pattern";
+                        }
+                        else
+                        {
+                            lastAssetRecordParsedEndOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset;
+                            startingOffset = lastAssetRecordParsedEndOffset;
+                            (localizedEntry, nextOffset) = LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset);
+                            assetRecordMethod = "Updated using pattern matching because previous record end was unknown";
+                        }
+
+
+                        if (localizedEntry != null)
+                        {
+                            result.LocalizedEntries.Add(localizedEntry);
+                            UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
+                            previousRecordWasParsed = true;
+                            indexOfLastAssetRecordParsed = i;
+                        }
+                        else
+                        {
+                            previousRecordWasParsed = false;
+                            assetRecordMethod = "Previous record was not parsed";
                         }
                     }
                     else

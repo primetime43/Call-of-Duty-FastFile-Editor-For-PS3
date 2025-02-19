@@ -57,7 +57,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private List<ZoneAssetRecord> _zoneAssetRecords;
 
-        private AssetProcessResult _processResult;
+        private ZoneAssetRecords _processResult;
 
         public MainWindowForm()
         {
@@ -209,6 +209,7 @@ namespace Call_of_Duty_FastFile_Editor
             LoadZoneHeaderValues(_openedFastFile.OpenedFastFileZone);
 
             PopulateStringTable();
+            PopulateLocalizeAssets();
             PopulateCollision_Map_Asset_StringData();
         }
 
@@ -862,6 +863,53 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
+        private void PopulateLocalizeAssets()
+        {
+            // Check if we have any localized entries in our processed results.
+            if (_processResult == null || _processResult.LocalizedEntries == null)
+            {
+                return;
+            }
+
+            // Clear any existing items and columns.
+            localizeListView.Items.Clear();
+            localizeListView.Columns.Clear();
+
+            // Set up the ListView.
+            localizeListView.View = View.Details;
+            localizeListView.FullRowSelect = true;
+            localizeListView.GridLines = true;
+
+            // Add the required columns with "Text" as the last column.
+            localizeListView.Columns.Add("Key", 120);
+            localizeListView.Columns.Add("Start Offset", 100);
+            localizeListView.Columns.Add("End Offset", 100);
+            localizeListView.Columns.Add("Size", 80);
+            localizeListView.Columns.Add("Text", 300);
+
+            // Loop through each localized entry.
+            foreach (var entry in _processResult.LocalizedEntries)
+            {
+                // Calculate the size difference.
+                int size = entry.EndOfFileHeader - entry.StartOfFileHeader;
+
+                // Create a new ListViewItem with the Key as the main text.
+                ListViewItem lvi = new ListViewItem(entry.Key);
+
+                // Add subitems in the new order.
+                lvi.SubItems.Add($"0x{entry.StartOfFileHeader:X}");
+                lvi.SubItems.Add($"0x{entry.EndOfFileHeader:X}");
+                lvi.SubItems.Add($"0x{size:X}");
+                lvi.SubItems.Add(entry.LocalizedText);
+
+                // Add the ListViewItem to the ListView.
+                localizeListView.Items.Add(lvi);
+            }
+
+            // Auto-resize columns to fit header size.
+            localizeListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
         /// <summary>
         /// Populates the String Table page view with the tables extracted from the zone file.
         /// </summary>
@@ -907,6 +955,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (offset == -1)
             {
                 //MessageBox.Show("No map header found near large FF blocks.");
+                mainTabControl.TabPages.Remove(collision_Map_AssetTabPage);
                 return;
             }
 

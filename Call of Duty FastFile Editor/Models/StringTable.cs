@@ -191,7 +191,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                         int offsetForThisString = currentStringOffset;
                         string cellValue = Utilities.ReadNullTerminatedString(zoneBytes, offsetForThisString);
                         cells.Add((offsetForThisString, cellValue));
-                        Debug.WriteLine($"[FindSingleCsvStringTableWithPattern] Read cell string \"{cellValue}\" at offset 0x{offsetForThisString:X}");
+                        //Debug.WriteLine($"[FindSingleCsvStringTableWithPattern] Read cell string \"{cellValue}\" at offset 0x{offsetForThisString:X}");
                         currentStringOffset += (cellValue.Length + 1);
                         codeEndPos = currentStringOffset - 1;
                         if (currentStringOffset + 4 > zoneBytes.Length)

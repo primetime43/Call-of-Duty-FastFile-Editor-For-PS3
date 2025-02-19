@@ -65,7 +65,7 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileMaxSizeStatusLabel = new ToolStripStatusLabel();
             selectedFileCurrentSizeStatusLabel = new ToolStripStatusLabel();
             filesTreeToolTip = new ToolTip(components);
-            zoneFileInfoTabControl = new TabControl();
+            mainTabControl = new TabControl();
             universalContextMenu = new ContextMenuStrip(components);
             copyToolStripMenuItem = new ToolStripMenuItem();
             rawFilesPage = new TabPage();
@@ -74,6 +74,8 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView = new TreeView();
             collision_Map_AssetTabPage = new TabPage();
             treeViewMapEnt = new TreeView();
+            localizeTabPage = new TabPage();
+            localizeListView = new ListView();
             tagsTabPage = new TabPage();
             tagsListView = new ListView();
             assetPoolTabPage = new TabPage();
@@ -88,11 +90,12 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             statusStripBottom.SuspendLayout();
-            zoneFileInfoTabControl.SuspendLayout();
+            mainTabControl.SuspendLayout();
             universalContextMenu.SuspendLayout();
             rawFilesPage.SuspendLayout();
             stringTablesTabPage.SuspendLayout();
             collision_Map_AssetTabPage.SuspendLayout();
+            localizeTabPage.SuspendLayout();
             tagsTabPage.SuspendLayout();
             assetPoolTabPage.SuspendLayout();
             zoneFileTabPage.SuspendLayout();
@@ -442,21 +445,22 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeToolTip.ShowAlways = true;
             filesTreeToolTip.ToolTipIcon = ToolTipIcon.Info;
             // 
-            // zoneFileInfoTabControl
+            // mainTabControl
             // 
-            zoneFileInfoTabControl.ContextMenuStrip = universalContextMenu;
-            zoneFileInfoTabControl.Controls.Add(rawFilesPage);
-            zoneFileInfoTabControl.Controls.Add(stringTablesTabPage);
-            zoneFileInfoTabControl.Controls.Add(collision_Map_AssetTabPage);
-            zoneFileInfoTabControl.Controls.Add(tagsTabPage);
-            zoneFileInfoTabControl.Controls.Add(assetPoolTabPage);
-            zoneFileInfoTabControl.Controls.Add(zoneFileTabPage);
-            zoneFileInfoTabControl.Dock = DockStyle.Fill;
-            zoneFileInfoTabControl.Location = new Point(0, 28);
-            zoneFileInfoTabControl.Name = "zoneFileInfoTabControl";
-            zoneFileInfoTabControl.SelectedIndex = 0;
-            zoneFileInfoTabControl.Size = new Size(1450, 777);
-            zoneFileInfoTabControl.TabIndex = 3;
+            mainTabControl.ContextMenuStrip = universalContextMenu;
+            mainTabControl.Controls.Add(rawFilesPage);
+            mainTabControl.Controls.Add(stringTablesTabPage);
+            mainTabControl.Controls.Add(collision_Map_AssetTabPage);
+            mainTabControl.Controls.Add(localizeTabPage);
+            mainTabControl.Controls.Add(tagsTabPage);
+            mainTabControl.Controls.Add(assetPoolTabPage);
+            mainTabControl.Controls.Add(zoneFileTabPage);
+            mainTabControl.Dock = DockStyle.Fill;
+            mainTabControl.Location = new Point(0, 28);
+            mainTabControl.Name = "mainTabControl";
+            mainTabControl.SelectedIndex = 0;
+            mainTabControl.Size = new Size(1450, 777);
+            mainTabControl.TabIndex = 3;
             // 
             // universalContextMenu
             // 
@@ -533,6 +537,26 @@ namespace Call_of_Duty_FastFile_Editor
             treeViewMapEnt.TabIndex = 2;
             treeViewMapEnt.MouseDown += treeView_MouseDownCopy;
             // 
+            // localizeTabPage
+            // 
+            localizeTabPage.Controls.Add(localizeListView);
+            localizeTabPage.Location = new Point(4, 24);
+            localizeTabPage.Name = "localizeTabPage";
+            localizeTabPage.Padding = new Padding(3);
+            localizeTabPage.Size = new Size(1442, 749);
+            localizeTabPage.TabIndex = 6;
+            localizeTabPage.Text = "Localize";
+            localizeTabPage.UseVisualStyleBackColor = true;
+            // 
+            // localizeListView
+            // 
+            localizeListView.Dock = DockStyle.Fill;
+            localizeListView.Location = new Point(3, 3);
+            localizeListView.Name = "localizeListView";
+            localizeListView.Size = new Size(1436, 743);
+            localizeListView.TabIndex = 0;
+            localizeListView.UseCompatibleStateImageBehavior = false;
+            // 
             // tagsTabPage
             // 
             tagsTabPage.Controls.Add(tagsListView);
@@ -603,7 +627,7 @@ namespace Call_of_Duty_FastFile_Editor
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1450, 827);
-            Controls.Add(zoneFileInfoTabControl);
+            Controls.Add(mainTabControl);
             Controls.Add(statusStripBottom);
             Controls.Add(menuStripTopToolbar);
             MainMenuStrip = menuStripTopToolbar;
@@ -617,11 +641,12 @@ namespace Call_of_Duty_FastFile_Editor
             splitContainer1.ResumeLayout(false);
             statusStripBottom.ResumeLayout(false);
             statusStripBottom.PerformLayout();
-            zoneFileInfoTabControl.ResumeLayout(false);
+            mainTabControl.ResumeLayout(false);
             universalContextMenu.ResumeLayout(false);
             rawFilesPage.ResumeLayout(false);
             stringTablesTabPage.ResumeLayout(false);
             collision_Map_AssetTabPage.ResumeLayout(false);
+            localizeTabPage.ResumeLayout(false);
             tagsTabPage.ResumeLayout(false);
             assetPoolTabPage.ResumeLayout(false);
             zoneFileTabPage.ResumeLayout(false);
@@ -676,7 +701,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem toolStripMenuItem1;
         private ToolTip filesTreeToolTip;
         private ToolStripMenuItem renameFileToolStripMenuItem;
-        private TabControl zoneFileInfoTabControl;
+        private TabControl mainTabControl;
         private TabPage rawFilesPage;
         private TabPage zoneFileTabPage;
         private DataGridView zoneInfoDataGridView;
@@ -694,5 +719,7 @@ namespace Call_of_Duty_FastFile_Editor
         private TabPage assetPoolTabPage;
         private ListView assetPoolListView;
         private ListView stringTableListView;
+        private TabPage localizeTabPage;
+        private ListView localizeListView;
     }
 }
