@@ -866,8 +866,9 @@ namespace Call_of_Duty_FastFile_Editor
         private void PopulateLocalizeAssets()
         {
             // Check if we have any localized entries in our processed results.
-            if (_processResult == null || _processResult.LocalizedEntries == null)
+            if (_processResult == null || _processResult.LocalizedEntries.Count <= 0)
             {
+                mainTabControl.TabPages.Remove(localizeTabPage); // hide the tab page if there's no data to show
                 return;
             }
 
@@ -915,6 +916,12 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void PopulateStringTable()
         {
+            if(_stringTables.Count <= 0)
+            {
+                mainTabControl.TabPages.Remove(stringTablesTabPage); // hide the tab page if there's no data to show
+                return;
+            }
+
             // Clear existing nodes
             stringTableTreeView.Nodes.Clear();
 
@@ -955,7 +962,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (offset == -1)
             {
                 //MessageBox.Show("No map header found near large FF blocks.");
-                mainTabControl.TabPages.Remove(collision_Map_AssetTabPage);
+                mainTabControl.TabPages.Remove(collision_Map_AssetTabPage); // hide the tab page if there's no data to show
                 return;
             }
 
