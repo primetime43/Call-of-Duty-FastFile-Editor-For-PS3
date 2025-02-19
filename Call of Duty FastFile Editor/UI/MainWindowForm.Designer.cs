@@ -550,12 +550,14 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // localizeListView
             // 
+            localizeListView.ContextMenuStrip = universalContextMenu;
             localizeListView.Dock = DockStyle.Fill;
             localizeListView.Location = new Point(3, 3);
             localizeListView.Name = "localizeListView";
             localizeListView.Size = new Size(1436, 743);
             localizeListView.TabIndex = 0;
             localizeListView.UseCompatibleStateImageBehavior = false;
+            localizeListView.MouseDown += listView_MouseDownCopy;
             // 
             // tagsTabPage
             // 
