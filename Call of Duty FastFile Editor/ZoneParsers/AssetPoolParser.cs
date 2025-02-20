@@ -38,7 +38,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 }
 
                 int assetTypeInt = (int)Utilities.ReadUInt32AtOffset(i, _zone, isBigEndian: true);
-                if (!Enum.IsDefined(typeof(ZoneFileAssetType), assetTypeInt))
+                if (!Enum.IsDefined(typeof(ZoneFileAssetType_COD5), assetTypeInt))
                 {
                     i++;
                     continue;
@@ -56,7 +56,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
                 var record = new ZoneAssetRecord
                 {
-                    AssetType = (ZoneFileAssetType)assetTypeInt,
+                    AssetType = (ZoneFileAssetType_COD5)assetTypeInt,
                     AssetPoolRecordOffset = i
                 };
 

@@ -51,7 +51,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                     // Process the record based on its type.
                     switch (zoneAssetRecords[i].AssetType)
                     {
-                        case ZoneFileAssetType.rawfile:
+                        case ZoneFileAssetType_COD5.rawfile:
                             {
                                 // Try to extract a raw file using the no-pattern method first.
                                 RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
@@ -70,7 +70,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 }
                                 break;
                             }
-                        case ZoneFileAssetType.stringtable:
+                        case ZoneFileAssetType_COD5.stringtable:
                             {
                                 // Parse a string table using a similar conditional approach.
                                 StringTable table = (previousRecordEndOffset > 0)
@@ -88,7 +88,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 }
                                 break;
                             }
-                        case ZoneFileAssetType.localize:
+                        case ZoneFileAssetType_COD5.localize:
                             {
                                 // Use a ternary operator to choose between the no-pattern and pattern methods.
                                 var tuple = (previousRecordEndOffset > 0)

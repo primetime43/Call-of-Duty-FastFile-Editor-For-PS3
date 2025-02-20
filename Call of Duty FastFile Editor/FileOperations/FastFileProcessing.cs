@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
+﻿using Ionic.Zlib;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.Models;
 
@@ -31,7 +26,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                         string text = BitConverter.ToString(array).Replace("-", "");
                         int count = int.Parse(text, System.Globalization.NumberStyles.AllowHexSpecifier);
                         byte[] compressedData = binaryReader.ReadBytes(count);
-                        byte[] decompressedData = FastFileDecompressor.DecompressFF(compressedData);
+                        byte[] decompressedData = DecompressFF(compressedData);
                         binaryWriter.Write(decompressedData);
                     }
                 }
@@ -42,6 +37,24 @@ namespace Call_of_Duty_FastFile_Editor.IO
                         throw;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Decompresses the specified byte array using the Zlib algorithm.
+        /// </summary>
+        /// <param name="compressedData"></param>
+        /// <returns></returns>
+        private static byte[] DecompressFF(byte[] compressedData)
+        {
+            using (MemoryStream input = new MemoryStream(compressedData))
+            using (MemoryStream output = new MemoryStream())
+            {
+                using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
+                {
+                    deflateStream.CopyTo(output);
+                }
+                return output.ToArray();
             }
         }
 
@@ -68,11 +81,6 @@ namespace Call_of_Duty_FastFile_Editor.IO
                     binaryWriter.Write(Constants.FastFiles.CoD4_VersionValue);
                 }
 
-                // Set the reader position to skip the header already written
-                // This should eventually be removed. This caused a bug where the header would be missing
-                // Cause bug #6 https://github.com/primetime43/Call-of-Duty-FastFile-Editor-For-PS3/issues/6
-                //binaryReader.BaseStream.Position = Constants.FastFiles.HeaderLength; // Skip the header section
-
                 int chunkSize = 65536;
                 while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length)
                 {
@@ -80,7 +88,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
                     byte[] chunk = binaryReader.ReadBytes(chunkSize);
 
                     // Compress the chunk
-                    byte[] compressedChunk = FastFileCompressor.CompressFF(chunk);
+                    byte[] compressedChunk = CompressFF(chunk);
 
                     // Write the length of the compressed chunk (2 bytes)
                     int compressedLength = compressedChunk.Length;
@@ -94,6 +102,18 @@ namespace Call_of_Duty_FastFile_Editor.IO
 
                 // Write the final 2-byte sequence
                 binaryWriter.Write(new byte[2] { 0, 1 });
+            }
+        }
+
+        private static byte[] CompressFF(byte[] uncompressedData)
+        {
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                using (DeflateStream deflateStream = new DeflateStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression))
+                {
+                    deflateStream.Write(uncompressedData, 0, uncompressedData.Length);
+                }
+                return memoryStream.ToArray();
             }
         }
     }

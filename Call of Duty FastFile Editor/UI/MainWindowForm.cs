@@ -32,6 +32,8 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private List<StringTable> _stringTables;
 
+        private List<LocalizedEntry> _localizedEntries;
+
         /// <summary>
         /// List of tags extracted from the zone file.
         /// </summary>
@@ -183,6 +185,7 @@ namespace Call_of_Duty_FastFile_Editor
             _rawFileNodes = _processResult.RawFileNodes;
             RawFileNode.CurrentZone = _openedFastFile.OpenedFastFileZone;
             _stringTables = _processResult.StringTables;
+            _localizedEntries = _processResult.LocalizedEntries;
 
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
@@ -866,7 +869,7 @@ namespace Call_of_Duty_FastFile_Editor
         private void PopulateLocalizeAssets()
         {
             // Check if we have any localized entries in our processed results.
-            if (_processResult == null || _processResult.LocalizedEntries.Count <= 0)
+            if (_localizedEntries == null || _localizedEntries.Count <= 0)
             {
                 mainTabControl.TabPages.Remove(localizeTabPage); // hide the tab page if there's no data to show
                 return;
@@ -889,7 +892,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.Columns.Add("Text", 300);
 
             // Loop through each localized entry.
-            foreach (var entry in _processResult.LocalizedEntries)
+            foreach (var entry in _localizedEntries)
             {
                 // Calculate the size difference.
                 int size = entry.EndOfFileHeader - entry.StartOfFileHeader;

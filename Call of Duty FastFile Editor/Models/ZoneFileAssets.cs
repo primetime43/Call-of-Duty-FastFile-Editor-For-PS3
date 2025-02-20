@@ -15,7 +15,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
     public struct ZoneAssetRecord
     {
-        public ZoneFileAssetType AssetType { get; set; }
+        public ZoneFileAssetType_COD5 AssetType { get; set; }
         public int HeaderStartOffset { get; set; }
         /// <summary>
         /// The offset where the header ends before the data. (Includes the null terminator)
@@ -42,7 +42,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string AdditionalData { get; set; }
     }
 
-    public enum ZoneFileAssetType
+    public enum ZoneFileAssetType_COD5
     {
         physpreset = 0x01,
         physconstraints = 0x02,
