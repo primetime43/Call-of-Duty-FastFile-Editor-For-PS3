@@ -1,4 +1,5 @@
 ﻿using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditorEx;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -20,7 +21,6 @@ namespace Call_of_Duty_FastFile_Editor
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            textEditorControl1 = new TextEditorControl();
             filesTreeView = new TreeView();
             contextMenuStripRawFiles = new ContextMenuStrip(components);
             exportFileMenuItem = new ToolStripMenuItem();
@@ -58,6 +58,7 @@ namespace Call_of_Duty_FastFile_Editor
             saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
+            textEditorControlEx1 = new TextEditorControlEx();
             statusStripBottom = new StatusStrip();
             loadedFileNameStatusLabel = new ToolStripStatusLabel();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
@@ -102,16 +103,6 @@ namespace Call_of_Duty_FastFile_Editor
             ((System.ComponentModel.ISupportInitialize)zoneInfoDataGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             SuspendLayout();
-            // 
-            // textEditorControl1
-            // 
-            textEditorControl1.Dock = DockStyle.Fill;
-            textEditorControl1.IsReadOnly = false;
-            textEditorControl1.Location = new Point(0, 0);
-            textEditorControl1.Name = "textEditorControl1";
-            textEditorControl1.Size = new Size(1094, 743);
-            textEditorControl1.TabIndex = 0;
-            textEditorControl1.TextChanged += textEditorControl1_TextChanged;
             // 
             // filesTreeView
             // 
@@ -390,10 +381,21 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // splitContainer1.Panel2
             // 
-            splitContainer1.Panel2.Controls.Add(textEditorControl1);
+            splitContainer1.Panel2.Controls.Add(textEditorControlEx1);
             splitContainer1.Size = new Size(1436, 743);
             splitContainer1.SplitterDistance = 338;
             splitContainer1.TabIndex = 0;
+            // 
+            // textEditorControlEx1
+            // 
+            textEditorControlEx1.ContextMenuEnabled = true;
+            textEditorControlEx1.Dock = DockStyle.Fill;
+            textEditorControlEx1.Font = new Font("Courier New", 10F);
+            textEditorControlEx1.Location = new Point(0, 0);
+            textEditorControlEx1.Name = "textEditorControlEx1";
+            textEditorControlEx1.Size = new Size(1094, 743);
+            textEditorControlEx1.TabIndex = 0;
+            textEditorControlEx1.TextChanged += textEditorControlEx1_TextChanged;
             // 
             // statusStripBottom
             // 
@@ -671,7 +673,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ToolStripStatusLabel selectedFileMaxSizeStatusLabel;
         private ToolStripStatusLabel selectedFileCurrentSizeStatusLabel;
-        private TextEditorControl textEditorControl1;
+        private TextEditorControlEx textEditorControlEx1;
         private ToolStripMenuItem saveFastFileToolStripMenuItem;
         private ToolStripMenuItem saveFastFileAsToolStripMenuItem;
         private ToolStripMenuItem exitToolStripMenuItem;

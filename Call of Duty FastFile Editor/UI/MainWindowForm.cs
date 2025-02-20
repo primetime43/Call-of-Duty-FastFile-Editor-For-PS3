@@ -11,6 +11,7 @@ using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.Services;
 using System.ComponentModel;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
+using ICSharpCode.TextEditorEx;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -64,7 +65,7 @@ namespace Call_of_Duty_FastFile_Editor
         public MainWindowForm()
         {
             InitializeComponent();
-            textEditorControl1.SetHighlighting("C#");
+            textEditorControlEx1.SyntaxHighlighting = "C#";
 
             DirectoryInfo directoryInfo = new DirectoryInfo(_originalFastFilesPath);
             directoryInfo.Attributes |= FileAttributes.Hidden;
@@ -272,7 +273,7 @@ namespace Call_of_Duty_FastFile_Editor
                             _openedFastFile.FfFilePath,     // Path to the Fast File (.ff)
                             _openedFastFile.ZoneFilePath,   // Path to the decompressed zone file
                             _rawFileNodes,                  // List of RawFileNode objects
-                            textEditorControl1.Text,        // Updated text from the editor
+                            textEditorControlEx1.Text,        // Updated text from the editor
                             _openedFastFile                // FastFile instance
                         );
                     }
@@ -299,9 +300,10 @@ namespace Call_of_Duty_FastFile_Editor
                 string fileContent = selectedNode.RawFileContent ?? string.Empty;
 
                 // Update the editor content without triggering multiple events.
-                textEditorControl1.TextChanged -= textEditorControl1_TextChanged;
-                textEditorControl1.Text = fileContent;
-                textEditorControl1.TextChanged += textEditorControl1_TextChanged;
+                textEditorControlEx1.TextChanged -= textEditorControlEx1_TextChanged;
+                //textEditorControlEx1.Text = fileContent;
+                textEditorControlEx1.SetTextAndRefresh(selectedNode.RawFileContent);
+                textEditorControlEx1.TextChanged += textEditorControlEx1_TextChanged;
 
                 // Update UI elements.
                 UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
@@ -309,7 +311,7 @@ namespace Call_of_Duty_FastFile_Editor
                     selectedFileMaxSizeStatusLabel,
                     selectedFileCurrentSizeStatusLabel,
                     maxSize,
-                    textEditorControl1.Text.Length
+                    textEditorControlEx1.Text.Length
                 );
                 _hasUnsavedChanges = false; // Reset unsaved flag after loading content
             }
@@ -318,7 +320,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Handles text changes in the editor, marking the content as unsaved.
         /// </summary>
-        private void textEditorControl1_TextChanged(object sender, EventArgs e)
+        private void textEditorControlEx1_TextChanged(object sender, EventArgs e)
         {
             if (filesTreeView.SelectedNode?.Tag is int position)
             {
@@ -330,7 +332,7 @@ namespace Call_of_Duty_FastFile_Editor
                         selectedFileMaxSizeStatusLabel,
                         selectedFileCurrentSizeStatusLabel,
                         maxSize,
-                        textEditorControl1.Text.Length
+                        textEditorControlEx1.Text.Length
                     );
                     _hasUnsavedChanges = true;
                 }
@@ -404,7 +406,7 @@ namespace Call_of_Duty_FastFile_Editor
                     _openedFastFile.FfFilePath,                   // Path to the Fast File (.ff)
                     _openedFastFile.ZoneFilePath,                 // Path to the decompressed zone file
                     _rawFileNodes,               // List of RawFileNode objects
-                    textEditorControl1.Text,      // Updated text from the editor
+                    textEditorControlEx1.Text,      // Updated text from the editor
                     _openedFastFile                       // FastFile instance
                 );
                 _hasUnsavedChanges = false; // Reset the flag after saving
@@ -423,9 +425,9 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
-                textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
-                textEditorControl1.Text = Regex.Replace(textEditorControl1.Text, "(\\r\\n){2,}", "\r\n\r\n");
+                textEditorControlEx1.Text = CommentRemover.RemoveCStyleComments(textEditorControlEx1.Text);
+                textEditorControlEx1.Text = CommentRemover.RemoveCustomComments(textEditorControlEx1.Text);
+                textEditorControlEx1.Text = Regex.Replace(textEditorControlEx1.Text, "(\\r\\n){2,}", "\r\n\r\n");
             }
             catch (Exception ex)
             {
@@ -493,9 +495,9 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                textEditorControl1.Text = CommentRemover.RemoveCStyleComments(textEditorControl1.Text);
-                textEditorControl1.Text = CommentRemover.RemoveCustomComments(textEditorControl1.Text);
-                textEditorControl1.Text = CodeCompressor.CompressCode(textEditorControl1.Text);
+                textEditorControlEx1.Text = CommentRemover.RemoveCStyleComments(textEditorControlEx1.Text);
+                textEditorControlEx1.Text = CommentRemover.RemoveCustomComments(textEditorControlEx1.Text);
+                textEditorControlEx1.Text = CodeCompressor.CompressCode(textEditorControlEx1.Text);
             }
             catch (Exception ex)
             {
@@ -510,7 +512,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                SyntaxChecker.CheckSyntax(textEditorControl1.Text);
+                SyntaxChecker.CheckSyntax(textEditorControlEx1.Text);
             }
             catch (Exception ex)
             {
@@ -1143,8 +1145,8 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableTreeView.Nodes.Clear();
             tagsListView.Items.Clear();
             zoneInfoDataGridView.DataSource = null;
-            textEditorControl1.Text = "";
-            textEditorControl1.ResetText();
+            textEditorControlEx1.Text = "";
+            textEditorControlEx1.ResetText();
         }
 
         /// <summary>

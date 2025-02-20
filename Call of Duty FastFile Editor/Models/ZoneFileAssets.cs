@@ -42,6 +42,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string AdditionalData { get; set; }
     }
 
+    // Maybe move this to Constants?
     public enum ZoneFileAssetType_COD5
     {
         physpreset = 0x01,
