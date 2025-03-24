@@ -41,7 +41,6 @@ namespace Call_of_Duty_FastFile_Editor
             checkSyntaxToolStripMenuItem = new ToolStripMenuItem();
             toolsToolStripMenuItem = new ToolStripMenuItem();
             checkForUpdateToolStripMenuItem = new ToolStripMenuItem();
-            injectFileToolStripMenuItem = new ToolStripMenuItem();
             originalFastFilesToolStripMenuItem = new ToolStripMenuItem();
             worldAtWarToolStripMenuItem = new ToolStripMenuItem();
             defaultffToolStripMenuItem = new ToolStripMenuItem();
@@ -52,10 +51,13 @@ namespace Call_of_Duty_FastFile_Editor
             nazizombiefactorypatchffToolStripMenuItem = new ToolStripMenuItem();
             modernWarfareToolStripMenuItem = new ToolStripMenuItem();
             patchmpffToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            injectFileToolStripMenuItem = new ToolStripMenuItem();
             rawFileToolsMenuItem = new ToolStripMenuItem();
             increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
             searchRawFileTxtMenuItem = new ToolStripMenuItem();
             saveFileToPCToolStripMenuItem = new ToolStripMenuItem();
+            extractAllRawFilesToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             textEditorControlEx1 = new TextEditorControlEx();
@@ -245,7 +247,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { checkForUpdateToolStripMenuItem, injectFileToolStripMenuItem, originalFastFilesToolStripMenuItem, rawFileToolsMenuItem, saveFileToPCToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { checkForUpdateToolStripMenuItem, originalFastFilesToolStripMenuItem, toolStripSeparator2, injectFileToolStripMenuItem, rawFileToolsMenuItem, saveFileToPCToolStripMenuItem, extractAllRawFilesToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
@@ -253,30 +255,23 @@ namespace Call_of_Duty_FastFile_Editor
             // checkForUpdateToolStripMenuItem
             // 
             checkForUpdateToolStripMenuItem.Name = "checkForUpdateToolStripMenuItem";
-            checkForUpdateToolStripMenuItem.Size = new Size(195, 24);
+            checkForUpdateToolStripMenuItem.Size = new Size(210, 24);
             checkForUpdateToolStripMenuItem.Text = "Check For Update";
             checkForUpdateToolStripMenuItem.Click += checkForUpdateToolStripMenuItem_Click;
-            // 
-            // injectFileToolStripMenuItem
-            // 
-            injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
-            injectFileToolStripMenuItem.Size = new Size(195, 24);
-            injectFileToolStripMenuItem.Text = "Inject File";
-            injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
             // 
             // originalFastFilesToolStripMenuItem
             // 
             originalFastFilesToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { worldAtWarToolStripMenuItem, modernWarfareToolStripMenuItem });
             originalFastFilesToolStripMenuItem.Name = "originalFastFilesToolStripMenuItem";
-            originalFastFilesToolStripMenuItem.Size = new Size(195, 24);
+            originalFastFilesToolStripMenuItem.Size = new Size(210, 24);
             originalFastFilesToolStripMenuItem.Text = "Original Fast Files";
             // 
             // worldAtWarToolStripMenuItem
             // 
             worldAtWarToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { defaultffToolStripMenuItem, patchmpffToolStripMenuItem1, patchffNachtDerUntotenToolStripMenuItem, patchffZombieVerruckToolStripMenuItem, nazizombiesumpfpatchffToolStripMenuItem, nazizombiefactorypatchffToolStripMenuItem });
             worldAtWarToolStripMenuItem.Name = "worldAtWarToolStripMenuItem";
-            worldAtWarToolStripMenuItem.Size = new Size(186, 24);
-            worldAtWarToolStripMenuItem.Text = "World at War";
+            worldAtWarToolStripMenuItem.Size = new Size(239, 24);
+            worldAtWarToolStripMenuItem.Text = "World at War [COD5]";
             // 
             // defaultffToolStripMenuItem
             // 
@@ -324,8 +319,8 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             modernWarfareToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { patchmpffToolStripMenuItem });
             modernWarfareToolStripMenuItem.Name = "modernWarfareToolStripMenuItem";
-            modernWarfareToolStripMenuItem.Size = new Size(186, 24);
-            modernWarfareToolStripMenuItem.Text = "Modern Warfare";
+            modernWarfareToolStripMenuItem.Size = new Size(239, 24);
+            modernWarfareToolStripMenuItem.Text = "Modern Warfare [COD4]";
             // 
             // patchmpffToolStripMenuItem
             // 
@@ -334,11 +329,23 @@ namespace Call_of_Duty_FastFile_Editor
             patchmpffToolStripMenuItem.Text = "patch_mp.ff";
             patchmpffToolStripMenuItem.Click += patchmpffToolStripMenuItem_Click;
             // 
+            // toolStripSeparator2
+            // 
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(207, 6);
+            // 
+            // injectFileToolStripMenuItem
+            // 
+            injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
+            injectFileToolStripMenuItem.Size = new Size(210, 24);
+            injectFileToolStripMenuItem.Text = "Inject Raw File";
+            injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
+            // 
             // rawFileToolsMenuItem
             // 
             rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { increaseRawFileSizeToolStripMenuItem, searchRawFileTxtMenuItem });
             rawFileToolsMenuItem.Name = "rawFileToolsMenuItem";
-            rawFileToolsMenuItem.Size = new Size(195, 24);
+            rawFileToolsMenuItem.Size = new Size(210, 24);
             rawFileToolsMenuItem.Text = "Raw File Tools";
             // 
             // increaseRawFileSizeToolStripMenuItem
@@ -357,9 +364,16 @@ namespace Call_of_Duty_FastFile_Editor
             // saveFileToPCToolStripMenuItem
             // 
             saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
-            saveFileToPCToolStripMenuItem.Size = new Size(195, 24);
+            saveFileToPCToolStripMenuItem.Size = new Size(210, 24);
             saveFileToPCToolStripMenuItem.Text = "Save File To PC";
             saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
+            // 
+            // extractAllRawFilesToolStripMenuItem
+            // 
+            extractAllRawFilesToolStripMenuItem.Name = "extractAllRawFilesToolStripMenuItem";
+            extractAllRawFilesToolStripMenuItem.Size = new Size(210, 24);
+            extractAllRawFilesToolStripMenuItem.Text = "Extract All Raw Files";
+            extractAllRawFilesToolStripMenuItem.Click += extractAllRawFilesToolStripMenuItem_Click;
             // 
             // aboutToolStripMenuItem
             // 
@@ -390,10 +404,12 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             textEditorControlEx1.ContextMenuEnabled = true;
             textEditorControlEx1.Dock = DockStyle.Fill;
+            //textEditorControlEx1.FoldingStrategy = null;
             textEditorControlEx1.Font = new Font("Courier New", 10F);
             textEditorControlEx1.Location = new Point(0, 0);
             textEditorControlEx1.Name = "textEditorControlEx1";
             textEditorControlEx1.Size = new Size(1094, 743);
+            textEditorControlEx1.SyntaxHighlighting = "C#";
             textEditorControlEx1.TabIndex = 0;
             textEditorControlEx1.TextChanged += textEditorControlEx1_TextChanged;
             // 
@@ -725,5 +741,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ListView stringTableListView;
         private TabPage localizeTabPage;
         private ListView localizeListView;
+        private ToolStripSeparator toolStripSeparator2;
+        private ToolStripMenuItem extractAllRawFilesToolStripMenuItem;
     }
 }

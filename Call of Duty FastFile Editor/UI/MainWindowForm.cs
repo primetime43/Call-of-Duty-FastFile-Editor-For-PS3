@@ -921,7 +921,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void PopulateStringTable()
         {
-            if(_stringTables.Count <= 0)
+            if (_stringTables.Count <= 0)
             {
                 mainTabControl.TabPages.Remove(stringTablesTabPage); // hide the tab page if there's no data to show
                 return;
@@ -1293,6 +1293,60 @@ namespace Call_of_Duty_FastFile_Editor
 
             // 5) Auto-resize columns to fit headers or content
             stringTableListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
+        /// <summary>
+        /// Extracts all raw files, including header information, to a chosen folder.
+        /// </summary>
+        private void extractAllRawFilesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Check that there are raw files available
+            if (_rawFileNodes == null || _rawFileNodes.Count == 0)
+            {
+                MessageBox.Show("No raw files available for extraction.", "No Files", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Prompt the user to choose a destination folder
+            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            {
+                folderBrowserDialog.Description = "Select the destination folder to extract all raw files";
+                if (folderBrowserDialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                string destinationFolder = folderBrowserDialog.SelectedPath;
+
+                // Loop through all raw file nodes and write each one to the selected folder
+                foreach (var rawFileNode in _rawFileNodes)
+                {
+                    try
+                    {
+                        // Replace any forward or backslashes in the file name with underscores to avoid invalid characters
+                        string safeFileName = rawFileNode.FileName.Replace("/", "_").Replace("\\", "_");
+
+                        // Construct the destination file path using the sanitized file name
+                        string destFilePath = Path.Combine(destinationFolder, safeFileName);
+
+                        // Write the raw bytes to the destination file.
+                        // (Assumes that rawFileNode.RawFileBytes includes header info.)
+                        File.WriteAllBytes(destFilePath, rawFileNode.RawFileBytes);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to extract {rawFileNode.FileName}: {ex.Message}",
+                            "Extraction Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                }
+
+                MessageBox.Show("All raw files extracted successfully.",
+                    "Extraction Complete",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
         }
     }
 }
