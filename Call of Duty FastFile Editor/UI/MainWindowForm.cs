@@ -789,13 +789,12 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
-            if (!(filesTreeView.SelectedNode.Tag is int position))
+            if (!(filesTreeView.SelectedNode.Tag is RawFileNode selectedFileNode))
             {
                 MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            RawFileNode selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
             if (selectedFileNode == null)
             {
                 MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);

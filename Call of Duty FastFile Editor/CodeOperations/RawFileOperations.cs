@@ -56,9 +56,9 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         {
             try
             {
-                if (filesTreeView.SelectedNode?.Tag is int position)
+                if (filesTreeView.SelectedNode?.Tag is RawFileNode selectedFileNode)
                 {
-                    var rawFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                    var rawFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == selectedFileNode.PatternIndexPosition);
                     if (rawFileNode != null)
                     {
                         // Prompt the user for a new file name.
@@ -69,7 +69,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                                 "Rename Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             return;
                         }
-                        newFileName = SanitizeFileName(newFileName);
+                        //newFileName = SanitizeFileName(newFileName);
 
                         // The header structure is: 4 bytes, then 4 bytes size, then 4 bytes,
                         // then the file name (in ASCII) ending with a null terminator.
@@ -185,7 +185,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         {
             foreach (TreeNode node in filesTreeView.Nodes)
             {
-                if (node.Tag is int tag && tag == patternIndexPosition)
+                if (node.Tag is RawFileNode rfn && rfn.PatternIndexPosition == patternIndexPosition)
                 {
                     node.Text = newFileName;
                     break; // Exit the loop once the node is found and updated
