@@ -1146,6 +1146,12 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.DataSource = null;
             textEditorControlEx1.Text = "";
             textEditorControlEx1.ResetText();
+            localizeListView.Items.Clear();
+            localizeListView.Columns.Clear();
+            tagsListView.Columns.Clear();
+            assetPoolListView.Items.Clear();
+            assetPoolListView.Columns.Clear();
+
         }
 
         /// <summary>

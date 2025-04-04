@@ -62,7 +62,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 {
                                     // Set the extraction method description based on the offset used.
                                     assetRecordMethod = (previousRecordEndOffset > 0)
-                                        ? "Raw file parsed using previous record's offset (or fallback via pattern matching)."
+                                        ? "Raw file parsed using previous record's offset."
                                         : "Raw file parsed from asset pool end using pattern matching.";
                                     result.RawFileNodes.Add(node);
                                     UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
