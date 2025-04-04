@@ -69,24 +69,20 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                                 "Rename Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             return;
                         }
-                        //newFileName = SanitizeFileName(newFileName);
 
                         // The header structure is: 4 bytes, then 4 bytes size, then 4 bytes,
-                        // then the file name (in ASCII) ending with a null terminator.
-                        // Here fixedHeaderSize is the size of the fixed portion (12 bytes).
+                        // then the file name (in ASCII). The file name field is currently of length equal to rawFileNode.FileName.Length.
                         const int fixedHeaderSize = 12;
                         int fileNameStartPosition = rawFileNode.StartOfFileHeader + fixedHeaderSize;
 
-                        // Get the current header bytes from the zone.
-                        byte[] headerBytes = rawFileNode.Header;
-                        // The current file name field length (including the terminating null)
-                        int currentFileNameFieldLength = headerBytes.Length - fixedHeaderSize;
-
-                        // Get the new file name bytes (which include the null terminator)
+                        // Get the old file name length.
+                        int oldNameLength = rawFileNode.FileName.Length;
+                        // Get the new file name as bytes (without a null terminator).
                         byte[] newFileNameBytes = rawFileNode.GetFileNameBytes(newFileName);
+                        int newNameLength = newFileNameBytes.Length;
 
-                        // Calculate the difference in length.
-                        int byteDifference = newFileNameBytes.Length - currentFileNameFieldLength;
+                        // Compute the byte difference between the new and old name lengths.
+                        int byteDifference = newNameLength - oldNameLength;
 
                         // Read the entire zone file into memory.
                         byte[] zoneFileData = File.ReadAllBytes(zoneFilePath);
@@ -96,45 +92,62 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
 
                         if (byteDifference == 0)
                         {
-                            // New name is exactly the same length as the old: overwrite directly.
-                            Array.Copy(newFileNameBytes, 0, zoneFileData, fileNameStartPosition, newFileNameBytes.Length);
+                            // Overwrite directly if the lengths are identical.
+                            Array.Copy(newFileNameBytes, 0, zoneFileData, fileNameStartPosition, newNameLength);
                         }
                         else if (byteDifference < 0)
                         {
-                            // New name is shorter. Overwrite the file name field,
-                            // then shift the remainder of the zone data left.
-                            Array.Copy(newFileNameBytes, 0, zoneFileData, fileNameStartPosition, newFileNameBytes.Length);
-                            int bytesToShift = zoneFileData.Length - (fileNameStartPosition + currentFileNameFieldLength);
-                            Array.Copy(zoneFileData,
-                                fileNameStartPosition + currentFileNameFieldLength,
-                                zoneFileData,
-                                fileNameStartPosition + newFileNameBytes.Length,
-                                bytesToShift);
-                            // Trim the zone file data to the new size.
+                            // New name is shorter.
+                            // Overwrite the file name field with the new bytes.
+                            Array.Copy(newFileNameBytes, 0, zoneFileData, fileNameStartPosition, newNameLength);
+                            // Fill remaining bytes (if any) with zeros.
+                            for (int i = newNameLength; i < oldNameLength; i++)
+                            {
+                                zoneFileData[fileNameStartPosition + i] = 0;
+                            }
+                            // Shift the remainder of the zone data left.
+                            int shiftStart = fileNameStartPosition + oldNameLength;
+                            int shiftLength = zoneFileData.Length - shiftStart;
+                            Array.Copy(zoneFileData, shiftStart, zoneFileData, fileNameStartPosition + newNameLength, shiftLength);
+                            // Truncate the zone file data array.
                             zoneFileData = zoneFileData.Take(zoneFileData.Length + byteDifference).ToArray();
                         }
                         else // byteDifference > 0
                         {
-                            // New name is longer. Resize the array and shift the remainder of the zone data right.
+                            // New name is longer.
                             int originalLength = zoneFileData.Length;
+                            // Resize the array to make room for extra bytes.
                             Array.Resize(ref zoneFileData, originalLength + byteDifference);
-                            int bytesToShift = originalLength - (fileNameStartPosition + currentFileNameFieldLength);
-                            Array.Copy(zoneFileData,
-                                fileNameStartPosition + currentFileNameFieldLength,
-                                zoneFileData,
-                                fileNameStartPosition + newFileNameBytes.Length,
-                                bytesToShift);
-                            Array.Copy(newFileNameBytes, 0, zoneFileData, fileNameStartPosition, newFileNameBytes.Length);
+                            // Shift the remainder of the zone data right.
+                            int shiftStart = fileNameStartPosition + oldNameLength;
+                            int shiftLength = originalLength - shiftStart;
+                            Array.Copy(zoneFileData, shiftStart, zoneFileData, fileNameStartPosition + newNameLength, shiftLength);
+                            // Overwrite the file name field with the new bytes.
+                            Array.Copy(newFileNameBytes, 0, zoneFileData, fileNameStartPosition, newNameLength);
                         }
 
                         // Write the modified zone file back to disk.
                         File.WriteAllBytes(zoneFilePath, zoneFileData);
 
-                        // Update the in-memory RawFileNode.
+                        // Save the old file name for notification.
+                        string oldFileName = rawFileNode.FileName;
+                        // Update the renamed file's FileName property.
                         rawFileNode.FileName = newFileName;
+                        // Note: Computed properties (CodeStartPosition, CodeEndPosition, RawFileEndPosition) will reflect the new name length.
+
+                        // Adjust the StartOfFileHeader for all subsequent raw file nodes.
+                        foreach (var node in rawFileNodes)
+                        {
+                            if (node.StartOfFileHeader > rawFileNode.StartOfFileHeader)
+                            {
+                                node.StartOfFileHeader += byteDifference;
+                            }
+                        }
+
+                        // Update the TreeView node text.
                         UpdateTreeViewNodeText(filesTreeView, rawFileNode.PatternIndexPosition, newFileName);
 
-                        MessageBox.Show($"File successfully renamed to '{newFileName}'.",
+                        MessageBox.Show($"File successfully renamed from '{oldFileName}' to '{newFileName}'.",
                             "Rename Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
