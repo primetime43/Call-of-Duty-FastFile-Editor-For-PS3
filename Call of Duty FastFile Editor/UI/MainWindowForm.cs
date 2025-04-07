@@ -694,7 +694,11 @@ namespace Call_of_Duty_FastFile_Editor
                         // It's a brand-new file, not already in the zone
                         try
                         {
+                            //test add to pool
+                            AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
+
                             // 1) Append it to the decompressed zone
+                            //RawFileInject.OldAppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
                             RawFileInject.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
@@ -1198,7 +1202,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Columns.Add("Size", 60);
             assetPoolListView.Columns.Add("Asset Record End", 100);
             assetPoolListView.Columns.Add("Name", 120);
-            assetPoolListView.Columns.Add("Content Snippet", 200);
+            assetPoolListView.Columns.Add("Parsing Method", 200);
 
             // Place the asset pool itself at the top
             var pool = new ListViewItem("");
@@ -1249,7 +1253,8 @@ namespace Call_of_Duty_FastFile_Editor
                 }
                 else
                 {
-                    lvi.SubItems.Add(string.Empty);
+                    //lvi.SubItems.Add(string.Empty);
+                    lvi.SubItems.Add("Unable to read.");
                 }
 
                 // Finally, add the row to the list
@@ -1352,6 +1357,11 @@ namespace Call_of_Duty_FastFile_Editor
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
+        }
+
+        private void tESTAddRawFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
         }
     }
 }

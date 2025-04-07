@@ -1,4 +1,4 @@
-﻿using Call_of_Duty_FastFile_Editor.Models;
+using Call_of_Duty_FastFile_Editor.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,13 +23,6 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         /// <exception cref="IOException">Thrown when file operations fail.</exception>
         public static void UpdateFileContent(string zoneFilePath, RawFileNode rawFileNode, byte[] newContent)
         {
-            // I think we want to get rid of this eventually.
-            // Not sure yet, but the user may be able to create larger files if they just change the
-            // max size in the header.
-
-
-
-
             if (newContent.Length > rawFileNode.MaxSize)
             {
                 throw new ArgumentException($"New content size ({newContent.Length} bytes) exceeds the maximum allowed size ({rawFileNode.MaxSize} bytes) for file '{rawFileNode.FileName}'.");
@@ -37,20 +30,24 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
 
             try
             {
-                using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Write, FileShare.None))
+                // Get the current Zone instance.
+                Zone currentZone = RawFileNode.CurrentZone;
+
+                // Modify the zone file using the helper so that the in-memory data is refreshed automatically.
+                currentZone.ModifyZoneFile(fs =>
                 {
                     fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
                     fs.Write(newContent, 0, newContent.Length);
 
-                    // Pad with zeros if newContent is smaller than MaxSize
+                    // Pad with zeros if newContent is smaller than MaxSize.
                     if (newContent.Length < rawFileNode.MaxSize)
                     {
                         byte[] padding = new byte[rawFileNode.MaxSize - newContent.Length];
                         fs.Write(padding, 0, padding.Length);
                     }
-                }
+                });
 
-                // Update the RawFileNode properties
+                // Update the RawFileNode in memory.
                 rawFileNode.RawFileBytes = newContent;
                 rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
             }
@@ -73,7 +70,7 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             int oldSize = rawFileNode.MaxSize;
             int newSize = newContent.Length;
 
-            // If the new size is not greater, just update in-place.
+            // If the new size is not greater, update in-place.
             if (newSize <= oldSize)
             {
                 UpdateFileContent(zoneFilePath, rawFileNode, newContent);
@@ -81,12 +78,13 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             }
 
             int sizeIncrease = newSize - oldSize;
+            Zone currentZone = RawFileNode.CurrentZone;
 
-            // Shift the zone file data (if any) that comes after the current raw file content.
-            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.ReadWrite))
+            currentZone.ModifyZoneFile(fs =>
             {
                 long shiftStart = rawFileNode.CodeStartPosition + oldSize;
                 long bytesToShift = fs.Length - shiftStart;
+
                 if (bytesToShift > 0)
                 {
                     // Read the data to be shifted
@@ -99,17 +97,17 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                     fs.Write(buffer, 0, buffer.Length);
                 }
 
-                // Write the new raw file content into its spot.
+                // Write the new raw file content into its position.
                 fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
                 fs.Write(newContent, 0, newSize);
-            }
+            });
 
-            // Update the RawFileNode properties.
+            // Update the RawFileNode properties in memory.
             rawFileNode.MaxSize = newSize;
             rawFileNode.RawFileBytes = newContent;
             rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
 
-            // Now update the zone file header’s size.
+            // Update the zone file header’s size.
             uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
             uint newZoneSize = currentZoneSize + (uint)sizeIncrease;
             Zone.WriteZoneFileSize(zoneFilePath, newZoneSize);
@@ -172,20 +170,67 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         /// <param name="zoneFilePath">Full path of the decompressed .zone</param>
         /// <param name="fileName">Filename (should include .gsc, .cfg, etc.)</param>
         /// <param name="fileContent">The raw file bytes you want to inject</param>
+        public static void OldAppendNewRawFile(string zoneFilePath, string fileName, byte[] fileContent)
+        {
+            byte[] newEntryBytes = BuildNewRawFileEntry(fileName, fileContent);
+            Zone currentZone = RawFileNode.CurrentZone;
+            currentZone.ModifyZoneFile(fs =>
+            {
+                // Move to the end of the file.
+                fs.Seek(0, SeekOrigin.End);
+                fs.Write(newEntryBytes, 0, newEntryBytes.Length);
+            });
+        }
+
         public static void AppendNewRawFile(string zoneFilePath, string fileName, byte[] fileContent)
         {
-            // 1) Build the bytes for the new raw file entry
             byte[] newEntryBytes = BuildNewRawFileEntry(fileName, fileContent);
+            Zone currentZone = RawFileNode.CurrentZone;
 
-            // 2) Append them at the end
-            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Write, FileShare.None))
+            // Use the AssetPoolEndOffset as the insertion point.
+            int insertPosition = currentZone.AssetPoolEndOffset;
+
+            currentZone.ModifyZoneFile(fs =>
             {
-                // Move to the end of the file
-                fs.Seek(0, SeekOrigin.End);
+                long originalLength = fs.Length;
 
-                // Write the new entry
+                // 1) Read everything from insertPosition to the end (the "tail")
+                fs.Seek(insertPosition, SeekOrigin.Begin);
+                byte[] tailBuffer = new byte[originalLength - insertPosition];
+                fs.Read(tailBuffer, 0, tailBuffer.Length);
+
+                // 2) Extend the file length to accommodate the new entry.
+                fs.SetLength(originalLength + newEntryBytes.Length);
+
+                // 3) Shift the tail data forward by the size of the new entry.
+                fs.Seek(insertPosition + newEntryBytes.Length, SeekOrigin.Begin);
+                fs.Write(tailBuffer, 0, tailBuffer.Length);
+
+                // 4) Write the new raw file entry at the insertion point.
+                fs.Seek(insertPosition, SeekOrigin.Begin);
                 fs.Write(newEntryBytes, 0, newEntryBytes.Length);
-            }
+
+                // 5) Update the asset record count in the header (if required).
+                int assetRecordCountOffset = Constants.ZoneFile.AssetRecordCountOffset;
+                fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
+                byte[] countBytes = new byte[4];
+                fs.Read(countBytes, 0, countBytes.Length);
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(countBytes);
+                uint currentCount = BitConverter.ToUInt32(countBytes, 0);
+                uint newCount = currentCount + 1;
+                byte[] newCountBytes = BitConverter.GetBytes(newCount);
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(newCountBytes);
+                fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
+                fs.Write(newCountBytes, 0, newCountBytes.Length);
+            });
+
+            // Update the in-memory AssetPoolEndOffset by adding the new entry's length.
+            currentZone.AssetPoolEndOffset += newEntryBytes.Length;
+
+            // Re-parse the asset pool so that the in-memory records and offsets are updated.
+            currentZone.GetSetZoneAssetPool();
         }
     }
 }

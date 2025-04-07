@@ -20,6 +20,26 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public byte[] ZoneFileData { get; private set; }
 
+        /// <summary>
+        /// Modify the zone file and update the in-memory data.
+        /// </summary>
+        public void ModifyZoneFile(Action<FileStream> modification)
+        {
+            using (FileStream fs = new FileStream(ZoneFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                modification(fs);
+            }
+            RefreshZoneFileData();
+        }
+
+        /// <summary>
+        /// Reads all bytes from the zone file and updates the in-memory ZoneFileData.
+        /// </summary>
+        public void RefreshZoneFileData()
+        {
+            ZoneFileData = File.ReadAllBytes(ZoneFilePath);
+        }
+
         // Various zone header properties.
         public uint ZoneFileSize { get; set; }
         public uint Unknown1 { get; set; }
