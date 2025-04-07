@@ -172,6 +172,7 @@ namespace Call_of_Duty_FastFile_Editor
             saveFastFileToolStripMenuItem.Name = "saveFastFileToolStripMenuItem";
             saveFastFileToolStripMenuItem.Size = new Size(286, 24);
             saveFastFileToolStripMenuItem.Text = "Save Fast File (Recompress)";
+            saveFastFileToolStripMenuItem.ToolTipText = "Saves changes to the FF";
             saveFastFileToolStripMenuItem.Click += saveFastFileToolStripMenuItem_Click;
             // 
             // saveFastFileAsToolStripMenuItem
@@ -187,13 +188,15 @@ namespace Call_of_Duty_FastFile_Editor
             toolStripMenuItem1.Name = "toolStripMenuItem1";
             toolStripMenuItem1.Size = new Size(286, 24);
             toolStripMenuItem1.Text = "Close Fast File";
-            toolStripMenuItem1.Click += toolStripMenuItem1_Click;
+            toolStripMenuItem1.ToolTipText = "Save changes to the FF & closes the opened FF";
+            toolStripMenuItem1.Click += closeFastFileToolStripMenuItem_Click;
             // 
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
             exitToolStripMenuItem.Size = new Size(286, 24);
             exitToolStripMenuItem.Text = "Exit";
+            exitToolStripMenuItem.ToolTipText = "Save changes to the FF & exits";
             exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
             // 
             // editToolStripMenuItem

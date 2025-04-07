@@ -60,6 +60,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
 
         /// <summary>
         /// Recompress the extracted zone file back into a FastFile.
+        /// Saves any changes to the zone in the FastFile.
         /// </summary>
         /// <param name="ffFilePath"></param>
         /// <param name="zoneFilePath"></param>

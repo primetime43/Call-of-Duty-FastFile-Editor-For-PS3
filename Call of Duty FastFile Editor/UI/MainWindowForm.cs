@@ -74,6 +74,7 @@ namespace Call_of_Duty_FastFile_Editor
             // Universal toolstrip menu item
             copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
             universalContextMenu.Opening += universalContextMenu_Opening;
+            this.FormClosing += MainWindowForm_FormClosing;
         }
 
         #region Right Click Context Menu initialization
@@ -100,7 +101,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             if (_openedFastFile != null)
             {
-                CloseFastFileAndCleanUp();
+                SaveCloseFastFileAndCleanUp();
             }
 
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -349,7 +350,7 @@ namespace Call_of_Duty_FastFile_Editor
                 FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
                 MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                 _hasUnsavedChanges = false; // Reset the flag after saving
-                CloseFastFileAndCleanUp();
+                SaveCloseFastFileAndCleanUp();
             }
             catch (Exception ex)
             {
@@ -375,7 +376,7 @@ namespace Call_of_Duty_FastFile_Editor
                         FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, newFilePath, _openedFastFile);
                         MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                         _hasUnsavedChanges = false; // Reset the flag after saving
-                        CloseFastFileAndCleanUp();
+                        SaveCloseFastFileAndCleanUp();
                     }
                     catch (Exception ex)
                     {
@@ -390,7 +391,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            CloseFastFileAndCleanUp(true);
+            SaveCloseFastFileAndCleanUp(true);
             Close();
         }
 
@@ -767,13 +768,13 @@ namespace Call_of_Duty_FastFile_Editor
 
         /// <summary>
         /// Close the opened fast file, clear the tree view, and reset the form.
-        /// Recompresses the zone file back into the fast file.
+        /// Recompresses the zone file back into the fast file. (saves changes)
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        private void closeFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            CloseFastFileAndCleanUp(true);
+            SaveCloseFastFileAndCleanUp(true);
         }
 
         private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1101,7 +1102,7 @@ namespace Call_of_Duty_FastFile_Editor
             }
         }
 
-        private void CloseFastFileAndCleanUp(bool deleteZoneFile = false)
+        private void SaveCloseFastFileAndCleanUp(bool deleteZoneFile = false)
         {
             try
             {
@@ -1347,6 +1348,23 @@ namespace Call_of_Duty_FastFile_Editor
                     "Extraction Complete",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+            }
+        }
+
+        private void MainWindowForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                DialogResult result = MessageBox.Show(
+                    "Warning: Exiting the application using the close button will discard any unsaved changes.\n\nDo you want to exit without saving?",
+                    "Exit Confirmation",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (result == DialogResult.No)
+                {
+                    e.Cancel = true;
+                }
             }
         }
     }
