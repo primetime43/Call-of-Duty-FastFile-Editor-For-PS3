@@ -279,7 +279,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
                     _hasUnsavedChanges = false;
                 }
-                else if (result == DialogResult.Cancel)
+                else if (result == DialogResult.Cancel || result == DialogResult.No)
                 {
                     e.Cancel = true; // Cancel the selection change
                     return;
@@ -661,6 +661,7 @@ namespace Call_of_Duty_FastFile_Editor
                     RawFileNode existingNode = _rawFileNodes
                         .FirstOrDefault(node => node.FileName.Equals(rawFileNameFromHeader, StringComparison.OrdinalIgnoreCase));
 
+                    // raw file alread exists, so will modify the existing
                     if (existingNode != null)
                     {
                         // if the newFileMaxSize is greater than the existing node's MaxSize,
@@ -689,20 +690,17 @@ namespace Call_of_Duty_FastFile_Editor
                             return;
                         }
                     }
+                    // raw file alread exists, so will inject the new raw file
                     else if (existingNode == null)
                     {
                         // It's a brand-new file, not already in the zone
                         try
                         {
-                            //test add to pool
+                            //Add a new raw file entry to the beginning of the asset pool
                             AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
 
                             // 1) Append it to the decompressed zone
-                            //RawFileOps.OldAppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
                             RawFileOps.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
-
-                            // 2) Re-extract the entire zone so we pick up the newly inserted file
-                            _rawFileNodes = RawFileParser.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
 
                             // 3) Clear & re-populate the TreeView
                             filesTreeView.Nodes.Clear();
@@ -710,13 +708,6 @@ namespace Call_of_Duty_FastFile_Editor
                             UIManager.SetRawFileTreeNodeColors(filesTreeView);
 
                             //_hasUnsavedChanges = true;
-
-                            MessageBox.Show(
-                                $"File '{rawFileName}' successfully injected into the zone file.",
-                                "Injection Complete",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information
-                            );
                         }
                         catch (Exception ex)
                         {
@@ -1357,11 +1348,6 @@ namespace Call_of_Duty_FastFile_Editor
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
-        }
-
-        private void tESTAddRawFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
         }
     }
 }

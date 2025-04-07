@@ -86,7 +86,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage = new TabPage();
             zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
-            tESTAddRawFileToolStripMenuItem = new ToolStripMenuItem();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -248,7 +247,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { checkForUpdateToolStripMenuItem, originalFastFilesToolStripMenuItem, toolStripSeparator2, injectFileToolStripMenuItem, rawFileToolsMenuItem, saveFileToPCToolStripMenuItem, extractAllRawFilesToolStripMenuItem, tESTAddRawFileToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { checkForUpdateToolStripMenuItem, originalFastFilesToolStripMenuItem, toolStripSeparator2, injectFileToolStripMenuItem, rawFileToolsMenuItem, saveFileToPCToolStripMenuItem, extractAllRawFilesToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
@@ -256,7 +255,7 @@ namespace Call_of_Duty_FastFile_Editor
             // checkForUpdateToolStripMenuItem
             // 
             checkForUpdateToolStripMenuItem.Name = "checkForUpdateToolStripMenuItem";
-            checkForUpdateToolStripMenuItem.Size = new Size(211, 24);
+            checkForUpdateToolStripMenuItem.Size = new Size(210, 24);
             checkForUpdateToolStripMenuItem.Text = "Check For Update";
             checkForUpdateToolStripMenuItem.Click += checkForUpdateToolStripMenuItem_Click;
             // 
@@ -264,7 +263,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             originalFastFilesToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { worldAtWarToolStripMenuItem, modernWarfareToolStripMenuItem });
             originalFastFilesToolStripMenuItem.Name = "originalFastFilesToolStripMenuItem";
-            originalFastFilesToolStripMenuItem.Size = new Size(211, 24);
+            originalFastFilesToolStripMenuItem.Size = new Size(210, 24);
             originalFastFilesToolStripMenuItem.Text = "Original Fast Files";
             // 
             // worldAtWarToolStripMenuItem
@@ -333,12 +332,12 @@ namespace Call_of_Duty_FastFile_Editor
             // toolStripSeparator2
             // 
             toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new Size(208, 6);
+            toolStripSeparator2.Size = new Size(207, 6);
             // 
             // injectFileToolStripMenuItem
             // 
             injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
-            injectFileToolStripMenuItem.Size = new Size(211, 24);
+            injectFileToolStripMenuItem.Size = new Size(210, 24);
             injectFileToolStripMenuItem.Text = "Inject Raw File";
             injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
             // 
@@ -346,7 +345,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { increaseRawFileSizeToolStripMenuItem, searchRawFileTxtMenuItem });
             rawFileToolsMenuItem.Name = "rawFileToolsMenuItem";
-            rawFileToolsMenuItem.Size = new Size(211, 24);
+            rawFileToolsMenuItem.Size = new Size(210, 24);
             rawFileToolsMenuItem.Text = "Raw File Tools";
             // 
             // increaseRawFileSizeToolStripMenuItem
@@ -365,14 +364,14 @@ namespace Call_of_Duty_FastFile_Editor
             // saveFileToPCToolStripMenuItem
             // 
             saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
-            saveFileToPCToolStripMenuItem.Size = new Size(211, 24);
+            saveFileToPCToolStripMenuItem.Size = new Size(210, 24);
             saveFileToPCToolStripMenuItem.Text = "Save File To PC";
             saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
             // 
             // extractAllRawFilesToolStripMenuItem
             // 
             extractAllRawFilesToolStripMenuItem.Name = "extractAllRawFilesToolStripMenuItem";
-            extractAllRawFilesToolStripMenuItem.Size = new Size(211, 24);
+            extractAllRawFilesToolStripMenuItem.Size = new Size(210, 24);
             extractAllRawFilesToolStripMenuItem.Text = "Extract All Raw Files";
             extractAllRawFilesToolStripMenuItem.Click += extractAllRawFilesToolStripMenuItem_Click;
             // 
@@ -642,13 +641,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.TabIndex = 0;
             zoneInfoDataGridView.MouseDown += dataGrid_MouseDownCopy;
             // 
-            // tESTAddRawFileToolStripMenuItem
-            // 
-            tESTAddRawFileToolStripMenuItem.Name = "tESTAddRawFileToolStripMenuItem";
-            tESTAddRawFileToolStripMenuItem.Size = new Size(211, 24);
-            tESTAddRawFileToolStripMenuItem.Text = "[TEST] Add Raw File";
-            tESTAddRawFileToolStripMenuItem.Click += tESTAddRawFileToolStripMenuItem_Click;
-            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -750,6 +742,5 @@ namespace Call_of_Duty_FastFile_Editor
         private ListView localizeListView;
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem extractAllRawFilesToolStripMenuItem;
-        private ToolStripMenuItem tESTAddRawFileToolStripMenuItem;
     }
 }

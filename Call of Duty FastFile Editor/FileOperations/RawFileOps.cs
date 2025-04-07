@@ -165,23 +165,12 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         }
 
         /// <summary>
-        /// Appends a new file entry to the *end* of the decompressed zone file.
+        /// Appends a new file entry to the *start* of the decompressed zone file.
+        /// Right at the end of the asset pool.
         /// </summary>
         /// <param name="zoneFilePath">Full path of the decompressed .zone</param>
         /// <param name="fileName">Filename (should include .gsc, .cfg, etc.)</param>
         /// <param name="fileContent">The raw file bytes you want to inject</param>
-        public static void OldAppendNewRawFile(string zoneFilePath, string fileName, byte[] fileContent)
-        {
-            byte[] newEntryBytes = BuildNewRawFileEntry(fileName, fileContent);
-            Zone currentZone = RawFileNode.CurrentZone;
-            currentZone.ModifyZoneFile(fs =>
-            {
-                // Move to the end of the file.
-                fs.Seek(0, SeekOrigin.End);
-                fs.Write(newEntryBytes, 0, newEntryBytes.Length);
-            });
-        }
-
         public static void AppendNewRawFile(string zoneFilePath, string fileName, byte[] fileContent)
         {
             byte[] newEntryBytes = BuildNewRawFileEntry(fileName, fileContent);
