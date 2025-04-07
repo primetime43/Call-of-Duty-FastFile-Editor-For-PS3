@@ -291,7 +291,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                 CreateBackup(ffFilePath);
 
                 // Update the zone file in memory
-                RawFileInject.UpdateFileContent(zoneFilePath, rawFileNode, updatedBytes);
+                RawFileOps.UpdateFileContent(zoneFilePath, rawFileNode, updatedBytes);
                 rawFileNode.RawFileContent = updatedText; // Update the in-memory representation
 
                 MessageBox.Show($"Raw File '{rawFileNode.FileName}' successfully saved to Zone.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);

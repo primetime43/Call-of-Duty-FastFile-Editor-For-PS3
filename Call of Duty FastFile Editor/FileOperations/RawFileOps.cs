@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Call_of_Duty_FastFile_Editor.FileOperations
 {
-    public class RawFileInject
+    public class RawFileOps
     {
         // Not sure if this is needed. Should probably use the Save in the SaveRawFile class.
 

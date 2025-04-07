@@ -672,12 +672,12 @@ namespace Call_of_Duty_FastFile_Editor
                                 // write the new file content to the zone at the existing offset
                                 // and make sure to append the extra length, so it shouldn't overwrite existing
                                 // code that comes after it. Also, update the size in the header.
-                                RawFileInject.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, newRawFileNode.RawFileBytes);
+                                RawFileOps.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, newRawFileNode.RawFileBytes);
                             }
                             else
                             {
                                 // write the raw bytes to the zone at the existing offset
-                                RawFileInject.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
+                                RawFileOps.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
                             }
                         }
                         catch (Exception ex)
@@ -698,8 +698,8 @@ namespace Call_of_Duty_FastFile_Editor
                             AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
 
                             // 1) Append it to the decompressed zone
-                            //RawFileInject.OldAppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
-                            RawFileInject.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
+                            //RawFileOps.OldAppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
+                            RawFileOps.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
 
                             // 2) Re-extract the entire zone so we pick up the newly inserted file
                             _rawFileNodes = RawFileParser.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
