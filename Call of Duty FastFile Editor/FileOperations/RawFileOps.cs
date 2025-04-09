@@ -1,26 +1,18 @@
 using Call_of_Duty_FastFile_Editor.Models;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Call_of_Duty_FastFile_Editor.FileOperations
 {
     public class RawFileOps
     {
-        // Not sure if this is needed. Should probably use the Save in the SaveRawFile class.
-
         /// <summary>
-        /// Updates the content of a specific file within the zone file. 
-        /// This is used for injecting raw files into the zone.
-        /// Does not append, only overwrites in-place.
+        /// Updates the content of a specific file within the zone file.
+        /// Overwrites in-place and pads with zeros if needed.
         /// </summary>
-        /// <param name="zoneFilePath">Path to the decompressed zone file.</param>
-        /// <param name="node">The RawFileNode representing the raw file to update.</param>
-        /// <param name="newContent">New content as a byte array.</param>
-        /// <exception cref="IOException">Thrown when file operations fail.</exception>
         public static void UpdateFileContent(string zoneFilePath, RawFileNode rawFileNode, byte[] newContent)
         {
             if (newContent.Length > rawFileNode.MaxSize)
@@ -30,16 +22,12 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
 
             try
             {
-                // Get the current Zone instance.
                 Zone currentZone = RawFileNode.CurrentZone;
-
-                // Modify the zone file using the helper so that the in-memory data is refreshed automatically.
                 currentZone.ModifyZoneFile(fs =>
                 {
                     fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
                     fs.Write(newContent, 0, newContent.Length);
 
-                    // Pad with zeros if newContent is smaller than MaxSize.
                     if (newContent.Length < rawFileNode.MaxSize)
                     {
                         byte[] padding = new byte[rawFileNode.MaxSize - newContent.Length];
@@ -47,7 +35,6 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                     }
                 });
 
-                // Update the RawFileNode in memory.
                 rawFileNode.RawFileBytes = newContent;
                 rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
             }
@@ -58,19 +45,13 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         }
 
         /// <summary>
-        /// Increases the size of the raw file entry within the zone file by shifting data,
-        /// writing the new content, updating the raw file node’s MaxSize,
-        /// and then increasing the zone file header’s size by the same delta.
+        /// Increases the size of a raw file entry by shifting tail data, writing new content,
+        /// updating the raw file node’s MaxSize, and adjusting the zone file header’s size.
         /// </summary>
-        /// <param name="zoneFilePath">Full path of the decompressed zone file.</param>
-        /// <param name="rawFileNode">The raw file node to be expanded.</param>
-        /// <param name="newContent">The new raw file content as a byte array.</param>
         public static void IncreaseSize(string zoneFilePath, RawFileNode rawFileNode, byte[] newContent)
         {
             int oldSize = rawFileNode.MaxSize;
             int newSize = newContent.Length;
-
-            // If the new size is not greater, update in-place.
             if (newSize <= oldSize)
             {
                 UpdateFileContent(zoneFilePath, rawFileNode, newContent);
@@ -84,122 +65,131 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             {
                 long shiftStart = rawFileNode.CodeStartPosition + oldSize;
                 long bytesToShift = fs.Length - shiftStart;
-
                 if (bytesToShift > 0)
                 {
-                    // Read the data to be shifted
                     fs.Seek(shiftStart, SeekOrigin.Begin);
                     byte[] buffer = new byte[bytesToShift];
                     fs.Read(buffer, 0, buffer.Length);
-
-                    // Write it back starting at the new shifted position
                     fs.Seek(shiftStart + sizeIncrease, SeekOrigin.Begin);
                     fs.Write(buffer, 0, buffer.Length);
                 }
-
-                // Write the new raw file content into its position.
                 fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
                 fs.Write(newContent, 0, newSize);
             });
 
-            // Update the RawFileNode properties in memory.
             rawFileNode.MaxSize = newSize;
             rawFileNode.RawFileBytes = newContent;
             rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
 
-            // Update the zone file header’s size.
             uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
             uint newZoneSize = currentZoneSize + (uint)sizeIncrease;
             Zone.WriteZoneFileSize(zoneFilePath, newZoneSize);
         }
 
-        // Maybe move this elsewhere
-
         /// <summary>
-        /// Constructs a byte array that contains:
-        /// 
-        ///   [ 4-byte big-endian size ]
-        ///   [ 0xFF 0xFF 0xFF 0xFF ]
-        ///   [ ASCII filename + 0x00 ]
-        ///   [ raw content bytes (size) ]
-        /// 
-        /// This matches the format expected by ExtractAllRawFilesSizeAndName.
+        /// Adjusts a raw file entry read from disk so that its header’s size field (at offset 4)
+        /// matches the expected data size. It uses the known header structure:
+        ///   Bytes 0-3: first marker (0xFFFFFFFF)
+        ///   Bytes 4-7: data size (to be updated)
+        ///   Bytes 8-11: second marker (0xFFFFFFFF)
+        ///   Bytes 12 to N: null-terminated filename
+        /// Followed by the file data.
+        /// The method pads or trims the data portion so that its length equals the expected size.
+        /// Finally, it returns the reassembled entry.
         /// </summary>
-        /// <param name="fileName">e.g. "myfile.gsc" or "myfile.cfg"</param>
-        /// <param name="fileContent">Raw content of the file.</param>
-        public static byte[] BuildNewRawFileEntry(string fileName, byte[] fileContent)
+        /// <param name="filePath">Full path to the file being injected (which already contains its header).</param>
+        /// <param name="expectedSize">The expected size for the file’s data portion (RawFileNode.MaxSize).</param>
+        /// <returns>An adjusted raw file entry as a byte array.</returns>
+        private static byte[] AdjustRawFileEntry(string filePath, int expectedSize)
         {
-            // 1) Convert 'fileContent.Length' to big-endian:
-            int sizeBigEndian = IPAddress.HostToNetworkOrder(fileContent.Length);
-            byte[] sizeBytes = BitConverter.GetBytes(sizeBigEndian);
+            // Read the entire file from disk.
+            byte[] entry = File.ReadAllBytes(filePath);
+            if (entry.Length < 12)
+                throw new Exception("File too short to contain a valid header.");
 
-            // 2) The 0xFF 0xFF 0xFF 0xFF marker
-            byte[] marker = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
+            // The header structure is fixed:
+            // - Bytes 0-3: first marker (0xFFFFFFFF)
+            // - Bytes 4-7: data size (to update)
+            // - Bytes 8-11: second marker (0xFFFFFFFF)
+            // - Bytes 12: start of filename (null terminated)
+            int fileNameStart = 12;
+            int fileNameEnd = fileNameStart;
+            while (fileNameEnd < entry.Length && entry[fileNameEnd] != 0x00)
+            {
+                fileNameEnd++;
+            }
+            if (fileNameEnd == entry.Length)
+                throw new Exception("Filename in header is not null-terminated.");
+            fileNameEnd++; // Include the null terminator.
+            int headerLength = fileNameEnd; // entire header is from 0 to fileNameEnd.
 
-            // 3) ASCII filename + null terminator
-            //    e.g. "myfile.gsc" + (byte)0x00
-            byte[] fileNameBytes = Encoding.ASCII.GetBytes(fileName);
-            byte[] fileNameWithNull = new byte[fileNameBytes.Length + 1];
-            Buffer.BlockCopy(fileNameBytes, 0, fileNameWithNull, 0, fileNameBytes.Length);
-            fileNameWithNull[fileNameBytes.Length] = 0x00;
+            // Extract the header.
+            byte[] header = new byte[headerLength];
+            Array.Copy(entry, header, headerLength);
 
-            // 4) Put it all together: 
-            //    size (4 bytes) + marker (4 bytes) + filenameWithNull + fileContent
-            byte[] result = new byte[
-                  sizeBytes.Length
-                + marker.Length
-                + fileNameWithNull.Length
-                + fileContent.Length
-            ];
+            // Data portion begins at offset headerLength.
+            int currentDataSize = entry.Length - headerLength;
+            byte[] data = new byte[expectedSize];
+            if (currentDataSize < expectedSize)
+            {
+                // Copy existing data and pad with zeros.
+                Array.Copy(entry, headerLength, data, 0, currentDataSize);
+            }
+            else
+            {
+                // Otherwise, take exactly expectedSize bytes.
+                Array.Copy(entry, headerLength, data, 0, expectedSize);
+            }
 
-            int offset = 0;
-            Buffer.BlockCopy(sizeBytes, 0, result, offset, sizeBytes.Length);
-            offset += sizeBytes.Length;
-            Buffer.BlockCopy(marker, 0, result, offset, marker.Length);
-            offset += marker.Length;
-            Buffer.BlockCopy(fileNameWithNull, 0, result, offset, fileNameWithNull.Length);
-            offset += fileNameWithNull.Length;
-            Buffer.BlockCopy(fileContent, 0, result, offset, fileContent.Length);
+            // Update the header’s size field (located at offset 4, 4 bytes).
+            int newSizeBigEndian = IPAddress.HostToNetworkOrder(expectedSize);
+            byte[] newSizeBytes = BitConverter.GetBytes(newSizeBigEndian);
+            // Overwrite bytes 4-7 in the header.
+            Array.Copy(newSizeBytes, 0, header, 4, 4);
 
-            return result;
+            // Reassemble the new entry.
+            byte[] newEntry = new byte[header.Length + data.Length];
+            Buffer.BlockCopy(header, 0, newEntry, 0, header.Length);
+            Buffer.BlockCopy(data, 0, newEntry, header.Length, data.Length);
+
+            return newEntry;
         }
 
         /// <summary>
-        /// Appends a new file entry to the *start* of the decompressed zone file.
-        /// Right at the end of the asset pool.
+        /// Appends a new raw file entry to the decompressed zone file at the end of the asset pool.
+        /// This method assumes that the file being injected already contains its header.
+        /// It reads the entire file from disk, adjusts the header size field (and data portion)
+        /// so that the entry’s data length matches expectedSize, and then injects the adjusted entry.
         /// </summary>
-        /// <param name="zoneFilePath">Full path of the decompressed .zone</param>
-        /// <param name="fileName">Filename (should include .gsc, .cfg, etc.)</param>
-        /// <param name="fileContent">The raw file bytes you want to inject</param>
-        public static void AppendNewRawFile(string zoneFilePath, string fileName, byte[] fileContent)
+        /// <param name="zoneFilePath">Full path of the decompressed zone file.</param>
+        /// <param name="filePath">
+        /// The full path to the file to be injected (which already contains its header).
+        /// </param>
+        /// <param name="expectedSize">The expected size for the data portion (RawFileNode.MaxSize).</param>
+        public static void AppendNewRawFile(string zoneFilePath, string filePath, int expectedSize)
         {
-            byte[] newEntryBytes = BuildNewRawFileEntry(fileName, fileContent);
+            // Adjust the raw file entry from disk.
+            byte[] newEntryBytes = AdjustRawFileEntry(filePath, expectedSize);
             Zone currentZone = RawFileNode.CurrentZone;
-
-            // Use the AssetPoolEndOffset as the insertion point.
             int insertPosition = currentZone.AssetPoolEndOffset;
 
             currentZone.ModifyZoneFile(fs =>
             {
                 long originalLength = fs.Length;
-
-                // 1) Read everything from insertPosition to the end (the "tail").
+                // Read tail data from the insertion point.
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 byte[] tailBuffer = new byte[originalLength - insertPosition];
                 fs.Read(tailBuffer, 0, tailBuffer.Length);
-
-                // 2) Extend the file length to accommodate the new entry.
+                // Extend file length.
                 fs.SetLength(originalLength + newEntryBytes.Length);
-
-                // 3) Shift the tail data forward by the size of the new entry.
+                // Shift tail data forward.
                 fs.Seek(insertPosition + newEntryBytes.Length, SeekOrigin.Begin);
                 fs.Write(tailBuffer, 0, tailBuffer.Length);
-
-                // 4) Write the new raw file entry at the insertion point.
+                // Write the adjusted new entry.
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 fs.Write(newEntryBytes, 0, newEntryBytes.Length);
 
-                // 5) Update the asset record count in the header (if required).
+                // Update the asset record count in the header.
                 int assetRecordCountOffset = Constants.ZoneFile.AssetRecordCountOffset;
                 fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
                 byte[] countBytes = new byte[4];
@@ -214,16 +204,14 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                 fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
                 fs.Write(newCountBytes, 0, newCountBytes.Length);
 
-                // 6) Write the termination marker at the new end of the asset pool.
+                // Write termination marker at the new end of the asset pool.
                 long newAssetPoolEnd = insertPosition + newEntryBytes.Length + tailBuffer.Length;
                 fs.Seek(newAssetPoolEnd, SeekOrigin.Begin);
                 byte[] terminationMarker = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
                 fs.Write(terminationMarker, 0, terminationMarker.Length);
             });
 
-            // Update the in-memory AssetPoolEndOffset by adding the new entry's length.
             currentZone.AssetPoolEndOffset += newEntryBytes.Length;
-            // Re-parse the asset pool so that the in-memory records and offsets are updated.
             currentZone.GetSetZoneAssetPool();
         }
     }

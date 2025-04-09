@@ -649,81 +649,53 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     string selectedFilePath = ofd.FileName;
                     string rawFileName = Path.GetFileName(selectedFilePath);
-                    byte[] fullFileBytes = File.ReadAllBytes(selectedFilePath);
 
+                    // Parse the file to obtain expected header details.
                     RawFileNode newRawFileNode = RawFileParser.ExtractAllRawFilesSizeAndName(selectedFilePath)[0];
-
-                    string actualDiskFileName = Path.GetFileName(selectedFilePath);
                     string rawFileNameFromHeader = newRawFileNode.FileName;
                     byte[] rawFileContent = newRawFileNode.RawFileBytes;
                     int newFileMaxSize = newRawFileNode.MaxSize;
 
-                    // 1) Check if file name already exists
+                    // Check if a file with the same header name already exists.
                     RawFileNode existingNode = _rawFileNodes
                         .FirstOrDefault(node => node.FileName.Equals(rawFileNameFromHeader, StringComparison.OrdinalIgnoreCase));
 
-                    // raw file alread exists, so will update modify the existing
                     if (existingNode != null)
                     {
-                        // if the newFileMaxSize is greater than the existing node's MaxSize,
-                        // update the header's size with the new one and write its content
                         try
                         {
                             if (newFileMaxSize > existingNode.MaxSize)
-                            {
-                                // write the new file content to the zone at the existing offset
-                                // and make sure to append the extra length, so it shouldn't overwrite existing
-                                // code that comes after it. Also, update the size in the header.
-                                RawFileOps.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, newRawFileNode.RawFileBytes);
-                            }
+                                RawFileOps.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
                             else
-                            {
-                                // write the raw bytes to the zone at the existing offset
                                 RawFileOps.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
-                            }
                         }
                         catch (Exception ex)
                         {
                             MessageBox.Show($"Failed to update file: {ex.Message}",
-                                "Injection Error",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error);
+                                "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
                     }
-                    // raw file doesn't exist, so will inject the new raw file
                     else
                     {
-                        // It's a brand-new file, not already in the zone
                         try
                         {
-                            // Add a new asset record entry to the pool (modifying the zone file on disk)
+                            // Add a new asset record entry.
                             AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
-
-                            // Append the raw file's content to the zone file
-                            RawFileOps.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
-
-                            //_hasUnsavedChanges = true;
+                            // Inject new file using the new AppendNewRawFile overload.
+                            RawFileOps.AppendNewRawFile(_openedFastFile.ZoneFilePath, selectedFilePath, newFileMaxSize);
                         }
                         catch (Exception ex)
                         {
                             MessageBox.Show($"Failed to inject file: {ex.Message}",
-                                "Injection Error",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error
-                            );
+                                "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
                         }
                     }
 
-                    // Fully refresh the in-memory zone and UI.
                     RefreshZoneData();
-
-                    MessageBox.Show(
-                        $"File '{rawFileName}' was successfully injected/updated in the zone file.",
-                        "Injection Complete",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show($"File '{rawFileName}' was successfully injected/updated in the zone file.",
+                        "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
