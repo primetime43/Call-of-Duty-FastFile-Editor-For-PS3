@@ -662,7 +662,7 @@ namespace Call_of_Duty_FastFile_Editor
                     RawFileNode existingNode = _rawFileNodes
                         .FirstOrDefault(node => node.FileName.Equals(rawFileNameFromHeader, StringComparison.OrdinalIgnoreCase));
 
-                    // raw file alread exists, so will modify the existing
+                    // raw file alread exists, so will update modify the existing
                     if (existingNode != null)
                     {
                         // if the newFileMaxSize is greater than the existing node's MaxSize,
@@ -691,22 +691,17 @@ namespace Call_of_Duty_FastFile_Editor
                             return;
                         }
                     }
-                    // raw file alread exists, so will inject the new raw file
-                    else if (existingNode == null)
+                    // raw file doesn't exist, so will inject the new raw file
+                    else
                     {
                         // It's a brand-new file, not already in the zone
                         try
                         {
-                            //Add a new raw file entry to the beginning of the asset pool
+                            // Add a new asset record entry to the pool (modifying the zone file on disk)
                             AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
 
-                            // 1) Append it to the decompressed zone
+                            // Append the raw file's content to the zone file
                             RawFileOps.AppendNewRawFile(_openedFastFile.ZoneFilePath, rawFileName, rawFileContent);
-
-                            // 3) Clear & re-populate the TreeView
-                            filesTreeView.Nodes.Clear();
-                            LoadRawFilesTreeView();
-                            UIManager.SetRawFileTreeNodeColors(filesTreeView);
 
                             //_hasUnsavedChanges = true;
                         }
@@ -720,18 +715,8 @@ namespace Call_of_Duty_FastFile_Editor
                         }
                     }
 
-                    // 2) Re-extract the entire zone to update _rawFileNodes
-                    _rawFileNodes = RawFileParser.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
-
-                    // 3) Clear & re-populate the TreeView to reflect the newly added/updated node
-                    filesTreeView.Nodes.Clear();
-                    LoadRawFilesTreeView();
-
-                    // Optionally re-apply any color or style
-                    UIManager.SetRawFileTreeNodeColors(filesTreeView);
-
-                    // 4) Indicate changes
-                    //_hasUnsavedChanges = true;
+                    // Fully refresh the in-memory zone and UI.
+                    RefreshZoneData();
 
                     MessageBox.Show(
                         $"File '{rawFileName}' was successfully injected/updated in the zone file.",
@@ -1349,6 +1334,45 @@ namespace Call_of_Duty_FastFile_Editor
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
+        }
+
+        // move this eventually maybe
+        private void RefreshZoneData()
+        {
+            if (_openedFastFile == null)
+                return;
+
+            // 1) Fully re-read the zone file bytes from disk
+            _openedFastFile.OpenedFastFileZone.GetSetZoneBytes();
+
+            // 2) Re-parse the asset pool (start/end offsets, record offsets, etc.)
+            _openedFastFile.OpenedFastFileZone.GetSetZoneAssetPool();
+
+            // 3) Re-run your asset record processing logic
+            //    This updates _rawFileNodes, _zoneAssetRecords, _stringTables, etc.
+            LoadAssetRecordsData();
+
+            // 4) Rebuild the entire UI
+            //    (Clears the TreeView/ListViews and reloads all data)
+            CleanUpUIControls();
+            LoadZoneDataToUI();
+        }
+
+        /// <summary>
+        /// Clears out the relevant UI elements, so they can be repopulated cleanly.
+        /// </summary>
+        private void CleanUpUIControls()
+        {
+            filesTreeView.Nodes.Clear();
+            assetPoolListView.Items.Clear();
+            assetPoolListView.Columns.Clear();
+            stringTableListView.Items.Clear();
+            stringTableListView.Columns.Clear();
+            tagsListView.Items.Clear();
+            tagsListView.Columns.Clear();
+            localizeListView.Items.Clear();
+            localizeListView.Columns.Clear();
+            treeViewMapEnt.Nodes.Clear();
         }
 
         private void MainWindowForm_FormClosing(object sender, FormClosingEventArgs e)

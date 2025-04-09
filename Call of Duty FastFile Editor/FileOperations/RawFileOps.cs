@@ -183,7 +183,7 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             {
                 long originalLength = fs.Length;
 
-                // 1) Read everything from insertPosition to the end (the "tail")
+                // 1) Read everything from insertPosition to the end (the "tail").
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 byte[] tailBuffer = new byte[originalLength - insertPosition];
                 fs.Read(tailBuffer, 0, tailBuffer.Length);
@@ -213,11 +213,16 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                     Array.Reverse(newCountBytes);
                 fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
                 fs.Write(newCountBytes, 0, newCountBytes.Length);
+
+                // 6) Write the termination marker at the new end of the asset pool.
+                long newAssetPoolEnd = insertPosition + newEntryBytes.Length + tailBuffer.Length;
+                fs.Seek(newAssetPoolEnd, SeekOrigin.Begin);
+                byte[] terminationMarker = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
+                fs.Write(terminationMarker, 0, terminationMarker.Length);
             });
 
             // Update the in-memory AssetPoolEndOffset by adding the new entry's length.
             currentZone.AssetPoolEndOffset += newEntryBytes.Length;
-
             // Re-parse the asset pool so that the in-memory records and offsets are updated.
             currentZone.GetSetZoneAssetPool();
         }

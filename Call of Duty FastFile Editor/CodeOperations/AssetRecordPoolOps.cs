@@ -31,10 +31,11 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 fs.Write(newRecord, 0, newRecord.Length);
 
+                // Update the AssetRecordCount field in the header.
                 int assetRecordCountOffset = Constants.ZoneFile.AssetRecordCountOffset;
                 fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
                 byte[] countBytes = new byte[4];
-                fs.Read(countBytes, 0, 4);
+                fs.Read(countBytes, 0, countBytes.Length);
                 if (BitConverter.IsLittleEndian)
                 {
                     Array.Reverse(countBytes);
@@ -50,29 +51,12 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                 fs.Write(newCountBytes, 0, newCountBytes.Length);
             });
 
+            // Update the AssetPoolEndOffset by the new record length.
             currentZone.AssetPoolEndOffset += newRecord.Length;
 
-            if (currentZone.ZoneFileAssets.ZoneAssetRecords != null)
-            {
-                for (int i = 0; i < currentZone.ZoneFileAssets.ZoneAssetRecords.Count; i++)
-                {
-                    ZoneAssetRecord record = currentZone.ZoneFileAssets.ZoneAssetRecords[i];
-                    if (record.AssetPoolRecordOffset >= currentZone.AssetPoolStartOffset)
-                    {
-                        record.AssetPoolRecordOffset += newRecord.Length;
-                        currentZone.ZoneFileAssets.ZoneAssetRecords[i] = record;
-                    }
-                }
-            }
-
-            ZoneAssetRecord newAssetRecord = new ZoneAssetRecord
-            {
-                AssetType = ZoneFileAssetType_COD5.rawfile,
-                AssetPoolRecordOffset = currentZone.AssetPoolStartOffset,
-            };
-            currentZone.ZoneFileAssets.ZoneAssetRecords.Insert(0, newAssetRecord);
-
-            Debug.WriteLine($"New asset record inserted at offset 0x{currentZone.AssetPoolStartOffset:X}. New asset count: {currentZone.AssetRecordCount + 1}");
+            // Instead of manually adjusting the in-memory asset records list,
+            // simply re-parse the asset pool from the updated zone file.
+            currentZone.GetSetZoneAssetPool();
         }
     }
 }
