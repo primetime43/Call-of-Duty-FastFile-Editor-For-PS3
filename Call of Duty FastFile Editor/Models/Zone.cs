@@ -43,7 +43,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         // Various zone header properties.
         public uint ZoneFileSize { get; set; }
         public uint Unknown1 { get; set; }
-        public uint AssetRecordCount { get; set; }
+        public uint Unknown2 { get; set; }
         public uint Unknown3 { get; set; }
         public uint Unknown4 { get; set; }
         public uint Unknown5 { get; set; }
@@ -52,7 +52,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint Unknown8 { get; set; }
         public uint TagCount { get; set; }
         public uint Unknown10 { get; set; }
-        public uint Unknown11 { get; set; }
+        public uint AssetRecordCount { get; set; }
 
         // For display or debugging purposes.
         public Dictionary<string, uint>? DecimalValues { get; private set; }
@@ -68,7 +68,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         {
             { "ZoneFileSize", Constants.ZoneFile.ZoneSizeOffset },
             { "Unknown1", Constants.ZoneFile.Unknown1Offset },
-            { "AssetRecordCount", Constants.ZoneFile.AssetRecordCountOffset },
+            { "Unknown2", Constants.ZoneFile.Unknown2Offset },
             { "Unknown3", Constants.ZoneFile.Unknown3Offset },
             { "Unknown4", Constants.ZoneFile.Unknown4Offset },
             { "Unknown5", Constants.ZoneFile.Unknown5Offset },
@@ -77,7 +77,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             { "Unknown8", Constants.ZoneFile.Unknown8Offset },
             { "TagCount", Constants.ZoneFile.TagCountOffset },
             { "Unknown10", Constants.ZoneFile.Unknown10Offset },
-            { "Unknown11", Constants.ZoneFile.Unknown11Offset }
+            { "AssetRecordCount", Constants.ZoneFile.AssetRecordCountOffset }
         };
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         {
             this.ZoneFileSize = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.ZoneSizeOffset, this);
             this.Unknown1 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown1Offset, this);
-            this.AssetRecordCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.AssetRecordCountOffset, this);
+            this.Unknown2 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown2Offset, this);
             this.Unknown3 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown3Offset, this);
             this.Unknown4 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown4Offset, this);
             this.Unknown5 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown5Offset, this);
@@ -110,7 +110,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             this.Unknown8 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown8Offset, this);
             this.TagCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.TagCountOffset, this);
             this.Unknown10 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown10Offset, this);
-            this.Unknown11 = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.Unknown11Offset, this);
+            this.AssetRecordCount = Utilities.ReadUInt32AtOffset(Constants.ZoneFile.AssetRecordCountOffset, this);
 
             SetDecimalValues();
         }
@@ -121,7 +121,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             {
                 { "ZoneFileSize", ZoneFileSize },
                 { "Unknown1", Unknown1 },
-                { "AssetRecordCount", AssetRecordCount },
+                { "Unknown2", Unknown2 },
                 { "Unknown3", Unknown3 },
                 { "Unknown4", Unknown4 },
                 { "Unknown5", Unknown5 },
@@ -130,7 +130,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 { "Unknown8", Unknown8 },
                 { "TagCount", TagCount },
                 { "Unknown10", Unknown10 },
-                { "Unknown11", Unknown11 }
+                { "AssetRecordCount", AssetRecordCount }
             };
         }
 
