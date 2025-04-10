@@ -130,6 +130,9 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 try
                 {
+                    // Show the opened FF path in the program's title text
+                    this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion} - [{_openedFastFile.FfFilePath}]";
+
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
 
@@ -1104,7 +1107,7 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.Columns.Clear();
             assetPoolListView.Items.Clear();
             assetPoolListView.Columns.Clear();
-
+            this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion}";
         }
 
         /// <summary>
