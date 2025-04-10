@@ -353,7 +353,6 @@ namespace Call_of_Duty_FastFile_Editor
                 FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
                 MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                 _hasUnsavedChanges = false; // Reset the flag after saving
-                SaveCloseFastFileAndCleanUp();
             }
             catch (Exception ex)
             {
@@ -697,7 +696,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     RefreshZoneData();
-                    MessageBox.Show($"File '{rawFileName}' was successfully injected/updated in the zone file.",
+                    MessageBox.Show($"File '{rawFileName}' was successfully injected & saved in the zone file.",
                         "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
