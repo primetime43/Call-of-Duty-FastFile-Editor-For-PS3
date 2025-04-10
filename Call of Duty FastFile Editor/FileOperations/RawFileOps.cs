@@ -92,8 +92,7 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         ///   Bytes 0-3: first marker (0xFFFFFFFF)
         ///   Bytes 4-7: data size (to be updated)
         ///   Bytes 8-11: second marker (0xFFFFFFFF)
-        ///   Bytes 12 to N: null-terminated filename
-        /// Followed by the file data.
+        ///   Bytes 12 to N: null-terminated filename, then file data.
         /// The method pads or trims the data portion so that its length equals the expected size.
         /// Finally, it returns the reassembled entry.
         /// </summary>
@@ -107,9 +106,9 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             if (entry.Length < 12)
                 throw new Exception("File too short to contain a valid header.");
 
-            // The header structure is fixed:
+            // The header structure is:
             // - Bytes 0-3: first marker (0xFFFFFFFF)
-            // - Bytes 4-7: data size (to update)
+            // - Bytes 4-7: data size (which we'll update)
             // - Bytes 8-11: second marker (0xFFFFFFFF)
             // - Bytes 12: start of filename (null terminated)
             int fileNameStart = 12;
@@ -121,18 +120,18 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             if (fileNameEnd == entry.Length)
                 throw new Exception("Filename in header is not null-terminated.");
             fileNameEnd++; // Include the null terminator.
-            int headerLength = fileNameEnd; // entire header is from 0 to fileNameEnd.
+            int headerLength = fileNameEnd; // The entire header is from offset 0 to fileNameEnd.
 
-            // Extract the header.
+            // Extract header.
             byte[] header = new byte[headerLength];
             Array.Copy(entry, header, headerLength);
 
-            // Data portion begins at offset headerLength.
+            // Data portion starts at headerLength.
             int currentDataSize = entry.Length - headerLength;
             byte[] data = new byte[expectedSize];
             if (currentDataSize < expectedSize)
             {
-                // Copy existing data and pad with zeros.
+                // Copy available data and pad with zeros.
                 Array.Copy(entry, headerLength, data, 0, currentDataSize);
             }
             else
@@ -141,17 +140,15 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                 Array.Copy(entry, headerLength, data, 0, expectedSize);
             }
 
-            // Update the header’s size field (located at offset 4, 4 bytes).
+            // Update the header’s size field (offset 4, 4 bytes) with the expectedSize (big-endian).
             int newSizeBigEndian = IPAddress.HostToNetworkOrder(expectedSize);
             byte[] newSizeBytes = BitConverter.GetBytes(newSizeBigEndian);
-            // Overwrite bytes 4-7 in the header.
             Array.Copy(newSizeBytes, 0, header, 4, 4);
 
-            // Reassemble the new entry.
+            // Reassemble and return the adjusted raw file entry.
             byte[] newEntry = new byte[header.Length + data.Length];
             Buffer.BlockCopy(header, 0, newEntry, 0, header.Length);
             Buffer.BlockCopy(data, 0, newEntry, header.Length, data.Length);
-
             return newEntry;
         }
 
@@ -180,7 +177,7 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 byte[] tailBuffer = new byte[originalLength - insertPosition];
                 fs.Read(tailBuffer, 0, tailBuffer.Length);
-                // Extend file length.
+                // Extend the file length.
                 fs.SetLength(originalLength + newEntryBytes.Length);
                 // Shift tail data forward.
                 fs.Seek(insertPosition + newEntryBytes.Length, SeekOrigin.Begin);
@@ -188,21 +185,6 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                 // Write the adjusted new entry.
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 fs.Write(newEntryBytes, 0, newEntryBytes.Length);
-
-                // Update the asset record count in the header.
-                int assetRecordCountOffset = Constants.ZoneFile.AssetRecordCountOffset;
-                fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
-                byte[] countBytes = new byte[4];
-                fs.Read(countBytes, 0, countBytes.Length);
-                if (BitConverter.IsLittleEndian)
-                    Array.Reverse(countBytes);
-                uint currentCount = BitConverter.ToUInt32(countBytes, 0);
-                uint newCount = currentCount + 1;
-                byte[] newCountBytes = BitConverter.GetBytes(newCount);
-                if (BitConverter.IsLittleEndian)
-                    Array.Reverse(newCountBytes);
-                fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
-                fs.Write(newCountBytes, 0, newCountBytes.Length);
 
                 // Write termination marker at the new end of the asset pool.
                 long newAssetPoolEnd = insertPosition + newEntryBytes.Length + tailBuffer.Length;
