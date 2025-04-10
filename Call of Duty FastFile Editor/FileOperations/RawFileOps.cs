@@ -1,7 +1,6 @@
 using Call_of_Duty_FastFile_Editor.Models;
 using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 
@@ -157,6 +156,8 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
         /// This method assumes that the file being injected already contains its header.
         /// It reads the entire file from disk, adjusts the header size field (and data portion)
         /// so that the entry’s data length matches expectedSize, and then injects the adjusted entry.
+        /// Additionally, it updates the zone file's size (the value at ZoneSizeOffset) by adding
+        /// the length of the injected entry. The asset record count is not updated here.
         /// </summary>
         /// <param name="zoneFilePath">Full path of the decompressed zone file.</param>
         /// <param name="filePath">
@@ -185,16 +186,17 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                 // Write the adjusted new entry.
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 fs.Write(newEntryBytes, 0, newEntryBytes.Length);
-
-                // Write termination marker at the new end of the asset pool.
-                long newAssetPoolEnd = insertPosition + newEntryBytes.Length + tailBuffer.Length;
-                fs.Seek(newAssetPoolEnd, SeekOrigin.Begin);
-                byte[] terminationMarker = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
-                fs.Write(terminationMarker, 0, terminationMarker.Length);
             });
 
-            currentZone.AssetPoolEndOffset += newEntryBytes.Length;
-            currentZone.GetSetZoneAssetPool();
+            // Read the current zone size.
+            uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
+            // Add the size of the injected entry.
+            uint newZoneSize = currentZoneSize + (uint)newEntryBytes.Length;
+            // Write the new size back to the zone file header.
+            Zone.WriteZoneFileSize(zoneFilePath, newZoneSize);
+            // Also update the in-memory zone header information.
+            currentZone.RefreshZoneFileData();
+            currentZone.SetZoneOffsets();
         }
     }
 }
