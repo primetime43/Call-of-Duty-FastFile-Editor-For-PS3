@@ -1363,7 +1363,7 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     e.Cancel = true;
                 }
-                else
+                else if(_openedFastFile != null)
                     File.Delete(_openedFastFile.ZoneFilePath);
             }
         }
