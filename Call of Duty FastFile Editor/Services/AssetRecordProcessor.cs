@@ -1,4 +1,4 @@
-﻿using Call_of_Duty_FastFile_Editor.Models;
+using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
 using System;
 using System.Collections.Generic;

@@ -272,7 +272,7 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     if (_previousSelectedNode != null && _previousSelectedNode.Tag is RawFileNode previousNode)
                     {
-                        RawFileOperations.Save(
+                        RawFileOperations.SaveZoneRawFileChanges(
                             filesTreeView,                // TreeView control
                             _openedFastFile.FfFilePath,     // Path to the Fast File (.ff)
                             _openedFastFile.ZoneFilePath,   // Path to the decompressed zone file
@@ -404,7 +404,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                RawFileOperations.Save(
+                RawFileOperations.SaveZoneRawFileChanges(
                     filesTreeView,                // TreeView control
                     _openedFastFile.FfFilePath,                   // Path to the Fast File (.ff)
                     _openedFastFile.ZoneFilePath,                 // Path to the decompressed zone file
@@ -707,22 +707,14 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void exportFileMenuItem_Click(object sender, EventArgs e)
         {
-            if (filesTreeView.SelectedNode == null)
-            {
-                MessageBox.Show("Please select a file to export.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            RawFileNode selectedNode = GetSelectedRawFileNode();
+            if (selectedNode == null)
                 return;
-            }
 
-            if (!(filesTreeView.SelectedNode.Tag is RawFileNode selectedFileNode))
-            {
-                MessageBox.Show("Selected node does not have a valid RawFileNode.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            string fileExtension = Path.GetExtension(selectedFileNode.FileName);
+            string fileExtension = Path.GetExtension(selectedNode.FileName);
             string validExtensions = string.Join(",", Constants.RawFiles.FileNamePatternStrings);
 
-            RawFileOperations.ExportRawFile(selectedFileNode, fileExtension);
+            RawFileOperations.ExportRawFile(selectedNode, fileExtension);
         }
 
         /// <summary>
@@ -738,23 +730,9 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (filesTreeView.SelectedNode == null)
-            {
-                MessageBox.Show("Please select a file to rename.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            RawFileNode selectedNode = GetSelectedRawFileNode();
+            if (selectedNode == null)
                 return;
-            }
-
-            if (!(filesTreeView.SelectedNode.Tag is RawFileNode selectedFileNode))
-            {
-                MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            if (selectedFileNode == null)
-            {
-                MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
 
             RawFileOperations.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _rawFileNodes, _openedFastFile);
         }
@@ -1367,5 +1345,53 @@ namespace Call_of_Duty_FastFile_Editor
                     File.Delete(_openedFastFile.ZoneFilePath);
             }
         }
+
+        /// <summary>
+        /// Adjust the size of the selected raw file node.
+        /// </summary>
+        private void increaseFileSizeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RawFileNode selectedNode = GetSelectedRawFileNode();
+            if (selectedNode == null)
+                return;
+
+            // Create the size adjust dialog and pass in the current file size.
+            using (RawFileSizeAdjust sizeAdjustDialog = new RawFileSizeAdjust())
+            {
+                sizeAdjustDialog.CurrentFileSize = selectedNode.MaxSize;
+                if (sizeAdjustDialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    int newSize = sizeAdjustDialog.NewFileSize;
+                    try
+                    {
+                        RawFileOps.AdjustRawFileNodeSize(_openedFastFile.ZoneFilePath, selectedNode, newSize);
+                        MessageBox.Show($"File '{selectedNode.FileName}' size increased to {newSize} bytes successfully.",
+                            "Size Increase Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        RefreshZoneData();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error increasing file size: {ex.Message}",
+                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the currently selected RawFileNode from the TreeView.
+        /// If no node is selected or the selected node does not have a valid RawFileNode,
+        /// a message box is shown and the method returns null.
+        /// </summary>
+        private RawFileNode GetSelectedRawFileNode()
+        {
+            if (filesTreeView.SelectedNode == null || !(filesTreeView.SelectedNode.Tag is RawFileNode selectedNode))
+            {
+                MessageBox.Show("Please select a raw file.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+            return selectedNode;
+        }
+
     }
 }

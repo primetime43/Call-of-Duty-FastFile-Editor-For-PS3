@@ -198,5 +198,77 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
             currentZone.RefreshZoneFileData();
             currentZone.SetZoneOffsets();
         }
+
+        /// <summary>
+        /// Adjusts (increases) the size of a raw file node by padding with 0x00 bytes.
+        /// This method updates the raw file header’s size field, shifts down the tail data,
+        /// writes the new (padded) content into the zone file, and adjusts the overall zone file size.
+        /// </summary>
+        /// <param name="zoneFilePath">The full path to the decompressed zone file.</param>
+        /// <param name="rawFileNode">The RawFileNode to be adjusted.</param>
+        /// <param name="newSize">
+        /// The desired new size for the file’s data portion.
+        /// Must be greater than the current (rawFileNode.MaxSize) size.
+        /// </param>
+        public static void AdjustRawFileNodeSize(string zoneFilePath, RawFileNode rawFileNode, int newSize)
+        {
+            int oldSize = rawFileNode.MaxSize;
+            if (newSize <= oldSize)
+            {
+                MessageBox.Show("The new size must be greater than the current size.",
+                                "Invalid Size", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int sizeIncrease = newSize - oldSize;
+
+            // Create the new content: copy the existing data then pad with zeros.
+            byte[] currentContent = rawFileNode.RawFileBytes;
+            byte[] newContent = new byte[newSize];
+            Array.Copy(currentContent, newContent, currentContent.Length);
+            // The remaining bytes in newContent are already 0.
+
+            Zone currentZone = RawFileNode.CurrentZone;
+            currentZone.ModifyZoneFile(fs =>
+            {
+                // Calculate where the raw file's data ends; that is,
+                // the starting point from which we need to shift subsequent bytes.
+                long shiftStart = rawFileNode.CodeStartPosition + oldSize;
+                long tailLength = fs.Length - shiftStart;
+
+                // If there's any tail data after the raw file entry,
+                // shift it further down by sizeIncrease bytes.
+                if (tailLength > 0)
+                {
+                    fs.Seek(shiftStart, SeekOrigin.Begin);
+                    byte[] tailData = new byte[tailLength];
+                    fs.Read(tailData, 0, tailData.Length);
+                    fs.Seek(shiftStart + sizeIncrease, SeekOrigin.Begin);
+                    fs.Write(tailData, 0, tailData.Length);
+                }
+
+                // Overwrite the raw file's data block (starting at CodeStartPosition)
+                // with our new content (which is padded with zeros).
+                fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
+                fs.Write(newContent, 0, newContent.Length);
+
+                // Update the size in the raw file header.
+                // The header is expected to have a 4-byte size field at offset 4 from the start.
+                fs.Seek(rawFileNode.StartOfFileHeader + 4, SeekOrigin.Begin);
+                int newSizeBigEndian = IPAddress.HostToNetworkOrder(newSize);
+                byte[] newSizeBytes = BitConverter.GetBytes(newSizeBigEndian);
+                fs.Write(newSizeBytes, 0, newSizeBytes.Length);
+            });
+
+            // Update in-memory RawFileNode properties.
+            rawFileNode.MaxSize = newSize;
+            rawFileNode.RawFileBytes = newContent;
+            rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
+
+            // Update the zone file size header.
+            uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
+            uint updatedZoneSize = currentZoneSize + (uint)sizeIncrease;
+            Zone.WriteZoneFileSize(zoneFilePath, updatedZoneSize);
+        }
     }
 }

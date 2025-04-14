@@ -7,6 +7,9 @@
     <Compile Update="UI\MainWindowForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="UI\RawFileSizeAdjust.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="UI\RenameDialog.cs">
       <SubType>Form</SubType>
     </Compile>

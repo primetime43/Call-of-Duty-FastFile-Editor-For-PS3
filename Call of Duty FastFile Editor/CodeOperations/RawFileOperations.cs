@@ -1,4 +1,4 @@
-﻿using Call_of_Duty_FastFile_Editor.IO;
+using Call_of_Duty_FastFile_Editor.IO;
 using System;
 using System.IO;
 using System.Linq;
@@ -9,6 +9,7 @@ using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.UI;
 using System.Runtime.CompilerServices;
 using static Call_of_Duty_FastFile_Editor.Models.FastFile;
+using System.Net;
 
 namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
@@ -225,13 +226,13 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         ///     <item>Delegates the actual saving process to <see cref="SaveFileNode"/>.</item>
         /// </list>
         /// </remarks>
-        public static void Save(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, string updatedText, FastFile openedFastFile)
+        public static void SaveZoneRawFileChanges(TreeView filesTreeView, string ffFilePath, string zoneFilePath, List<RawFileNode> rawFileNodes, string updatedText, FastFile openedFastFile)
         {
             try
             {
-                if (filesTreeView.SelectedNode?.Tag is int position)
+                if (filesTreeView.SelectedNode?.Tag is RawFileNode selectedFileNode)
                 {
-                    var rawFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
+                    var rawFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == selectedFileNode.PatternIndexPosition);
                     if (rawFileNode != null)
                     {
                         SaveFileNode(ffFilePath, zoneFilePath, rawFileNode, updatedText, openedFastFile.OpenedFastFileHeader);
