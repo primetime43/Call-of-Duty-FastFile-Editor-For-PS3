@@ -326,20 +326,25 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void textEditorControlEx1_TextChanged(object sender, EventArgs e)
         {
-            if (filesTreeView.SelectedNode?.Tag is int position)
+            // Fetch the selected node from the TreeView
+            if (filesTreeView.SelectedNode?.Tag is RawFileNode selectedNode)
             {
-                var selectedNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
-                if (selectedNode != null)
-                {
-                    int maxSize = selectedNode.MaxSize;
-                    UIManager.UpdateStatusStrip(
-                        selectedFileMaxSizeStatusLabel,
-                        selectedFileCurrentSizeStatusLabel,
-                        maxSize,
-                        textEditorControlEx1.Text.Length
-                    );
-                    _hasUnsavedChanges = true;
-                }
+                // Update the RawFileContent in memory (optional but useful if you want to keep changes synced)
+                selectedNode.RawFileContent = textEditorControlEx1.Text;
+
+                // The "current size" is simply the length of the editor text
+                int currentSize = textEditorControlEx1.Text.Length;
+
+                // Update the status strip to reflect the new size
+                UIManager.UpdateStatusStrip(
+                    selectedFileMaxSizeStatusLabel,       // The label displaying "Max Size: XYZ"
+                    selectedFileCurrentSizeStatusLabel,   // The label displaying "Current Size: XYZ"
+                    selectedNode.MaxSize,                 // The raw file's maximum allowed size
+                    currentSize                           // The new size in the editor
+                );
+
+                // Mark the file as having unsaved changes
+                _hasUnsavedChanges = true;
             }
         }
 
