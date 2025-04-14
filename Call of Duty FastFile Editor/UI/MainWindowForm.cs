@@ -407,6 +407,23 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void saveRawFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            // Get the currently selected raw file node.
+            RawFileNode selectedNode = GetSelectedRawFileNode();
+            if (selectedNode == null)
+            {
+                return;
+            }
+
+            // Get the new content size from the editor.
+            int currentContentSize = textEditorControlEx1.Text.Length;
+
+            // Check if the new content exceeds the allowed maximum.
+            // If the check returns false, we cancel the saving process.
+            if (!CheckAndAdjustFileSize(selectedNode, currentContentSize))
+            {
+                return;
+            }
+
             try
             {
                 RawFileOperations.SaveZoneRawFileChanges(
@@ -1380,6 +1397,51 @@ namespace Call_of_Duty_FastFile_Editor
                             "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Checks if the text from the editor exceeds the maximum allowed size for the raw file.
+        /// If so, it prompts the user to confirm adjusting the file size.
+        /// Returns true if the operation should continue (after adjustment if necessary), false otherwise.
+        /// </summary>
+        private bool CheckAndAdjustFileSize(RawFileNode selectedNode, int currentContentSize)
+        {
+            // If the current content size is not larger than the maximum allowed size, return true.
+            if (currentContentSize <= selectedNode.MaxSize)
+            {
+                return true;
+            }
+
+            // Alert the user that the file's content is larger than its current maximum.
+            DialogResult result = MessageBox.Show(
+                "The new file content size (" + currentContentSize + " bytes) exceeds the current maximum allowed size (" + selectedNode.MaxSize + " bytes).\n" +
+                "Do you want to adjust the file size to save your changes?",
+                "File Size Exceeds Limit",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    // Call the function to adjust the file size.
+                    // Here, we use currentContentSize as the new max.
+                    // FUTURE MAYBE? - (or use the RawFileSizeAdjust form) to let the user specify a new size.
+                    RawFileOps.AdjustRawFileNodeSize(_openedFastFile.ZoneFilePath, selectedNode, currentContentSize);
+                    // After successful adjustment the node's MaxSize has been updated.
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error adjusting file size: " + ex.Message, "Adjustment Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+            }
+            else
+            {
+                // The user chose not to adjust, so cancel the saving.
+                return false;
             }
         }
 
