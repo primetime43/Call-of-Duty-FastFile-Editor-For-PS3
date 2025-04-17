@@ -1,4 +1,4 @@
-using Call_of_Duty_FastFile_Editor.CodeOperations;
+﻿using Call_of_Duty_FastFile_Editor.CodeOperations;
 using Call_of_Duty_FastFile_Editor.IO;
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.UI;
@@ -11,7 +11,6 @@ using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.Services;
 using System.ComponentModel;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
-using ICSharpCode.TextEditorEx;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -20,8 +19,6 @@ namespace Call_of_Duty_FastFile_Editor
         private string _programVersion = "v1.0.0";
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
-        private bool _hasUnsavedChanges = false;
-
 
         /// <summary>
         /// List of raw file nodes extracted from the zone file.
@@ -259,37 +256,49 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void filesTreeView_BeforeSelect(object sender, TreeViewCancelEventArgs e)
         {
-            if (_hasUnsavedChanges)
+            if (_previousSelectedNode?.Tag is RawFileNode prevNode && prevNode.HasUnsavedChanges)
             {
-                DialogResult result = MessageBox.Show(
-                    "You have unsaved changes. Do you want to save before switching?",
+                var result = MessageBox.Show(
+                    "You have unsaved changes to this file. Do you want to save before switching?",
                     "Unsaved Changes",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning
-                );
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Warning);
 
                 if (result == DialogResult.Yes)
                 {
-                    if (_previousSelectedNode != null && _previousSelectedNode.Tag is RawFileNode previousNode)
-                    {
-                        RawFileOperations.SaveZoneRawFileChanges(
-                            filesTreeView,                // TreeView control
-                            _openedFastFile.FfFilePath,     // Path to the Fast File (.ff)
-                            _openedFastFile.ZoneFilePath,   // Path to the decompressed zone file
-                            _rawFileNodes,                  // List of RawFileNode objects
-                            textEditorControlEx1.Text,        // Updated text from the editor
-                            _openedFastFile                // FastFile instance
-                        );
-                    }
-                    _hasUnsavedChanges = false;
+                    // Save the previous node
+                    RawFileOperations.SaveZoneRawFileChanges(
+                        filesTreeView,
+                        _openedFastFile.FfFilePath,
+                        _openedFastFile.ZoneFilePath,
+                        _rawFileNodes,
+                        prevNode.RawFileContent,
+                        _openedFastFile
+                    );
+                    prevNode.HasUnsavedChanges = false;
                 }
-                else if (result == DialogResult.Cancel || result == DialogResult.No)
+                else if (result == DialogResult.Cancel)
                 {
-                    e.Cancel = true; // Cancel the selection change
+                    // Cancel the switch entirely
+                    e.Cancel = true;
                     return;
                 }
+                else // DialogResult.No → discard changes
+                {
+                    // Revert the node’s content back to the last‐loaded bytes
+                    var originalText = Encoding.UTF8.GetString(prevNode.RawFileBytes);
+                    prevNode.RawFileContent = originalText;
+                    prevNode.HasUnsavedChanges = false;
+
+                    // Immediately update the editor so the user sees the discard
+                    textEditorControlEx1.TextChanged -= textEditorControlEx1_TextChanged;
+                    textEditorControlEx1.SetTextAndRefresh(originalText);
+                    textEditorControlEx1.TextChanged += textEditorControlEx1_TextChanged;
+                }
             }
-            _previousSelectedNode = filesTreeView.SelectedNode; // Save the current node for later use
+
+            // Now allow the selection to change
+            _previousSelectedNode = filesTreeView.SelectedNode;
         }
 
         /// <summary>
@@ -297,27 +306,27 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void filesTreeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            if (e.Node.Tag is RawFileNode selectedNode)
+            if (e.Node?.Tag is RawFileNode selectedNode)
             {
-                string fileName = selectedNode.FileName;
-                int maxSize = selectedNode.MaxSize;
-                string fileContent = selectedNode.RawFileContent ?? string.Empty;
-
-                // Update the editor content without triggering multiple events.
+                // Load the file content into the editor without retriggering TextChanged
                 textEditorControlEx1.TextChanged -= textEditorControlEx1_TextChanged;
-                //textEditorControlEx1.Text = fileContent;
-                textEditorControlEx1.SetTextAndRefresh(selectedNode.RawFileContent);
+                textEditorControlEx1.SetTextAndRefresh(selectedNode.RawFileContent ?? string.Empty);
                 textEditorControlEx1.TextChanged += textEditorControlEx1_TextChanged;
 
-                // Update UI elements.
-                UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, fileName);
+                // Update UI
+                UIManager.UpdateSelectedFileStatusStrip(selectedItemStatusLabel, selectedNode.FileName);
                 UIManager.UpdateStatusStrip(
                     selectedFileMaxSizeStatusLabel,
                     selectedFileCurrentSizeStatusLabel,
-                    maxSize,
+                    selectedNode.MaxSize,
                     textEditorControlEx1.Text.Length
                 );
-                _hasUnsavedChanges = false; // Reset unsaved flag after loading content
+
+                // Reset this node’s dirty flag now that its content is in sync
+                selectedNode.HasUnsavedChanges = false;
+
+                // Track for BeforeSelect logic
+                _previousSelectedNode = e.Node;
             }
         }
 
@@ -329,8 +338,10 @@ namespace Call_of_Duty_FastFile_Editor
             // Fetch the selected node from the TreeView
             if (filesTreeView.SelectedNode?.Tag is RawFileNode selectedNode)
             {
-                // Update the RawFileContent in memory (optional but useful if you want to keep changes synced)
+                // Update the RawFileContent in memory
                 selectedNode.RawFileContent = textEditorControlEx1.Text;
+                // Mark the file as having unsaved changes (dirty)
+                selectedNode.HasUnsavedChanges = true;
 
                 // The "current size" is simply the length of the editor text
                 int currentSize = textEditorControlEx1.Text.Length;
@@ -342,9 +353,6 @@ namespace Call_of_Duty_FastFile_Editor
                     selectedNode.MaxSize,                 // The raw file's maximum allowed size
                     currentSize                           // The new size in the editor
                 );
-
-                // Mark the file as having unsaved changes
-                _hasUnsavedChanges = true;
             }
         }
 
@@ -355,13 +363,24 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
-                MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-                _hasUnsavedChanges = false; // Reset the flag after saving
+                FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath,
+                                                      _openedFastFile.ZoneFilePath,
+                                                      _openedFastFile);
+                MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath,
+                                "Saved",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Asterisk);
+
+                // Reset every node’s dirty flag now that the zone is saved
+                foreach (var node in _rawFileNodes)
+                    node.HasUnsavedChanges = false;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to save Fast File: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Failed to save Fast File: {ex.Message}",
+                                "Save Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
             }
         }
 
@@ -370,7 +389,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void saveFastFileAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            using (var saveFileDialog = new SaveFileDialog())
             {
                 saveFileDialog.Filter = "Fast Files (*.ff)|*.ff|All Files (*.*)|*.*";
                 saveFileDialog.Title = "Save Fast File As";
@@ -380,14 +399,27 @@ namespace Call_of_Duty_FastFile_Editor
                     try
                     {
                         string newFilePath = saveFileDialog.FileName;
-                        FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, newFilePath, _openedFastFile);
-                        MessageBox.Show("Fast File saved to:\n\n" + newFilePath, "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-                        _hasUnsavedChanges = false; // Reset the flag after saving
+                        FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath,
+                                                              newFilePath,
+                                                              _openedFastFile);
+                        MessageBox.Show("Fast File saved to:\n\n" + newFilePath,
+                                        "Saved",
+                                        MessageBoxButtons.OK,
+                                        MessageBoxIcon.Asterisk);
+
+                        // Clear all per-node dirty flags
+                        foreach (var node in _rawFileNodes)
+                            node.HasUnsavedChanges = false;
+
+                        // Then close out
                         SaveCloseFastFileAndCleanUp();
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Failed to save Fast File As: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Failed to save Fast File As: {ex.Message}",
+                                        "Save Error",
+                                        MessageBoxButtons.OK,
+                                        MessageBoxIcon.Error);
                     }
                 }
             }
@@ -419,7 +451,7 @@ namespace Call_of_Duty_FastFile_Editor
                 _openedFastFile
             );
 
-            _hasUnsavedChanges = false;
+            selectedNode.HasUnsavedChanges = false;
         }
 
         /// <summary>
@@ -1046,28 +1078,32 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 if (_openedFastFile != null && File.Exists(_openedFastFile.FfFilePath))
                 {
-                    FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
-                    _hasUnsavedChanges = false; // Reset the flag after saving
+                    // Always save before closing
+                    FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath,
+                                                          _openedFastFile.ZoneFilePath,
+                                                          _openedFastFile);
+
+                    // We no longer have a form‑level dirty flag to clear
                     CleanUpAndClearUI();
 
-                    try
+                    if (deleteZoneFile)
                     {
-                        // Delete the zone file if requested
-                        if (deleteZoneFile)
-                            File.Delete(_openedFastFile.ZoneFilePath);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Failed to delete zone file: {ex.Message}", "Deletion Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        try { File.Delete(_openedFastFile.ZoneFilePath); }
+                        catch { }
                     }
 
                     _openedFastFile = null;
-                    MessageBox.Show("Fast File closed.", "Close Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Fast File closed.", "Close Complete",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to close fastfile: {ex.Message}", "Close Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Failed to close fastfile: {ex.Message}",
+                                "Close Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
             }
         }
 
@@ -1332,18 +1368,59 @@ namespace Call_of_Duty_FastFile_Editor
         {
             if (e.CloseReason == CloseReason.UserClosing)
             {
-                DialogResult result = MessageBox.Show(
-                    "Warning: Exiting the application using the close button will discard any unsaved changes.\n\nDo you want to exit without saving?",
-                    "Exit Confirmation",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
-
-                if (result == DialogResult.No)
+                // Find any raw files with unsaved changes
+                var dirtyNodes = _rawFileNodes.Where(n => n.HasUnsavedChanges).ToList();
+                if (dirtyNodes.Count > 0)
                 {
-                    e.Cancel = true;
+                    var result = MessageBox.Show(
+                        $"You have unsaved changes in {dirtyNodes.Count} file(s). Save before exiting?",
+                        "Unsaved Changes",
+                        MessageBoxButtons.YesNoCancel,
+                        MessageBoxIcon.Warning);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        // Save each dirty file
+                        foreach (var node in dirtyNodes)
+                        {
+                            // Select the corresponding TreeNode so SaveZoneRawFileChanges targets it
+                            var treeNode = filesTreeView.Nodes
+                                .OfType<TreeNode>()
+                                .First(t => ReferenceEquals(t.Tag, node));
+                            filesTreeView.SelectedNode = treeNode;
+
+                            RawFileOperations.SaveZoneRawFileChanges(
+                                filesTreeView,
+                                _openedFastFile.FfFilePath,
+                                _openedFastFile.ZoneFilePath,
+                                _rawFileNodes,
+                                node.RawFileContent,
+                                _openedFastFile
+                            );
+                            node.HasUnsavedChanges = false;
+                        }
+                    }
+                    else if (result == DialogResult.Cancel)
+                    {
+                        // Cancel the close
+                        e.Cancel = true;
+                        return;
+                    }
+                    // if No, proceed and discard unsaved changes
                 }
-                else if(_openedFastFile != null)
-                    File.Delete(_openedFastFile.ZoneFilePath);
+
+                // Clean up the temp zone file
+                if (_openedFastFile != null && File.Exists(_openedFastFile.ZoneFilePath))
+                {
+                    try
+                    {
+                        File.Delete(_openedFastFile.ZoneFilePath);
+                    }
+                    catch
+                    {
+                        // ignore any deletion errors
+                    }
+                }
             }
         }
 

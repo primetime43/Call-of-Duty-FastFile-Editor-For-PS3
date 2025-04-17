@@ -13,6 +13,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
         // Backing field for the header bytes.
         private byte[] _header;
 
+        /// <summary>
+        /// Has this file’s content been edited (but not yet saved) in the UI?
+        /// </summary>
+        public bool HasUnsavedChanges { get; set; }
+
         public RawFileNode() { }
 
         // Constructor that initializes the necessary properties.

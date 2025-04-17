@@ -25,6 +25,7 @@ namespace Call_of_Duty_FastFile_Editor
             contextMenuStripRawFiles = new ContextMenuStrip(components);
             exportFileMenuItem = new ToolStripMenuItem();
             renameFileToolStripMenuItem = new ToolStripMenuItem();
+            increaseFileSizeToolStripMenuItem = new ToolStripMenuItem();
             menuStripTopToolbar = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
@@ -86,7 +87,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage = new TabPage();
             zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
-            increaseFileSizeToolStripMenuItem = new ToolStripMenuItem();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -116,7 +116,7 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.HideSelection = false;
             filesTreeView.Location = new Point(8, 0);
             filesTreeView.Name = "filesTreeView";
-            filesTreeView.Size = new Size(330, 743);
+            filesTreeView.Size = new Size(330, 739);
             filesTreeView.TabIndex = 0;
             filesTreeToolTip.SetToolTip(filesTreeView, "Right click for more options.");
             filesTreeView.BeforeSelect += filesTreeView_BeforeSelect;
@@ -126,12 +126,12 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             contextMenuStripRawFiles.Items.AddRange(new ToolStripItem[] { exportFileMenuItem, renameFileToolStripMenuItem, increaseFileSizeToolStripMenuItem });
             contextMenuStripRawFiles.Name = "contextMenuStrip1";
-            contextMenuStripRawFiles.Size = new Size(181, 92);
+            contextMenuStripRawFiles.Size = new Size(162, 70);
             // 
             // exportFileMenuItem
             // 
             exportFileMenuItem.Name = "exportFileMenuItem";
-            exportFileMenuItem.Size = new Size(180, 22);
+            exportFileMenuItem.Size = new Size(161, 22);
             exportFileMenuItem.Text = "Export File";
             exportFileMenuItem.ToolTipText = "Export the selected raw file";
             exportFileMenuItem.Click += exportFileMenuItem_Click;
@@ -139,9 +139,16 @@ namespace Call_of_Duty_FastFile_Editor
             // renameFileToolStripMenuItem
             // 
             renameFileToolStripMenuItem.Name = "renameFileToolStripMenuItem";
-            renameFileToolStripMenuItem.Size = new Size(180, 22);
+            renameFileToolStripMenuItem.Size = new Size(161, 22);
             renameFileToolStripMenuItem.Text = "Rename File";
             renameFileToolStripMenuItem.Click += renameFileToolStripMenuItem_Click;
+            // 
+            // increaseFileSizeToolStripMenuItem
+            // 
+            increaseFileSizeToolStripMenuItem.Name = "increaseFileSizeToolStripMenuItem";
+            increaseFileSizeToolStripMenuItem.Size = new Size(161, 22);
+            increaseFileSizeToolStripMenuItem.Text = "Increase File Size";
+            increaseFileSizeToolStripMenuItem.Click += increaseFileSizeToolStripMenuItem_Click;
             // 
             // menuStripTopToolbar
             // 
@@ -163,7 +170,7 @@ namespace Call_of_Duty_FastFile_Editor
             // openFastFileToolStripMenuItem
             // 
             openFastFileToolStripMenuItem.Name = "openFastFileToolStripMenuItem";
-            openFastFileToolStripMenuItem.Size = new Size(427, 24);
+            openFastFileToolStripMenuItem.Size = new Size(286, 24);
             openFastFileToolStripMenuItem.Text = "Open Fast File";
             openFastFileToolStripMenuItem.Click += openFastFileToolStripMenuItem_Click;
             // 
@@ -171,7 +178,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             saveFastFileToolStripMenuItem.Enabled = false;
             saveFastFileToolStripMenuItem.Name = "saveFastFileToolStripMenuItem";
-            saveFastFileToolStripMenuItem.Size = new Size(427, 24);
+            saveFastFileToolStripMenuItem.Size = new Size(286, 24);
             saveFastFileToolStripMenuItem.Text = "Save Fast File (Recompress)";
             saveFastFileToolStripMenuItem.ToolTipText = "Saves changes to the FF";
             saveFastFileToolStripMenuItem.Click += saveFastFileToolStripMenuItem_Click;
@@ -180,14 +187,14 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             saveFastFileAsToolStripMenuItem.Enabled = false;
             saveFastFileAsToolStripMenuItem.Name = "saveFastFileAsToolStripMenuItem";
-            saveFastFileAsToolStripMenuItem.Size = new Size(427, 24);
+            saveFastFileAsToolStripMenuItem.Size = new Size(286, 24);
             saveFastFileAsToolStripMenuItem.Text = "Save Fast File as... (Recompress)";
             saveFastFileAsToolStripMenuItem.Click += saveFastFileAsToolStripMenuItem_Click;
             // 
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(427, 24);
+            toolStripMenuItem1.Size = new Size(286, 24);
             toolStripMenuItem1.Text = "Close Fast File";
             toolStripMenuItem1.ToolTipText = "Save changes to the FF & closes the opened FF";
             toolStripMenuItem1.Click += closeFastFileToolStripMenuItem_Click;
@@ -195,7 +202,7 @@ namespace Call_of_Duty_FastFile_Editor
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            exitToolStripMenuItem.Size = new Size(427, 24);
+            exitToolStripMenuItem.Size = new Size(286, 24);
             exitToolStripMenuItem.Text = "Exit";
             exitToolStripMenuItem.ToolTipText = "Save changes to the FF & exits";
             exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
@@ -211,7 +218,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             saveRawFileToolStripMenuItem.Enabled = false;
             saveRawFileToolStripMenuItem.Name = "saveRawFileToolStripMenuItem";
-            saveRawFileToolStripMenuItem.Size = new Size(355, 24);
+            saveRawFileToolStripMenuItem.Size = new Size(214, 24);
             saveRawFileToolStripMenuItem.Text = "Save Raw File (zone)";
             saveRawFileToolStripMenuItem.ToolTipText = "This will save the modified file extracted from the ff";
             saveRawFileToolStripMenuItem.Click += saveRawFileToolStripMenuItem_Click;
@@ -220,32 +227,32 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             renameRawFileToolStripMenuItem.Enabled = false;
             renameRawFileToolStripMenuItem.Name = "renameRawFileToolStripMenuItem";
-            renameRawFileToolStripMenuItem.Size = new Size(355, 24);
+            renameRawFileToolStripMenuItem.Size = new Size(214, 24);
             renameRawFileToolStripMenuItem.Text = "Rename Raw File";
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(352, 6);
+            toolStripSeparator1.Size = new Size(211, 6);
             // 
             // compressCodeToolStripMenuItem
             // 
             compressCodeToolStripMenuItem.Name = "compressCodeToolStripMenuItem";
-            compressCodeToolStripMenuItem.Size = new Size(355, 24);
+            compressCodeToolStripMenuItem.Size = new Size(214, 24);
             compressCodeToolStripMenuItem.Text = "Compress Code";
             compressCodeToolStripMenuItem.Click += compressCodeToolStripMenuItem_Click;
             // 
             // removeCommentsToolStripMenuItem
             // 
             removeCommentsToolStripMenuItem.Name = "removeCommentsToolStripMenuItem";
-            removeCommentsToolStripMenuItem.Size = new Size(355, 24);
+            removeCommentsToolStripMenuItem.Size = new Size(214, 24);
             removeCommentsToolStripMenuItem.Text = "Remove Comments";
             removeCommentsToolStripMenuItem.Click += removeCommentsToolStripMenuItem_Click;
             // 
             // checkSyntaxToolStripMenuItem
             // 
             checkSyntaxToolStripMenuItem.Name = "checkSyntaxToolStripMenuItem";
-            checkSyntaxToolStripMenuItem.Size = new Size(355, 24);
+            checkSyntaxToolStripMenuItem.Size = new Size(214, 24);
             checkSyntaxToolStripMenuItem.Text = "Check Syntax";
             checkSyntaxToolStripMenuItem.Click += checkSyntaxToolStripMenuItem_Click;
             // 
@@ -259,7 +266,7 @@ namespace Call_of_Duty_FastFile_Editor
             // checkForUpdateToolStripMenuItem
             // 
             checkForUpdateToolStripMenuItem.Name = "checkForUpdateToolStripMenuItem";
-            checkForUpdateToolStripMenuItem.Size = new Size(318, 24);
+            checkForUpdateToolStripMenuItem.Size = new Size(210, 24);
             checkForUpdateToolStripMenuItem.Text = "Check For Update";
             checkForUpdateToolStripMenuItem.Click += checkForUpdateToolStripMenuItem_Click;
             // 
@@ -267,7 +274,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             originalFastFilesToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { worldAtWarToolStripMenuItem, modernWarfareToolStripMenuItem });
             originalFastFilesToolStripMenuItem.Name = "originalFastFilesToolStripMenuItem";
-            originalFastFilesToolStripMenuItem.Size = new Size(318, 24);
+            originalFastFilesToolStripMenuItem.Size = new Size(210, 24);
             originalFastFilesToolStripMenuItem.Text = "Original Fast Files";
             // 
             // worldAtWarToolStripMenuItem
@@ -336,12 +343,12 @@ namespace Call_of_Duty_FastFile_Editor
             // toolStripSeparator2
             // 
             toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new Size(315, 6);
+            toolStripSeparator2.Size = new Size(207, 6);
             // 
             // injectFileToolStripMenuItem
             // 
             injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
-            injectFileToolStripMenuItem.Size = new Size(318, 24);
+            injectFileToolStripMenuItem.Size = new Size(210, 24);
             injectFileToolStripMenuItem.Text = "Inject Raw File";
             injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
             // 
@@ -349,7 +356,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { increaseRawFileSizeToolStripMenuItem, searchRawFileTxtMenuItem });
             rawFileToolsMenuItem.Name = "rawFileToolsMenuItem";
-            rawFileToolsMenuItem.Size = new Size(318, 24);
+            rawFileToolsMenuItem.Size = new Size(210, 24);
             rawFileToolsMenuItem.Text = "Raw File Tools";
             // 
             // increaseRawFileSizeToolStripMenuItem
@@ -368,14 +375,14 @@ namespace Call_of_Duty_FastFile_Editor
             // saveFileToPCToolStripMenuItem
             // 
             saveFileToPCToolStripMenuItem.Name = "saveFileToPCToolStripMenuItem";
-            saveFileToPCToolStripMenuItem.Size = new Size(318, 24);
+            saveFileToPCToolStripMenuItem.Size = new Size(210, 24);
             saveFileToPCToolStripMenuItem.Text = "Save File To PC";
             saveFileToPCToolStripMenuItem.Click += saveFileToPCToolStripMenuItem_Click;
             // 
             // extractAllRawFilesToolStripMenuItem
             // 
             extractAllRawFilesToolStripMenuItem.Name = "extractAllRawFilesToolStripMenuItem";
-            extractAllRawFilesToolStripMenuItem.Size = new Size(318, 24);
+            extractAllRawFilesToolStripMenuItem.Size = new Size(210, 24);
             extractAllRawFilesToolStripMenuItem.Text = "Extract All Raw Files";
             extractAllRawFilesToolStripMenuItem.Click += extractAllRawFilesToolStripMenuItem_Click;
             // 
@@ -400,7 +407,7 @@ namespace Call_of_Duty_FastFile_Editor
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(textEditorControlEx1);
-            splitContainer1.Size = new Size(1436, 743);
+            splitContainer1.Size = new Size(1436, 739);
             splitContainer1.SplitterDistance = 338;
             splitContainer1.TabIndex = 0;
             // 
@@ -408,10 +415,11 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             textEditorControlEx1.ContextMenuEnabled = true;
             textEditorControlEx1.Dock = DockStyle.Fill;
+            textEditorControlEx1.FoldingStrategy = "C#";
             textEditorControlEx1.Font = new Font("Courier New", 10F);
             textEditorControlEx1.Location = new Point(0, 0);
             textEditorControlEx1.Name = "textEditorControlEx1";
-            textEditorControlEx1.Size = new Size(1094, 743);
+            textEditorControlEx1.Size = new Size(1094, 739);
             textEditorControlEx1.SyntaxHighlighting = "C#";
             textEditorControlEx1.TabIndex = 0;
             textEditorControlEx1.TextChanged += textEditorControlEx1_TextChanged;
@@ -420,9 +428,9 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             statusStripBottom.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             statusStripBottom.Items.AddRange(new ToolStripItem[] { loadedFileNameStatusLabel, toolStripStatusLabel1, selectedItemStatusLabel, selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel });
-            statusStripBottom.Location = new Point(0, 805);
+            statusStripBottom.Location = new Point(0, 801);
             statusStripBottom.Name = "statusStripBottom";
-            statusStripBottom.Size = new Size(1450, 22);
+            statusStripBottom.Size = new Size(1450, 26);
             statusStripBottom.TabIndex = 2;
             // 
             // loadedFileNameStatusLabel
@@ -435,7 +443,7 @@ namespace Call_of_Duty_FastFile_Editor
             // toolStripStatusLabel1
             // 
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            toolStripStatusLabel1.Size = new Size(0, 17);
+            toolStripStatusLabel1.Size = new Size(0, 21);
             // 
             // selectedItemStatusLabel
             // 
@@ -480,7 +488,7 @@ namespace Call_of_Duty_FastFile_Editor
             mainTabControl.Location = new Point(0, 28);
             mainTabControl.Name = "mainTabControl";
             mainTabControl.SelectedIndex = 0;
-            mainTabControl.Size = new Size(1450, 777);
+            mainTabControl.Size = new Size(1450, 773);
             mainTabControl.TabIndex = 3;
             // 
             // universalContextMenu
@@ -502,7 +510,7 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.Location = new Point(4, 24);
             rawFilesPage.Name = "rawFilesPage";
             rawFilesPage.Padding = new Padding(3);
-            rawFilesPage.Size = new Size(1442, 749);
+            rawFilesPage.Size = new Size(1442, 745);
             rawFilesPage.TabIndex = 0;
             rawFilesPage.Text = "Raw Files";
             rawFilesPage.UseVisualStyleBackColor = true;
@@ -514,7 +522,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTabPage.Location = new Point(4, 24);
             stringTablesTabPage.Name = "stringTablesTabPage";
             stringTablesTabPage.Padding = new Padding(3);
-            stringTablesTabPage.Size = new Size(1442, 749);
+            stringTablesTabPage.Size = new Size(1442, 745);
             stringTablesTabPage.TabIndex = 3;
             stringTablesTabPage.Text = "String Tables";
             stringTablesTabPage.UseVisualStyleBackColor = true;
@@ -544,7 +552,7 @@ namespace Call_of_Duty_FastFile_Editor
             collision_Map_AssetTabPage.Location = new Point(4, 24);
             collision_Map_AssetTabPage.Name = "collision_Map_AssetTabPage";
             collision_Map_AssetTabPage.Padding = new Padding(3);
-            collision_Map_AssetTabPage.Size = new Size(1442, 749);
+            collision_Map_AssetTabPage.Size = new Size(1442, 745);
             collision_Map_AssetTabPage.TabIndex = 4;
             collision_Map_AssetTabPage.Text = "Collision Map Data";
             collision_Map_AssetTabPage.UseVisualStyleBackColor = true;
@@ -564,7 +572,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeTabPage.Location = new Point(4, 24);
             localizeTabPage.Name = "localizeTabPage";
             localizeTabPage.Padding = new Padding(3);
-            localizeTabPage.Size = new Size(1442, 749);
+            localizeTabPage.Size = new Size(1442, 745);
             localizeTabPage.TabIndex = 6;
             localizeTabPage.Text = "Localize";
             localizeTabPage.UseVisualStyleBackColor = true;
@@ -575,7 +583,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.Dock = DockStyle.Fill;
             localizeListView.Location = new Point(3, 3);
             localizeListView.Name = "localizeListView";
-            localizeListView.Size = new Size(1436, 743);
+            localizeListView.Size = new Size(1436, 739);
             localizeListView.TabIndex = 0;
             localizeListView.UseCompatibleStateImageBehavior = false;
             localizeListView.MouseDown += listView_MouseDownCopy;
@@ -586,7 +594,7 @@ namespace Call_of_Duty_FastFile_Editor
             tagsTabPage.Location = new Point(4, 24);
             tagsTabPage.Name = "tagsTabPage";
             tagsTabPage.Padding = new Padding(3);
-            tagsTabPage.Size = new Size(1442, 749);
+            tagsTabPage.Size = new Size(1442, 745);
             tagsTabPage.TabIndex = 2;
             tagsTabPage.Text = "Tags";
             tagsTabPage.UseVisualStyleBackColor = true;
@@ -608,7 +616,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolTabPage.Location = new Point(4, 24);
             assetPoolTabPage.Name = "assetPoolTabPage";
             assetPoolTabPage.Padding = new Padding(3);
-            assetPoolTabPage.Size = new Size(1442, 749);
+            assetPoolTabPage.Size = new Size(1442, 745);
             assetPoolTabPage.TabIndex = 5;
             assetPoolTabPage.Text = "Asset Pool";
             assetPoolTabPage.UseVisualStyleBackColor = true;
@@ -619,7 +627,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Dock = DockStyle.Fill;
             assetPoolListView.Location = new Point(3, 3);
             assetPoolListView.Name = "assetPoolListView";
-            assetPoolListView.Size = new Size(1436, 743);
+            assetPoolListView.Size = new Size(1436, 739);
             assetPoolListView.TabIndex = 0;
             assetPoolListView.UseCompatibleStateImageBehavior = false;
             assetPoolListView.MouseDown += listView_MouseDownCopy;
@@ -630,7 +638,7 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage.Location = new Point(4, 24);
             zoneFileTabPage.Name = "zoneFileTabPage";
             zoneFileTabPage.Padding = new Padding(3);
-            zoneFileTabPage.Size = new Size(1442, 749);
+            zoneFileTabPage.Size = new Size(1442, 745);
             zoneFileTabPage.TabIndex = 1;
             zoneFileTabPage.Text = "Zone File Info";
             zoneFileTabPage.UseVisualStyleBackColor = true;
@@ -644,13 +652,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.Size = new Size(493, 432);
             zoneInfoDataGridView.TabIndex = 0;
             zoneInfoDataGridView.MouseDown += dataGrid_MouseDownCopy;
-            // 
-            // increaseFileSizeToolStripMenuItem
-            // 
-            increaseFileSizeToolStripMenuItem.Name = "increaseFileSizeToolStripMenuItem";
-            increaseFileSizeToolStripMenuItem.Size = new Size(180, 22);
-            increaseFileSizeToolStripMenuItem.Text = "Increase File Size";
-            increaseFileSizeToolStripMenuItem.Click += increaseFileSizeToolStripMenuItem_Click;
             // 
             // MainWindowForm
             // 
