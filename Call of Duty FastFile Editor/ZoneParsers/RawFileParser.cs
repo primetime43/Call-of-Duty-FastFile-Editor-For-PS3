@@ -305,12 +305,13 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                                 byte[] fileBytes = null;
                                 // Extract binary data
                                 fileBytes = ExtractBinaryContent(zoneFilePath, patternIndex, maxSize);
+                                int headerStart = sizePosition - 4;
 
                                 rawFileNodes.Add(new RawFileNode
                                 {
                                     PatternIndexPosition = patternIndex,
                                     MaxSize = maxSize,
-                                    StartOfFileHeader = sizePosition,
+                                    StartOfFileHeader = headerStart,
                                     FileName = fileName,
                                     RawFileContent = fileContent,
                                     RawFileBytes = fileBytes

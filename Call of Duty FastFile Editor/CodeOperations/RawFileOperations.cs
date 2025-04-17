@@ -1,4 +1,4 @@
-using Call_of_Duty_FastFile_Editor.IO;
+﻿using Call_of_Duty_FastFile_Editor.IO;
 using System;
 using System.IO;
 using System.Linq;
@@ -230,21 +230,24 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
         {
             try
             {
-                if (filesTreeView.SelectedNode?.Tag is RawFileNode selectedFileNode)
+                if (filesTreeView.SelectedNode?.Tag is RawFileNode rawFileNode)
                 {
-                    var rawFileNode = rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == selectedFileNode.PatternIndexPosition);
-                    if (rawFileNode != null)
-                    {
-                        SaveFileNode(ffFilePath, zoneFilePath, rawFileNode, updatedText, openedFastFile.OpenedFastFileHeader);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Selected node does not match any file entry nodes.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    SaveFileNode(
+                      ffFilePath,
+                      zoneFilePath,
+                      rawFileNode,                 
+                      updatedText,
+                      openedFastFile.OpenedFastFileHeader
+                    );
                 }
                 else
                 {
-                    MessageBox.Show("No node is selected or the selected node does not have a valid position.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(
+                      "No node is selected or the selected node does not have a valid RawFileNode.",
+                      "Error",
+                      MessageBoxButtons.OK,
+                      MessageBoxIcon.Error
+                    );
                 }
             }
             catch (Exception ex)
@@ -280,30 +283,46 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
             int updatedSize = updatedBytes.Length;
             int originalSize = rawFileNode.MaxSize;
 
+            // If new content exceeds the current slot, offer to resize
             if (updatedSize > originalSize)
             {
-                MessageBox.Show($"New size is {updatedSize - originalSize} bytes larger than the original size.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
-                return;
+                var result = MessageBox.Show(
+                    $"Content is {updatedSize} bytes (max {originalSize}).\n" +
+                    "Do you want to expand the slot to fit?",
+                    "Resize Raw File Slot",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    // Expand the raw file slot in the zone file
+                    RawFileOps.AdjustRawFileNodeSize(zoneFilePath, rawFileNode, updatedSize);
+                }
+                else
+                {
+                    // User declined—abort save
+                    return;
+                }
             }
 
             try
             {
-                // Create a backup before making changes
-                CreateBackup(ffFilePath);
+                // Backup zone file before writing
+                CreateBackup(zoneFilePath);
 
-                // Update the zone file in memory
+                // Now write the content (will pad with zeros if smaller than MaxSize)
                 RawFileOps.UpdateFileContent(zoneFilePath, rawFileNode, updatedBytes);
-                rawFileNode.RawFileContent = updatedText; // Update the in-memory representation
+                rawFileNode.RawFileContent = updatedText;
 
-                MessageBox.Show($"Raw File '{rawFileNode.FileName}' successfully saved to Zone.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-            }
-            catch (ArgumentException argEx)
-            {
-                MessageBox.Show(argEx.Message, "Size Exceeded", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(
+                    $"Raw File '{rawFileNode.FileName}' saved successfully.",
+                    "Saved",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Asterisk);
             }
             catch (IOException ioEx)
             {
-                MessageBox.Show($"Failed to save file: {ioEx.Message}", "IO Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Failed to save raw file: {ioEx.Message}", "IO Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

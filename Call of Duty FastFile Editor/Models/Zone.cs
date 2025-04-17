@@ -154,31 +154,25 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// <summary>
         /// Reads the 4-byte zone file size from the header (big-endian) at the defined offset.
         /// </summary>
-        public static uint ReadZoneFileSize(string zoneFilePath)
+        public static uint ReadZoneFileSize(string path)
         {
-            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Read))
-            {
-                fs.Seek(Constants.ZoneFile.ZoneSizeOffset, SeekOrigin.Begin);
-                byte[] sizeBytes = new byte[4];
-                fs.Read(sizeBytes, 0, sizeBytes.Length);
-                // The size is stored in big-endian; reverse if necessary.
-                if (BitConverter.IsLittleEndian)
-                    Array.Reverse(sizeBytes);
-                return BitConverter.ToUInt32(sizeBytes, 0);
-            }
+            var b = new byte[4];
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            fs.Seek(Constants.ZoneFile.ZoneSizeOffset, SeekOrigin.Begin);
+            fs.Read(b, 0, 4);
+            return System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(b);
         }
 
         /// <summary>
         /// Writes the updated zone file size (big-endian) to the header at the defined offset.
         /// </summary>
-        public static void WriteZoneFileSize(string zoneFilePath, uint newZoneSize)
+        public static void WriteZoneFileSize(string path, uint newSize)
         {
-            byte[] sizeBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((int)newZoneSize));
-            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Open, FileAccess.Write))
-            {
-                fs.Seek(Constants.ZoneFile.ZoneSizeOffset, SeekOrigin.Begin);
-                fs.Write(sizeBytes, 0, sizeBytes.Length);
-            }
+            Span<byte> b = stackalloc byte[4];
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(b, newSize);
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Write);
+            fs.Seek(Constants.ZoneFile.ZoneSizeOffset, SeekOrigin.Begin);
+            fs.Write(b);
         }
     }
 }

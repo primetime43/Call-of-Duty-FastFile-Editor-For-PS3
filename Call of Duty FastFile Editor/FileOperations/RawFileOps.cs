@@ -139,10 +139,11 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
                 Array.Copy(entry, headerLength, data, 0, expectedSize);
             }
 
-            // Update the header’s size field (offset 4, 4 bytes) with the expectedSize (big-endian).
-            int newSizeBigEndian = IPAddress.HostToNetworkOrder(expectedSize);
-            byte[] newSizeBytes = BitConverter.GetBytes(newSizeBigEndian);
-            Array.Copy(newSizeBytes, 0, header, 4, 4);
+            // Write the expectedSize directly as big‑endian into header[4..8)
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(
+              header.AsSpan(4, 4),
+              (uint)expectedSize
+            );
 
             // Reassemble and return the adjusted raw file entry.
             byte[] newEntry = new byte[header.Length + data.Length];
@@ -254,10 +255,11 @@ namespace Call_of_Duty_FastFile_Editor.FileOperations
 
                 // Update the size in the raw file header.
                 // The header is expected to have a 4-byte size field at offset 4 from the start.
+                // Overwrite the 4‑byte size field at header+4 in big‑endian.
+                Span<byte> buf = stackalloc byte[4];
+                System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(buf, (uint)newSize);
                 fs.Seek(rawFileNode.StartOfFileHeader + 4, SeekOrigin.Begin);
-                int newSizeBigEndian = IPAddress.HostToNetworkOrder(newSize);
-                byte[] newSizeBytes = BitConverter.GetBytes(newSizeBigEndian);
-                fs.Write(newSizeBytes, 0, newSizeBytes.Length);
+                fs.Write(buf);
             });
 
             // Update in-memory RawFileNode properties.
