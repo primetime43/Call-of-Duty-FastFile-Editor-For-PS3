@@ -1366,7 +1366,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void MainWindowForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (e.CloseReason == CloseReason.UserClosing)
+            if (e.CloseReason == CloseReason.UserClosing && _rawFileNodes != null)
             {
                 // Find any raw files with unsaved changes
                 var dirtyNodes = _rawFileNodes.Where(n => n.HasUnsavedChanges).ToList();
