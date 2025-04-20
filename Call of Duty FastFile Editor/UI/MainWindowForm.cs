@@ -7,7 +7,6 @@ using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 using System.Diagnostics;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
 using System.Text;
-using Call_of_Duty_FastFile_Editor.FileOperations;
 using Call_of_Duty_FastFile_Editor.Services;
 using System.ComponentModel;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
@@ -19,6 +18,7 @@ namespace Call_of_Duty_FastFile_Editor
         private string _programVersion = "v1.0.0";
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
+        private readonly IRawFileService _rawFileService;
 
         /// <summary>
         /// List of raw file nodes extracted from the zone file.
@@ -59,9 +59,10 @@ namespace Call_of_Duty_FastFile_Editor
 
         private ZoneAssetRecords _processResult;
 
-        public MainWindowForm()
+        public MainWindowForm(IRawFileService rawFileService)
         {
             InitializeComponent();
+            _rawFileService = rawFileService;
             textEditorControlEx1.SyntaxHighlighting = "C#";
 
             DirectoryInfo directoryInfo = new DirectoryInfo(_originalFastFilesPath);
@@ -267,7 +268,7 @@ namespace Call_of_Duty_FastFile_Editor
                 if (result == DialogResult.Yes)
                 {
                     // Save the previous node
-                    RawFileOperations.SaveZoneRawFileChanges(
+                    _rawFileService.SaveZoneRawFileChanges(
                         filesTreeView,
                         _openedFastFile.FfFilePath,
                         _openedFastFile.ZoneFilePath,
@@ -442,7 +443,7 @@ namespace Call_of_Duty_FastFile_Editor
             var selectedNode = GetSelectedRawFileNode();
             if (selectedNode == null) return;
 
-            RawFileOperations.SaveZoneRawFileChanges(
+            _rawFileService.SaveZoneRawFileChanges(
                 filesTreeView,
                 _openedFastFile.FfFilePath,
                 _openedFastFile.ZoneFilePath,
@@ -620,9 +621,9 @@ namespace Call_of_Duty_FastFile_Editor
                         try
                         {
                             if (newFileMaxSize > existingNode.MaxSize)
-                                RawFileOps.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
+                                _rawFileService.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
                             else
-                                RawFileOps.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
+                                _rawFileService.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
                         }
                         catch (Exception ex)
                         {
@@ -638,7 +639,7 @@ namespace Call_of_Duty_FastFile_Editor
                             // Add a new asset record entry.
                             AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
                             // Inject new file using the new AppendNewRawFile overload.
-                            RawFileOps.AppendNewRawFile(_openedFastFile.ZoneFilePath, selectedFilePath, newFileMaxSize);
+                            _rawFileService.AppendNewRawFile(_openedFastFile.ZoneFilePath, selectedFilePath, newFileMaxSize);
                         }
                         catch (Exception ex)
                         {
@@ -667,7 +668,7 @@ namespace Call_of_Duty_FastFile_Editor
             string fileExtension = Path.GetExtension(selectedNode.FileName);
             string validExtensions = string.Join(",", Constants.RawFiles.FileNamePatternStrings);
 
-            RawFileOperations.ExportRawFile(selectedNode, fileExtension);
+            _rawFileService.ExportRawFile(selectedNode, fileExtension);
         }
 
         /// <summary>
@@ -687,7 +688,7 @@ namespace Call_of_Duty_FastFile_Editor
             if (selectedNode == null)
                 return;
 
-            RawFileOperations.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _rawFileNodes, _openedFastFile);
+            _rawFileService.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _rawFileNodes, _openedFastFile);
         }
 
         /// <summary>
@@ -1309,7 +1310,7 @@ namespace Call_of_Duty_FastFile_Editor
                                 .First(t => ReferenceEquals(t.Tag, node));
                             filesTreeView.SelectedNode = treeNode;
 
-                            RawFileOperations.SaveZoneRawFileChanges(
+                            _rawFileService.SaveZoneRawFileChanges(
                                 filesTreeView,
                                 _openedFastFile.FfFilePath,
                                 _openedFastFile.ZoneFilePath,
@@ -1362,7 +1363,7 @@ namespace Call_of_Duty_FastFile_Editor
                     int newSize = sizeAdjustDialog.NewFileSize;
                     try
                     {
-                        RawFileOps.AdjustRawFileNodeSize(_openedFastFile.ZoneFilePath, selectedNode, newSize);
+                        _rawFileService.AdjustRawFileNodeSize(_openedFastFile.ZoneFilePath, selectedNode, newSize);
                         MessageBox.Show($"File '{selectedNode.FileName}' size increased to {newSize} bytes successfully.",
                             "Size Increase Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         RefreshZoneData();
