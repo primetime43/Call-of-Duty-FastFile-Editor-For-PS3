@@ -35,7 +35,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// List of tags extracted from the zone file.
         /// </summary>
-        private Tags? _tags;
+        private TagCollection? _tags;
 
         /// <summary>
         /// Offset where the assset pool starts in the zone file.
@@ -57,7 +57,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private List<ZoneAssetRecord> _zoneAssetRecords;
 
-        private ZoneAssetRecords _processResult;
+        private AssetRecordCollection _processResult;
 
         public MainWindowForm(IRawFileService rawFileService)
         {

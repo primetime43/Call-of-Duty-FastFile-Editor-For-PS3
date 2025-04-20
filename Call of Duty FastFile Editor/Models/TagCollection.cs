@@ -2,7 +2,7 @@
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
-    public class Tags
+    public class TagCollection
     {
         public List<ZoneAsset_TagEntry> TagEntries { get; set; }
         = new List<ZoneAsset_TagEntry>();
@@ -48,7 +48,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// is null-terminated ASCII, and we store each tag's offset in both 
         /// decimal and hex.
         /// </summary>
-        public static Tags? FindTags(Zone zone)
+        public static TagCollection? FindTags(Zone zone)
         {
             byte[] zoneBytes = zone.ZoneFileData;
 
@@ -119,7 +119,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             }
 
             // Return them
-            return new Tags
+            return new TagCollection
             {
                 TagEntries = tagEntries
             };

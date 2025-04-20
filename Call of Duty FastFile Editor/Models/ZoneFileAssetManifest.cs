@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
-    public class ZoneFileAssets
+    public class ZoneFileAssetManifest
     {
         /// <summary>
         /// List of asset records in the zone file.

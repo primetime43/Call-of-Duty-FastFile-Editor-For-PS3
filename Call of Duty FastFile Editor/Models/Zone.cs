@@ -58,7 +58,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public Dictionary<string, uint>? DecimalValues { get; private set; }
 
         // The asset mapping container.
-        public ZoneFileAssets ZoneFileAssets { get; set; } = new ZoneFileAssets();
+        public ZoneFileAssetManifest ZoneFileAssets { get; set; } = new ZoneFileAssetManifest();
 
         public int AssetPoolStartOffset { get; internal set; }
         public int AssetPoolEndOffset { get; internal set; }

@@ -17,10 +17,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
         /// <param name="openedFastFile">The FastFile object containing the zone data.</param>
         /// <param name="zoneAssetRecords">The list of asset records extracted from the zone.</param>
         /// <returns>A ZoneAssetRecords object containing updated asset lists and records.</returns>
-        public static ZoneAssetRecords ProcessAssetRecords(FastFile openedFastFile, List<ZoneAssetRecord> zoneAssetRecords)
+        public static AssetRecordCollection ProcessAssetRecords(FastFile openedFastFile, List<ZoneAssetRecord> zoneAssetRecords)
         {
             // Create the result container.
-            ZoneAssetRecords result = new ZoneAssetRecords();
+            AssetRecordCollection result = new AssetRecordCollection();
 
             // Keep track of the index and end offset of the last successfully parsed asset record.
             int indexOfLastAssetRecordParsed = 0;
