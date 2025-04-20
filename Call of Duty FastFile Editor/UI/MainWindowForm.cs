@@ -1005,7 +1005,7 @@ namespace Call_of_Duty_FastFile_Editor
                                                           _openedFastFile);
 
                     // We no longer have a form‑level dirty flag to clear
-                    CleanUpAndClearUI();
+                    ResetAllViews();
 
                     if (deleteZoneFile)
                     {
@@ -1026,23 +1026,6 @@ namespace Call_of_Duty_FastFile_Editor
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Error);
             }
-        }
-
-        private void CleanUpAndClearUI()
-        {
-            filesTreeView.Nodes.Clear();
-            treeViewMapEnt.Nodes.Clear();
-            stringTableTreeView.Nodes.Clear();
-            tagsListView.Items.Clear();
-            zoneInfoDataGridView.DataSource = null;
-            textEditorControlEx1.Text = "";
-            textEditorControlEx1.ResetText();
-            localizeListView.Items.Clear();
-            localizeListView.Columns.Clear();
-            tagsListView.Columns.Clear();
-            assetPoolListView.Items.Clear();
-            assetPoolListView.Columns.Clear();
-            this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion}";
         }
 
         /// <summary>
@@ -1264,26 +1247,37 @@ namespace Call_of_Duty_FastFile_Editor
 
             // 4) Rebuild the entire UI
             //    (Clears the TreeView/ListViews and reloads all data)
-            CleanUpUIControls();
+            ResetAllViews();
             LoadZoneDataToUI();
         }
 
         /// <summary>
         /// Clears out the relevant UI elements, so they can be repopulated cleanly.
         /// </summary>
-        private void CleanUpUIControls()
+        private void ResetAllViews()
         {
             filesTreeView.Nodes.Clear();
             assetPoolListView.Items.Clear();
             assetPoolListView.Columns.Clear();
             stringTableListView.Items.Clear();
             stringTableListView.Columns.Clear();
+            stringTableTreeView.Nodes.Clear();
+            statusStripBottom.Items.Clear();
             tagsListView.Items.Clear();
             tagsListView.Columns.Clear();
             localizeListView.Items.Clear();
             localizeListView.Columns.Clear();
             treeViewMapEnt.Nodes.Clear();
+            foreach (var lv in new[] { tagsListView, assetPoolListView, localizeListView })
+            {
+                lv.Items.Clear();
+                lv.Columns.Clear();
+            }
+            zoneInfoDataGridView.DataSource = null;
+            textEditorControlEx1.ResetText();
+            this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion}";
         }
+
 
         private void MainWindowForm_FormClosing(object sender, FormClosingEventArgs e)
         {

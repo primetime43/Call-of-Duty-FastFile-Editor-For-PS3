@@ -116,7 +116,7 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.HideSelection = false;
             filesTreeView.Location = new Point(8, 0);
             filesTreeView.Name = "filesTreeView";
-            filesTreeView.Size = new Size(330, 743);
+            filesTreeView.Size = new Size(330, 739);
             filesTreeView.TabIndex = 0;
             filesTreeToolTip.SetToolTip(filesTreeView, "Right click for more options.");
             filesTreeView.BeforeSelect += filesTreeView_BeforeSelect;
@@ -407,7 +407,7 @@ namespace Call_of_Duty_FastFile_Editor
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(textEditorControlEx1);
-            splitContainer1.Size = new Size(1436, 743);
+            splitContainer1.Size = new Size(1436, 739);
             splitContainer1.SplitterDistance = 338;
             splitContainer1.TabIndex = 0;
             // 
@@ -419,7 +419,7 @@ namespace Call_of_Duty_FastFile_Editor
             textEditorControlEx1.Font = new Font("Courier New", 10F);
             textEditorControlEx1.Location = new Point(0, 0);
             textEditorControlEx1.Name = "textEditorControlEx1";
-            textEditorControlEx1.Size = new Size(1094, 743);
+            textEditorControlEx1.Size = new Size(1094, 739);
             textEditorControlEx1.SyntaxHighlighting = "C#";
             textEditorControlEx1.TabIndex = 0;
             textEditorControlEx1.TextChanged += textEditorControlEx1_TextChanged;
@@ -428,9 +428,9 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             statusStripBottom.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             statusStripBottom.Items.AddRange(new ToolStripItem[] { loadedFileNameStatusLabel, toolStripStatusLabel1, selectedItemStatusLabel, selectedFileMaxSizeStatusLabel, selectedFileCurrentSizeStatusLabel });
-            statusStripBottom.Location = new Point(0, 805);
+            statusStripBottom.Location = new Point(0, 801);
             statusStripBottom.Name = "statusStripBottom";
-            statusStripBottom.Size = new Size(1450, 22);
+            statusStripBottom.Size = new Size(1450, 26);
             statusStripBottom.TabIndex = 2;
             // 
             // loadedFileNameStatusLabel
@@ -443,7 +443,7 @@ namespace Call_of_Duty_FastFile_Editor
             // toolStripStatusLabel1
             // 
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            toolStripStatusLabel1.Size = new Size(0, 17);
+            toolStripStatusLabel1.Size = new Size(0, 21);
             // 
             // selectedItemStatusLabel
             // 
@@ -488,7 +488,7 @@ namespace Call_of_Duty_FastFile_Editor
             mainTabControl.Location = new Point(0, 28);
             mainTabControl.Name = "mainTabControl";
             mainTabControl.SelectedIndex = 0;
-            mainTabControl.Size = new Size(1450, 777);
+            mainTabControl.Size = new Size(1450, 773);
             mainTabControl.TabIndex = 3;
             // 
             // universalContextMenu
@@ -510,7 +510,7 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.Location = new Point(4, 24);
             rawFilesPage.Name = "rawFilesPage";
             rawFilesPage.Padding = new Padding(3);
-            rawFilesPage.Size = new Size(1442, 749);
+            rawFilesPage.Size = new Size(1442, 745);
             rawFilesPage.TabIndex = 0;
             rawFilesPage.Text = "Raw Files";
             rawFilesPage.UseVisualStyleBackColor = true;
