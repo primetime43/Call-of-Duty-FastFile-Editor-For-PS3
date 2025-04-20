@@ -19,6 +19,7 @@ namespace Call_of_Duty_FastFile_Editor
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
         private readonly IRawFileService _rawFileService;
+        private Be.Windows.Forms.HexBox zoneHexBox;
 
         /// <summary>
         /// List of raw file nodes extracted from the zone file.
@@ -1405,6 +1406,20 @@ namespace Call_of_Duty_FastFile_Editor
         private void CheckForUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             checkForUpdate();
+        }
+
+        private void toolStripMenuItem2_Click(object sender, EventArgs e)
+        {
+            if (_openedFastFile == null)
+            {
+                MessageBox.Show("Open a .ff first", "No Zone Loaded", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // make sure bytes are loaded
+            var zoneData = _openedFastFile.OpenedFastFileZone.ZoneFileData;
+            var hexForm = new ZoneHexViewForm(zoneData);
+            hexForm.Show();
         }
     }
 }

@@ -13,5 +13,8 @@
     <Compile Update="UI\RenameDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="UI\ZoneHexViewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
 </Project>
