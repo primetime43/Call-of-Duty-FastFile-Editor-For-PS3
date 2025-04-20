@@ -504,25 +504,6 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
-        /// Displays the About dialog.
-        /// </summary>
-        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            string message = "Call of Duty Fast File Editor for PS3\n" +
-                             "Version: " + _programVersion + "\n\n" +
-                             "Developed by primetime43\n\n" +
-                             "Supported Games\n" +
-                             "- COD4 (Modern Warfare)\n" +
-                             "- COD5 (World at War)\n\n" +
-                             "Special thanks to:\n" +
-                             "- BuC-ShoTz\n" +
-                             "- aerosoul94\n" +
-                             "- EliteMossy\n\n" +
-                             "GitHub: https://github.com/primetime43";
-            MessageBox.Show(message, "About Call of Duty Fast File Editor");
-        }
-
-        /// <summary>
         /// Downloads the default Fast File for COD5.
         /// </summary>
         private void defaultffToolStripMenuItem_Click(object sender, EventArgs e)
@@ -552,14 +533,6 @@ namespace Call_of_Duty_FastFile_Editor
         private void patchmpffToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD4"));
-        }
-
-        /// <summary>
-        /// Checks for updates asynchronously.
-        /// </summary>
-        private void checkForUpdateToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            checkForUpdate();
         }
 
         private async void checkForUpdate()
@@ -1418,5 +1391,25 @@ namespace Call_of_Duty_FastFile_Editor
             return selectedNode;
         }
 
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string message = "Call of Duty Fast File Editor for PS3\n" +
+                 "Version: " + _programVersion + "\n\n" +
+                 "Developed by primetime43\n\n" +
+                 "Supported Games\n" +
+                 "- COD4 (Modern Warfare)\n" +
+                 "- COD5 (World at War)\n\n" +
+                 "Special thanks to:\n" +
+                 "- BuC-ShoTz\n" +
+                 "- aerosoul94\n" +
+                 "- EliteMossy\n\n" +
+                 "GitHub: https://github.com/primetime43";
+            MessageBox.Show(message, "About Call of Duty Fast File Editor");
+        }
+
+        private void CheckForUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            checkForUpdate();
+        }
     }
 }

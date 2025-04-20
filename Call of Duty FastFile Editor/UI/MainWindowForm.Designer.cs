@@ -41,7 +41,6 @@ namespace Call_of_Duty_FastFile_Editor
             removeCommentsToolStripMenuItem = new ToolStripMenuItem();
             checkSyntaxToolStripMenuItem = new ToolStripMenuItem();
             toolsToolStripMenuItem = new ToolStripMenuItem();
-            checkForUpdateToolStripMenuItem = new ToolStripMenuItem();
             originalFastFilesToolStripMenuItem = new ToolStripMenuItem();
             worldAtWarToolStripMenuItem = new ToolStripMenuItem();
             defaultffToolStripMenuItem = new ToolStripMenuItem();
@@ -58,7 +57,9 @@ namespace Call_of_Duty_FastFile_Editor
             increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
             searchRawFileTxtMenuItem = new ToolStripMenuItem();
             extractAllRawFilesToolStripMenuItem = new ToolStripMenuItem();
+            helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
+            CheckForUpdatesToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             textEditorControlEx1 = new TextEditorControlEx();
             statusStripBottom = new StatusStrip();
@@ -152,7 +153,7 @@ namespace Call_of_Duty_FastFile_Editor
             // menuStripTopToolbar
             // 
             menuStripTopToolbar.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            menuStripTopToolbar.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, toolsToolStripMenuItem, aboutToolStripMenuItem });
+            menuStripTopToolbar.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, toolsToolStripMenuItem, helpToolStripMenuItem });
             menuStripTopToolbar.Location = new Point(0, 0);
             menuStripTopToolbar.Name = "menuStripTopToolbar";
             menuStripTopToolbar.Size = new Size(1450, 28);
@@ -257,17 +258,10 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { checkForUpdateToolStripMenuItem, originalFastFilesToolStripMenuItem, toolStripSeparator2, injectFileToolStripMenuItem, rawFileToolsMenuItem, extractAllRawFilesToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { originalFastFilesToolStripMenuItem, toolStripSeparator2, injectFileToolStripMenuItem, rawFileToolsMenuItem, extractAllRawFilesToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
-            // 
-            // checkForUpdateToolStripMenuItem
-            // 
-            checkForUpdateToolStripMenuItem.Name = "checkForUpdateToolStripMenuItem";
-            checkForUpdateToolStripMenuItem.Size = new Size(210, 24);
-            checkForUpdateToolStripMenuItem.Text = "Check For Update";
-            checkForUpdateToolStripMenuItem.Click += checkForUpdateToolStripMenuItem_Click;
             // 
             // originalFastFilesToolStripMenuItem
             // 
@@ -378,12 +372,26 @@ namespace Call_of_Duty_FastFile_Editor
             extractAllRawFilesToolStripMenuItem.Text = "Extract All Raw Files";
             extractAllRawFilesToolStripMenuItem.Click += extractAllRawFilesToolStripMenuItem_Click;
             // 
+            // helpToolStripMenuItem
+            // 
+            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { aboutToolStripMenuItem, CheckForUpdatesToolStripMenuItem });
+            helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            helpToolStripMenuItem.Size = new Size(53, 24);
+            helpToolStripMenuItem.Text = "Help";
+            // 
             // aboutToolStripMenuItem
             // 
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            aboutToolStripMenuItem.Size = new Size(62, 24);
+            aboutToolStripMenuItem.Size = new Size(195, 24);
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
+            // 
+            // CheckForUpdatesToolStripMenuItem
+            // 
+            CheckForUpdatesToolStripMenuItem.Name = "CheckForUpdatesToolStripMenuItem";
+            CheckForUpdatesToolStripMenuItem.Size = new Size(195, 24);
+            CheckForUpdatesToolStripMenuItem.Text = "Check For Update";
+            CheckForUpdatesToolStripMenuItem.Click += CheckForUpdatesToolStripMenuItem_Click;
             // 
             // splitContainer1
             // 
@@ -514,7 +522,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTabPage.Location = new Point(4, 24);
             stringTablesTabPage.Name = "stringTablesTabPage";
             stringTablesTabPage.Padding = new Padding(3);
-            stringTablesTabPage.Size = new Size(1442, 745);
+            stringTablesTabPage.Size = new Size(1442, 749);
             stringTablesTabPage.TabIndex = 3;
             stringTablesTabPage.Text = "String Tables";
             stringTablesTabPage.UseVisualStyleBackColor = true;
@@ -544,7 +552,7 @@ namespace Call_of_Duty_FastFile_Editor
             collision_Map_AssetTabPage.Location = new Point(4, 24);
             collision_Map_AssetTabPage.Name = "collision_Map_AssetTabPage";
             collision_Map_AssetTabPage.Padding = new Padding(3);
-            collision_Map_AssetTabPage.Size = new Size(1442, 745);
+            collision_Map_AssetTabPage.Size = new Size(1442, 749);
             collision_Map_AssetTabPage.TabIndex = 4;
             collision_Map_AssetTabPage.Text = "Collision Map Data";
             collision_Map_AssetTabPage.UseVisualStyleBackColor = true;
@@ -564,7 +572,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeTabPage.Location = new Point(4, 24);
             localizeTabPage.Name = "localizeTabPage";
             localizeTabPage.Padding = new Padding(3);
-            localizeTabPage.Size = new Size(1442, 745);
+            localizeTabPage.Size = new Size(1442, 749);
             localizeTabPage.TabIndex = 6;
             localizeTabPage.Text = "Localize";
             localizeTabPage.UseVisualStyleBackColor = true;
@@ -575,7 +583,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.Dock = DockStyle.Fill;
             localizeListView.Location = new Point(3, 3);
             localizeListView.Name = "localizeListView";
-            localizeListView.Size = new Size(1436, 739);
+            localizeListView.Size = new Size(1436, 743);
             localizeListView.TabIndex = 0;
             localizeListView.UseCompatibleStateImageBehavior = false;
             localizeListView.MouseDown += listView_MouseDownCopy;
@@ -586,7 +594,7 @@ namespace Call_of_Duty_FastFile_Editor
             tagsTabPage.Location = new Point(4, 24);
             tagsTabPage.Name = "tagsTabPage";
             tagsTabPage.Padding = new Padding(3);
-            tagsTabPage.Size = new Size(1442, 745);
+            tagsTabPage.Size = new Size(1442, 749);
             tagsTabPage.TabIndex = 2;
             tagsTabPage.Text = "Tags";
             tagsTabPage.UseVisualStyleBackColor = true;
@@ -608,7 +616,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolTabPage.Location = new Point(4, 24);
             assetPoolTabPage.Name = "assetPoolTabPage";
             assetPoolTabPage.Padding = new Padding(3);
-            assetPoolTabPage.Size = new Size(1442, 745);
+            assetPoolTabPage.Size = new Size(1442, 749);
             assetPoolTabPage.TabIndex = 5;
             assetPoolTabPage.Text = "Asset Pool";
             assetPoolTabPage.UseVisualStyleBackColor = true;
@@ -619,7 +627,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Dock = DockStyle.Fill;
             assetPoolListView.Location = new Point(3, 3);
             assetPoolListView.Name = "assetPoolListView";
-            assetPoolListView.Size = new Size(1436, 739);
+            assetPoolListView.Size = new Size(1436, 743);
             assetPoolListView.TabIndex = 0;
             assetPoolListView.UseCompatibleStateImageBehavior = false;
             assetPoolListView.MouseDown += listView_MouseDownCopy;
@@ -630,7 +638,7 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage.Location = new Point(4, 24);
             zoneFileTabPage.Name = "zoneFileTabPage";
             zoneFileTabPage.Padding = new Padding(3);
-            zoneFileTabPage.Size = new Size(1442, 745);
+            zoneFileTabPage.Size = new Size(1442, 749);
             zoneFileTabPage.TabIndex = 1;
             zoneFileTabPage.Text = "Zone File Info";
             zoneFileTabPage.UseVisualStyleBackColor = true;
@@ -698,7 +706,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem exitToolStripMenuItem;
         private ToolStripMenuItem editToolStripMenuItem;
         private ToolStripMenuItem toolsToolStripMenuItem;
-        private ToolStripMenuItem aboutToolStripMenuItem;
+        private ToolStripMenuItem helpToolStripMenuItem;
         private ToolStripMenuItem saveRawFileToolStripMenuItem;
         private ToolStripMenuItem renameRawFileToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator1;
@@ -716,7 +724,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem patchffZombieVerruckToolStripMenuItem;
         private ToolStripMenuItem nazizombiesumpfpatchffToolStripMenuItem;
         private ToolStripMenuItem nazizombiefactorypatchffToolStripMenuItem;
-        private ToolStripMenuItem checkForUpdateToolStripMenuItem;
         private ToolStripMenuItem injectFileToolStripMenuItem;
         private ContextMenuStrip contextMenuStripRawFiles;
         private ToolStripMenuItem exportFileMenuItem;
@@ -746,5 +753,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem extractAllRawFilesToolStripMenuItem;
         private ToolStripMenuItem increaseFileSizeToolStripMenuItem;
+        private ToolStripMenuItem aboutToolStripMenuItem;
+        private ToolStripMenuItem CheckForUpdatesToolStripMenuItem;
     }
 }
