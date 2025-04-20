@@ -26,7 +26,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         public static (LocalizedEntry entry, int nextOffset) ParseSingleLocalizeAssetNoPattern(FastFile openedFastFile, int startingOffset)
         {
             Debug.WriteLine($"[LocalizeAssetParser] Starting parse at offset 0x{startingOffset:X}.");
-            byte[] fileData = openedFastFile.OpenedFastFileZone.ZoneFileData;
+            byte[] fileData = openedFastFile.OpenedFastFileZone.Data;
 
             using (MemoryStream ms = new MemoryStream(fileData))
             using (BinaryReader br = new BinaryReader(ms, Encoding.ASCII))
@@ -98,7 +98,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         public static (LocalizedEntry entry, int nextOffset) ParseSingleLocalizeAssetWithPattern(FastFile openedFastFile, int startingOffset)
         {
             Debug.WriteLine($"[LocalizeAssetParser] Starting pattern-based parse at offset 0x{startingOffset:X}.");
-            byte[] fileData = openedFastFile.OpenedFastFileZone.ZoneFileData;
+            byte[] fileData = openedFastFile.OpenedFastFileZone.Data;
             int markerPos = -1;
 
             // Search for eight consecutive 0xFF bytes starting at startingOffset.

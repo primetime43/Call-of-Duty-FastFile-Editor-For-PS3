@@ -117,7 +117,7 @@ namespace Call_of_Duty_FastFile_Editor
             try
             {
                 _openedFastFile = new FastFile(openFileDialog.FileName);
-                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile.FastFileName);
+                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile.FastFileName, _openedFastFile.IsCod4File);
             }
             catch (Exception ex)
             {
@@ -135,11 +135,11 @@ namespace Call_of_Duty_FastFile_Editor
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
 
-                    // Read the byte of the zone file and set them to the Zone object
-                    _openedFastFile.OpenedFastFileZone.GetSetZoneBytes();
+                    // Load & parse that zone in one go
+                    _openedFastFile.LoadZone();
 
-                    // Find the asset pool, parse it, and set it to the Zone object
-                    _openedFastFile.OpenedFastFileZone.GetSetZoneAssetPool();
+                    // 3) Parse the asset pool out of the newly‐loaded zone
+                    _openedFastFile.OpenedFastFileZone.ParseAssetPool();
 
                     // Here is where the asset records actual data is parsed throughout the zone
                     LoadAssetRecordsData();
@@ -695,15 +695,15 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Populates the DataGridView with Zone decimal values.
         /// </summary>
-        private void LoadZoneHeaderValues(Zone zone)
+        private void LoadZoneHeaderValues(ZoneFile zone)
         {
-            if (zone == null || zone.DecimalValues == null)
+            if (zone == null || zone.HeaderFieldValues == null)
             {
-                _openedFastFile.OpenedFastFileZone.SetZoneOffsets();
+                _openedFastFile.OpenedFastFileZone.ReadHeaderFields();
             }
 
             // Convert the dictionary to a list of objects with matching property names
-            var dataSource = zone.DecimalValues.Select(kvp => new
+            var dataSource = zone.HeaderFieldValues.Select(kvp => new
             {
                 ZoneName = kvp.Key,
                 ZoneDecValue = kvp.Value,
@@ -1237,10 +1237,10 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
 
             // 1) Fully re-read the zone file bytes from disk
-            _openedFastFile.OpenedFastFileZone.GetSetZoneBytes();
+            _openedFastFile.OpenedFastFileZone.LoadData();
 
             // 2) Re-parse the asset pool (start/end offsets, record offsets, etc.)
-            _openedFastFile.OpenedFastFileZone.GetSetZoneAssetPool();
+            _openedFastFile.OpenedFastFileZone.ParseAssetPool();
 
             // 3) Re-run your asset record processing logic
             //    This updates _rawFileNodes, _zoneAssetRecords, _stringTables, etc.
@@ -1417,7 +1417,7 @@ namespace Call_of_Duty_FastFile_Editor
             }
 
             // make sure bytes are loaded
-            var zoneData = _openedFastFile.OpenedFastFileZone.ZoneFileData;
+            var zoneData = _openedFastFile.OpenedFastFileZone.Data;
             var hexForm = new ZoneHexViewForm(zoneData);
             hexForm.Show();
         }

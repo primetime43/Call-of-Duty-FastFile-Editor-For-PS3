@@ -5,7 +5,7 @@
         /// <summary>
         /// Static property to hold the currently loaded zone.
         /// </summary>
-        public static Zone CurrentZone { get; set; }
+        public static ZoneFile CurrentZone { get; set; }
 
         /// <summary>
         /// Updates the provided ZoneAssetRecord with data from the implementing object.

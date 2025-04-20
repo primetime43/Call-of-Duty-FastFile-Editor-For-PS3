@@ -17,7 +17,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             Debug.WriteLine($"[ExtractSingleRawFileNodeNoPattern] Starting raw file scan at offset 0x{offset:X}.");
 
             RawFileNode node = new RawFileNode();
-            byte[] fileData = openedFastFile.OpenedFastFileZone.ZoneFileData;
+            byte[] fileData = openedFastFile.OpenedFastFileZone.Data;
             Debug.WriteLine($"[ExtractSingleRawFileNodeNoPattern] Read file '{openedFastFile.ZoneFilePath}' ({fileData.Length} bytes).");
 
             // Ensure we have enough bytes for the header (12 bytes)

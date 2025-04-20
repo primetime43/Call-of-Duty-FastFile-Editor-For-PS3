@@ -7,22 +7,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
 {
     public class FastFile
     {
-        // Zone associated with the FastFile
-        public Zone OpenedFastFileZone { get; private set; }
-
-        /// <summary>
-        /// Path to the selected FastFile. (contains the full path + file name + extension)
-        /// </summary>
-        public string FfFilePath;
-
-        /// <summary>
-        /// Path to the decompressed zone file corresponding to the selected Fast File.
-        /// </summary>
-        public string ZoneFilePath;
+        public string FfFilePath { get; }
+        public string ZoneFilePath { get; }
+        public ZoneFile OpenedFastFileZone { get; private set; }
+        public FastFileHeader OpenedFastFileHeader { get; }
 
         public string FastFileName => Path.GetFileName(FfFilePath);
-
-        // Public properties exposing necessary header information about the FastFile
         public string FastFileMagic => OpenedFastFileHeader.FastFileMagic;
         public int GameVersion => OpenedFastFileHeader.GameVersion;
         public int FileLength => OpenedFastFileHeader.FileLength;
@@ -30,80 +20,52 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public bool IsCod4File => OpenedFastFileHeader.IsCod4File;
         public bool IsCod5File => OpenedFastFileHeader.IsCod5File;
 
-        public FastFileHeader OpenedFastFileHeader;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FastFile"/> class by reading the header from the specified file.
-        /// </summary>
-        /// <param name="filePath">The path to the FastFile (.ff).</param>
         public FastFile(string filePath)
         {
-            this.FfFilePath = filePath;
-            this.ZoneFilePath = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath) + ".zone");
-
-            if (string.IsNullOrWhiteSpace(filePath))
-                throw new ArgumentException("File path cannot be null or whitespace.", nameof(filePath));
+            FfFilePath = filePath
+                ?? throw new ArgumentException("File path cannot be null.", nameof(filePath));
+            ZoneFilePath = Path.ChangeExtension(filePath, ".zone");
 
             if (!File.Exists(filePath))
-                throw new FileNotFoundException($"The file '{filePath}' does not exist.", filePath);
+                throw new FileNotFoundException($"FastFile not found: {filePath}", filePath);
 
-            // Initialize Zone
-            this.OpenedFastFileZone = new Zone(this.ZoneFilePath);
+            // Defer loading .zone until after you decompress it:
+            OpenedFastFileZone = new ZoneFile(ZoneFilePath);
 
-            // Initialize FastFileHeader
-            this.OpenedFastFileHeader = new FastFileHeader(filePath);
+            OpenedFastFileHeader = new FastFileHeader(filePath);
         }
 
         /// <summary>
-        /// Public nested class representing the Fast File header.
+        /// AFTER you’ve written the .zone to disk, call this to load it.
         /// </summary>
+        public void LoadZone()
+        {
+            OpenedFastFileZone = ZoneFile.Load(ZoneFilePath);
+        }
+
         public class FastFileHeader
         {
-            // Properties representing header details
-            public string FastFileMagic { get; private set; } // Represents a signed or unsigned FF IWffu100/IWff0100
+            public string FastFileMagic { get; private set; }
             public int GameVersion { get; private set; }
             public int FileLength { get; private set; }
             public bool IsValid { get; private set; }
             public bool IsCod4File { get; private set; }
             public bool IsCod5File { get; private set; }
 
-            /// <summary>
-            /// Initializes a new instance of the <see cref="FastFileHeader"/> class by reading the header from the specified file.
-            /// </summary>
-            /// <param name="filePath">The path to the Fast File (.ff).</param>
             public FastFileHeader(string filePath)
             {
-                ReadFastFileHeader(filePath);
-            }
-
-            /// <summary>
-            /// Reads and parses the Fast File header.
-            /// </summary>
-            /// <param name="filePath">The path to the Fast File (.ff).</param>
-            private void ReadFastFileHeader(string filePath)
-            {
-                using (BinaryReader binaryReader = new BinaryReader(new FileStream(filePath, FileMode.Open, FileAccess.Read), Encoding.Default))
+                using var br = new BinaryReader(new FileStream(filePath, FileMode.Open, FileAccess.Read), Encoding.Default);
+                if (br.BaseStream.Length < 12)
                 {
-                    // Ensure the file has enough bytes for the header
-                    if (binaryReader.BaseStream.Length < 12) // 8 + 4 bytes
-                    {
-                        IsValid = false;
-                        return;
-                    }
-
-                    // Read the first 8 characters to determine the file type
-                    char[] headerChars = binaryReader.ReadChars(8);
-                    FastFileMagic = new string(headerChars).TrimEnd('\0'); // Remove any trailing null characters
-
-                    // Read the next 4 bytes as an integer and convert from network byte order (big-endian) to host byte order (little-endian)
-                    GameVersion = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
-
-                    // Get the length of the file
-                    FileLength = Convert.ToInt32(new FileInfo(filePath).Length);
-
-                    // Validate the header based on specific criteria
-                    ValidateHeader();
+                    IsValid = false;
+                    return;
                 }
+
+                FastFileMagic = new string(br.ReadChars(8)).TrimEnd('\0');
+                GameVersion = IPAddress.NetworkToHostOrder(br.ReadInt32());
+                FileLength = (int)new FileInfo(filePath).Length;
+
+                ValidateHeader();
             }
 
             /// <summary>
@@ -113,8 +75,6 @@ namespace Call_of_Duty_FastFile_Editor.Models
             {
                 // Initial validation
                 IsValid = false;
-                IsCod4File = false;
-                IsCod5File = false;
 
                 // Check the FastFileMagic and GameVersion to determine validity
                 if (FastFileMagic == Constants.FastFiles.UnSignedFF)

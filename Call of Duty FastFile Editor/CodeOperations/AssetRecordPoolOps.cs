@@ -5,7 +5,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
     public class AssetRecordPoolOps
     {
-        public static void AddRawFileAssetRecordToPool(Zone currentZone, string zoneFilePath)
+        public static void AddRawFileAssetRecordToPool(ZoneFile currentZone, string zoneFilePath)
         {
             if (currentZone.AssetPoolStartOffset < 0 || currentZone.AssetPoolEndOffset < 0)
             {
@@ -56,7 +56,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
 
             // Instead of manually adjusting the in-memory asset records list,
             // simply re-parse the asset pool from the updated zone file.
-            currentZone.GetSetZoneAssetPool();
+            currentZone.ParseAssetPool();
         }
     }
 }

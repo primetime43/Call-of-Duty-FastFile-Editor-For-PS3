@@ -66,9 +66,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// This is more robust than scanning for ".csv" first.
         /// TEMP EVENTUALLY DELETE
         /// </summary>
-        public static StringTable? FindSingleCsvStringTableWithPattern(Zone zone, int startingOffset)
+        public static StringTable? FindSingleCsvStringTableWithPattern(ZoneFile zone, int startingOffset)
         {
-            byte[] zoneBytes = zone.ZoneFileData;
+            byte[] zoneBytes = zone.Data;
             if (startingOffset < 0 || startingOffset >= zoneBytes.Length)
             {
                 Debug.WriteLine($"[FindSingleCsvStringTableWithPattern] Starting offset {startingOffset} is out of range.");

@@ -48,9 +48,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// is null-terminated ASCII, and we store each tag's offset in both 
         /// decimal and hex.
         /// </summary>
-        public static TagCollection? FindTags(Zone zone)
+        public static TagCollection? FindTags(ZoneFile zone)
         {
-            byte[] zoneBytes = zone.ZoneFileData;
+            byte[] zoneBytes = zone.Data;
 
             // 1) Locate the block of 0xFFs
             int blockStart = FindLargeFFBlock(zoneBytes);

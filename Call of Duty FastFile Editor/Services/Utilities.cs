@@ -9,13 +9,13 @@ namespace Call_of_Duty_FastFile_Editor.Services
 {
     public static class Utilities
     {
-        public static int ReadInt32BigEndianAtOffset(int offset, Zone loadedZone, bool isBigEndian = true)
+        public static int ReadInt32BigEndianAtOffset(int offset, ZoneFile loadedZone, bool isBigEndian = true)
         {
-            if (offset + 4 > loadedZone.ZoneFileData.Length)
+            if (offset + 4 > loadedZone.Data.Length)
                 throw new EndOfStreamException($"Cannot read Int32 at offset 0x{offset:X}, exceeds file length.");
 
             byte[] bytes = new byte[4];
-            Array.Copy(loadedZone.ZoneFileData, offset, bytes, 0, 4);
+            Array.Copy(loadedZone.Data, offset, bytes, 0, 4);
 
             if (isBigEndian)
                 Array.Reverse(bytes);
@@ -31,13 +31,13 @@ namespace Call_of_Duty_FastFile_Editor.Services
         /// <param name="loadedZone"></param>
         /// <returns></returns>
         /// <exception cref="EndOfStreamException"></exception>
-        public static uint ReadUInt32AtOffset(int offset, Zone loadedZone, bool isBigEndian = true)
+        public static uint ReadUInt32AtOffset(int offset, ZoneFile loadedZone, bool isBigEndian = true)
         {
-            if (offset + 4 > loadedZone.ZoneFileData.Length)
+            if (offset + 4 > loadedZone.Data.Length)
                 throw new EndOfStreamException($"Cannot read UInt32 at offset 0x{offset:X}, exceeds file length.");
 
             byte[] bytes = new byte[4];
-            Array.Copy(loadedZone.ZoneFileData, offset, bytes, 0, 4);
+            Array.Copy(loadedZone.Data, offset, bytes, 0, 4);
 
             if (isBigEndian)
                 Array.Reverse(bytes);
@@ -53,21 +53,21 @@ namespace Call_of_Duty_FastFile_Editor.Services
         /// <param name="loadedZone"></param>
         /// <returns></returns>
         /// <exception cref="EndOfStreamException"></exception>
-        public static string ReadStringAtOffset(int offset, Zone loadedZone)
+        public static string ReadStringAtOffset(int offset, ZoneFile loadedZone)
         {
-            if (offset >= loadedZone.ZoneFileData.Length)
+            if (offset >= loadedZone.Data.Length)
                 throw new EndOfStreamException($"Cannot read string at offset 0x{offset:X}, exceeds file length.");
 
             int end = offset;
-            while (end < loadedZone.ZoneFileData.Length && loadedZone.ZoneFileData[end] != 0x00)
+            while (end < loadedZone.Data.Length && loadedZone.Data[end] != 0x00)
             {
                 end++;
             }
 
-            if (end == loadedZone.ZoneFileData.Length)
+            if (end == loadedZone.Data.Length)
                 throw new EndOfStreamException($"String starting at offset 0x{offset:X} is not null-terminated.");
 
-            return Encoding.UTF8.GetString(loadedZone.ZoneFileData, offset, end - offset);
+            return Encoding.UTF8.GetString(loadedZone.Data, offset, end - offset);
         }
 
         /// <summary>
@@ -78,13 +78,13 @@ namespace Call_of_Duty_FastFile_Editor.Services
         /// <param name="loadedZone"></param>
         /// <returns></returns>
         /// <exception cref="EndOfStreamException"></exception>
-        public static byte[] GetBytesAtOffset(int offset, Zone loadedZone, int length = 4) // default 4 bytes aka a word
+        public static byte[] GetBytesAtOffset(int offset, ZoneFile loadedZone, int length = 4) // default 4 bytes aka a word
         {
-            if (offset + length > loadedZone.ZoneFileData.Length)
+            if (offset + length > loadedZone.Data.Length)
                 throw new EndOfStreamException($"Cannot read {length} bytes at offset 0x{offset:X}, exceeds file length.");
 
             byte[] bytes = new byte[length];
-            Array.Copy(loadedZone.ZoneFileData, offset, bytes, 0, length);
+            Array.Copy(loadedZone.Data, offset, bytes, 0, length);
             return bytes;
         }
 

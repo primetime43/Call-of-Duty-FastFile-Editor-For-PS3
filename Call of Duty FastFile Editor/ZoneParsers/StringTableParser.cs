@@ -10,7 +10,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
     {
         public static StringTable? ParseStringTable(FastFile openedFastFile, int startingOffset)
         {
-            byte[] fileData = openedFastFile.OpenedFastFileZone.ZoneFileData;
+            byte[] fileData = openedFastFile.OpenedFastFileZone.Data;
 
             // Marker: typically 0xFFFFFFFF
             int marker = (int)Utilities.ReadUInt32BigEndian(fileData, startingOffset);

@@ -38,10 +38,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         /// <param name="zone">The zone whose ZoneFileData we are scanning.</param>
         /// <param name="offset">AssetPoolRecordOffset where the 4-byte big-endian size is located.</param>
-        public static List<MapEntity> ParseMapEntsAtOffset(Zone zone, int offset)
+        public static List<MapEntity> ParseMapEntsAtOffset(ZoneFile zone, int offset)
         {
             var results = new List<MapEntity>();
-            byte[] zoneBytes = zone.ZoneFileData;
+            byte[] zoneBytes = zone.Data;
             if (zoneBytes == null)
                 return results;
 
@@ -69,12 +69,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
             return results;
         }
 
-        public static int FindCollision_Map_DataOffsetViaFF(Zone zone)
+        public static int FindCollision_Map_DataOffsetViaFF(ZoneFile zone)
         {
-            if (zone?.ZoneFileData == null)
+            if (zone?.Data == null)
                 return -1;
 
-            byte[] data = zone.ZoneFileData;
+            byte[] data = zone.Data;
             int fileLength = data.Length;
 
             // 1) Find large runs of 0xFF (say, >= 32 in a row).
@@ -259,12 +259,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// Returns a tuple: (mapSize, offsetOfSize).
         /// If not found/invalid, returns null.
         /// </summary>
-        public static (int mapSize, int offsetOfSize)? GetMapDataSizeAndOffset(Zone zone, List<MapEntity> entities)
+        public static (int mapSize, int offsetOfSize)? GetMapDataSizeAndOffset(ZoneFile zone, List<MapEntity> entities)
         {
-            if (zone?.ZoneFileData == null || entities == null || entities.Count == 0)
+            if (zone?.Data == null || entities == null || entities.Count == 0)
                 return null;
 
-            byte[] data = zone.ZoneFileData;
+            byte[] data = zone.Data;
 
             // 1) Find the earliest offset where a '{' was found
             int minOffset = int.MaxValue;

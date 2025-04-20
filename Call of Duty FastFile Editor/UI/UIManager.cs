@@ -2,13 +2,18 @@
 {
     public static class UIManager
     {
-        public static void UpdateLoadedFileNameStatusStrip(ToolStripStatusLabel statusLabel, string filePath)
+        public static void UpdateLoadedFileNameStatusStrip(ToolStripStatusLabel statusLabel, string fileName, bool isCod4File)
         {
-            if (!string.IsNullOrEmpty(filePath))
+            if (string.IsNullOrEmpty(fileName))
             {
-                statusLabel.Text = Path.GetFileName(filePath);
-                statusLabel.Visible = true;
+                statusLabel.Visible = false;
+                return;
             }
+
+            // Decide the prefix based on the flag
+            var gameString = isCod4File ? "COD4" : "WaW";
+            statusLabel.Text = $"{gameString}: {Path.GetFileName(fileName)}";
+            statusLabel.Visible = true;
         }
 
         public static void UpdateSelectedFileStatusStrip(ToolStripStatusLabel statusLabel, string fileName)

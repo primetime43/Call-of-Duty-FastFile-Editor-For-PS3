@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.UI;
+using Call_of_Duty_FastFile_Editor.Services.IO;
 using static Call_of_Duty_FastFile_Editor.Models.FastFile;
 
 namespace Call_of_Duty_FastFile_Editor.Services
@@ -12,7 +13,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
         {
             // Adjust the raw file entry from disk.
             byte[] newEntryBytes = AdjustRawFileEntry(filePath, expectedSize);
-            Zone currentZone = RawFileNode.CurrentZone;
+            ZoneFile currentZone = RawFileNode.CurrentZone;
             int insertPosition = currentZone.AssetPoolEndOffset;
 
             currentZone.ModifyZoneFile(fs =>
@@ -33,14 +34,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
             });
 
             // Read the current zone size.
-            uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
+            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
             // Add the size of the injected entry.
             uint newZoneSize = currentZoneSize + (uint)newEntryBytes.Length;
             // Write the new size back to the zone file header.
-            Zone.WriteZoneFileSize(zoneFilePath, newZoneSize);
+            ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
             // Also update the in-memory zone header information.
-            currentZone.RefreshZoneFileData();
-            currentZone.SetZoneOffsets();
+            currentZone.LoadData();
+            currentZone.ReadHeaderFields();
         }
 
         /// <inheritdoc/>
@@ -62,7 +63,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
             Array.Copy(currentContent, newContent, currentContent.Length);
             // The remaining bytes in newContent are already 0.
 
-            Zone currentZone = RawFileNode.CurrentZone;
+            ZoneFile currentZone = RawFileNode.CurrentZone;
             currentZone.ModifyZoneFile(fs =>
             {
                 // Calculate where the raw file's data ends; that is,
@@ -101,9 +102,9 @@ namespace Call_of_Duty_FastFile_Editor.Services
             rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
 
             // Update the zone file size header.
-            uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
+            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
             uint updatedZoneSize = currentZoneSize + (uint)sizeIncrease;
-            Zone.WriteZoneFileSize(zoneFilePath, updatedZoneSize);
+            ZoneFileIO.WriteZoneFileSize(zoneFilePath, updatedZoneSize);
         }
 
         /// <summary>
@@ -188,7 +189,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
             try
             {
-                byte[] zoneData = RawFileNode.CurrentZone.ZoneFileData;
+                byte[] zoneData = RawFileNode.CurrentZone.Data;
                 int start = exportedRawFile.StartOfFileHeader;
                 int length = exportedRawFile.RawFileEndPosition - start;
                 byte[] slice = zoneData.Skip(start).Take(length).ToArray();
@@ -225,7 +226,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
             }
 
             int sizeIncrease = newSize - oldSize;
-            Zone currentZone = RawFileNode.CurrentZone;
+            ZoneFile currentZone = RawFileNode.CurrentZone;
 
             currentZone.ModifyZoneFile(fs =>
             {
@@ -247,9 +248,9 @@ namespace Call_of_Duty_FastFile_Editor.Services
             rawFileNode.RawFileBytes = newContent;
             rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
 
-            uint currentZoneSize = Zone.ReadZoneFileSize(zoneFilePath);
+            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
             uint newZoneSize = currentZoneSize + (uint)sizeIncrease;
-            Zone.WriteZoneFileSize(zoneFilePath, newZoneSize);
+            ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
         }
 
         /// <inheritdoc/>

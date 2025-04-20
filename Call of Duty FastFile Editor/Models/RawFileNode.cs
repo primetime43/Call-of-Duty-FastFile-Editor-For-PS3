@@ -31,7 +31,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// <summary>
         /// Static property to hold the currently loaded zone.
         /// </summary>
-        public static Zone CurrentZone { get; set; }
+        public static ZoneFile CurrentZone { get; set; }
 
         public byte[] Header => Utilities.GetBytesAtOffset(StartOfFileHeader, CurrentZone, EndOfFileHeader - StartOfFileHeader);
 

@@ -6,9 +6,9 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 {
     public class AssetPoolParser
     {
-        private Zone _zone;
+        private ZoneFile _zone;
 
-        public AssetPoolParser(Zone zone)
+        public AssetPoolParser(ZoneFile zone)
         {
             _zone = zone;
         }
@@ -19,7 +19,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 _zone.ZoneFileAssets.ZoneAssetRecords = new List<ZoneAssetRecord>();
             _zone.ZoneFileAssets.ZoneAssetRecords.Clear();
 
-            byte[] data = _zone.ZoneFileData;
+            byte[] data = _zone.Data;
             int fileLen = data.Length;
             int i = 0;
             bool foundAnyAsset = false;
