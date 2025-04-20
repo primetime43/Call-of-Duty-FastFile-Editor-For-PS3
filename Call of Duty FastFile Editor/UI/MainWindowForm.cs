@@ -472,59 +472,6 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
-        /// Saves the selected file to PC.
-        /// </summary>
-        private void saveFileToPCToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (filesTreeView.SelectedNode == null)
-            {
-                MessageBox.Show("Please select a file to save.", "No File Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (!(filesTreeView.SelectedNode.Tag is int position))
-            {
-                MessageBox.Show("Selected node does not have a valid position.", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            var selectedFileNode = _rawFileNodes.FirstOrDefault(node => node.PatternIndexPosition == position);
-            if (selectedFileNode == null)
-            {
-                MessageBox.Show("Selected file node not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
-            {
-                saveFileDialog.Title = "Choose where to save Asset...";
-                saveFileDialog.FileName = Path.GetFileName(selectedFileNode.FileName);
-                saveFileDialog.Filter = "All Files (*.*)|*.*";
-
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    try
-                    {
-                        if (string.IsNullOrEmpty(selectedFileNode.RawFileContent))
-                        {
-                            MessageBox.Show("Selected text file has no content to save.", "Empty File", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            return;
-                        }
-                        // Determine encoding based on your requirements
-                        Encoding encoding = Encoding.UTF8; // or another appropriate encoding
-                        File.WriteAllText(saveFileDialog.FileName, selectedFileNode.RawFileContent, encoding);
-
-                        MessageBox.Show($"File successfully saved to:\n\n{saveFileDialog.FileName}", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Failed to save file: {ex.Message}", "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Compresses the code in the editor.
         /// </summary>
         private void compressCodeToolStripMenuItem_Click(object sender, EventArgs e)
