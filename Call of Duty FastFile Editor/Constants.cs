@@ -94,5 +94,22 @@ namespace Call_of_Duty_FastFile_Editor
             public const int Unknown10Offset = 0x28; // 4 bytes
             public const int AssetRecordCountOffset = 0x2C; // 4 bytes
         }
+
+        public static class Application
+        {
+            public const string programName = "Call of Duty Fast File Editor for PS3";
+            public const string programVersion = "v1.0.0";
+            public const string about = $"{programName}\n" +
+                 "Version: " + programVersion + "\n\n" +
+                 "Developed by primetime43\n\n" +
+                 "Supported Games\n" +
+                 "- COD4 (Modern Warfare)\n" +
+                 "- COD5 (World at War)\n\n" +
+                 "Special thanks to:\n" +
+                 "- BuC-ShoTz\n" +
+                 "- aerosoul94\n" +
+                 "- EliteMossy\n\n" +
+                 "GitHub: https://github.com/primetime43";
+        }
     }
 }

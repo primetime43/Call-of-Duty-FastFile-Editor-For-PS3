@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 using System.Diagnostics;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
+using static Call_of_Duty_FastFile_Editor.Constants.Application;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.Services;
 using System.ComponentModel;
@@ -15,7 +16,6 @@ namespace Call_of_Duty_FastFile_Editor
 {
     public partial class MainWindowForm : Form
     {
-        private string _programVersion = "v1.0.0";
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
         private readonly IRawFileService _rawFileService;
@@ -68,7 +68,7 @@ namespace Call_of_Duty_FastFile_Editor
 
             DirectoryInfo directoryInfo = new DirectoryInfo(_originalFastFilesPath);
             directoryInfo.Attributes |= FileAttributes.Hidden;
-            this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion}";
+            this.SetProgramTitle();
 
             // Universal toolstrip menu item
             copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
@@ -130,7 +130,7 @@ namespace Call_of_Duty_FastFile_Editor
                 try
                 {
                     // Show the opened FF path in the program's title text
-                    this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion} - [{_openedFastFile.FfFilePath}]";
+                    this.SetProgramTitle(_openedFastFile.FfFilePath);
 
                     // Decompress the Fast File to get the zone file
                     FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
@@ -546,12 +546,12 @@ namespace Call_of_Duty_FastFile_Editor
                 if (release != null)
                 {
                     int latestReleaseInt = ReleaseChecker.convertVersionToInt(release.tag_name);
-                    int localProgramVersionInt = ReleaseChecker.convertVersionToInt(_programVersion);
+                    int localProgramVersionInt = ReleaseChecker.convertVersionToInt(programVersion);
 
                     if (latestReleaseInt > localProgramVersionInt)
                     {
                         DialogResult result = MessageBox.Show(
-                            "Current version: " + _programVersion + "\nNew release available: " + release.name + " (" + release.tag_name + ")\nDo you want to download it?",
+                            "Current version: " + programVersion + "\nNew release available: " + release.name + " (" + release.tag_name + ")\nDo you want to download it?",
                             "New Release",
                             MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question
@@ -1276,7 +1276,7 @@ namespace Call_of_Duty_FastFile_Editor
             }
             zoneInfoDataGridView.DataSource = null;
             textEditorControlEx1.ResetText();
-            this.Text = $"Call of Duty Fast File Editor for PS3 - {_programVersion}";
+            this.SetProgramTitle();
         }
 
 
@@ -1389,18 +1389,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string message = "Call of Duty Fast File Editor for PS3\n" +
-                 "Version: " + _programVersion + "\n\n" +
-                 "Developed by primetime43\n\n" +
-                 "Supported Games\n" +
-                 "- COD4 (Modern Warfare)\n" +
-                 "- COD5 (World at War)\n\n" +
-                 "Special thanks to:\n" +
-                 "- BuC-ShoTz\n" +
-                 "- aerosoul94\n" +
-                 "- EliteMossy\n\n" +
-                 "GitHub: https://github.com/primetime43";
-            MessageBox.Show(message, "About Call of Duty Fast File Editor");
+            MessageBox.Show(about, "About Call of Duty Fast File Editor");
         }
 
         private void CheckForUpdatesToolStripMenuItem_Click(object sender, EventArgs e)

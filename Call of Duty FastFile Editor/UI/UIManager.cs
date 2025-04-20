@@ -2,6 +2,26 @@
 {
     public static class UIManager
     {
+        /// <summary>
+        /// Sets the main window’s title bar to include the program name, version and the opened .ff path.
+        /// </summary>
+        public static void SetProgramTitle(this Form mainForm, string fastFilePath)
+        {
+            string version = Constants.Application.programVersion;
+            string programName = Constants.Application.programName;
+            mainForm.Text = $"{programName} - {version} - [{fastFilePath}]";
+        }
+
+        /// <summary>
+        /// Sets the main window’s title bar to include the program name, version.
+        /// </summary>
+        public static void SetProgramTitle(this Form mainForm)
+        {
+            string version = Constants.Application.programVersion;
+            string programName = Constants.Application.programName;
+            mainForm.Text = $"{programName} - {version}";
+        }
+
         public static void UpdateLoadedFileNameStatusStrip(ToolStripStatusLabel statusLabel, string fileName, bool isCod4File)
         {
             if (string.IsNullOrEmpty(fileName))
