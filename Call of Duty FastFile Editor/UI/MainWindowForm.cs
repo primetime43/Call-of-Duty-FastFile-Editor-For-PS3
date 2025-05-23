@@ -19,7 +19,6 @@ namespace Call_of_Duty_FastFile_Editor
         private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
         private readonly IRawFileService _rawFileService;
-        private Be.Windows.Forms.HexBox zoneHexBox;
 
         /// <summary>
         /// List of raw file nodes extracted from the zone file.
@@ -59,6 +58,7 @@ namespace Call_of_Duty_FastFile_Editor
         private List<ZoneAssetRecord> _zoneAssetRecords;
 
         private AssetRecordCollection _processResult;
+        private IFastFileHandler _fastFileHandler;
 
         public MainWindowForm(IRawFileService rawFileService)
         {
@@ -92,82 +92,6 @@ namespace Call_of_Duty_FastFile_Editor
             }
         }
         #endregion
-
-        /// <summary>
-        /// Opens a Fast File, decompresses it, extracts data from the zone & displays it.
-        /// </summary>
-        private void openFastFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (_openedFastFile != null)
-            {
-                SaveCloseFastFileAndCleanUp();
-            }
-
-            OpenFileDialog openFileDialog = new OpenFileDialog
-            {
-                Title = "Select a COD5 Fast File",
-                Filter = "Fast Files (*.ff)|*.ff"
-            };
-
-            if (openFileDialog.ShowDialog() != DialogResult.OK)
-            {
-                return;
-            }
-
-            try
-            {
-                _openedFastFile = new FastFile(openFileDialog.FileName);
-                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile.FastFileName, _openedFastFile.IsCod4File);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to read FastFile header: {ex.Message}", "Header Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            if (_openedFastFile.IsValid)
-            {
-                try
-                {
-                    // Show the opened FF path in the program's title text
-                    this.SetProgramTitle(_openedFastFile.FfFilePath);
-
-                    // Decompress the Fast File to get the zone file
-                    FastFileProcessing.DecompressFastFile(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
-
-                    // Load & parse that zone in one go
-                    _openedFastFile.LoadZone();
-
-                    // 3) Parse the asset pool out of the newly‐loaded zone
-                    _openedFastFile.OpenedFastFileZone.ParseAssetPool();
-
-                    // Here is where the asset records actual data is parsed throughout the zone
-                    LoadAssetRecordsData();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to parse zone: {ex.Message}", "Zone Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                try
-                {
-                    // Load all the parsed data from the zone file to the UI
-                    LoadZoneDataToUI();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Loading data failed: {ex.Message}", "Data Loading Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
-            else
-            {
-                MessageBox.Show("Invalid FastFile!\n\nThe FastFile you have selected is not a valid PS3 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
-                return;
-            }
-            EnableUI_Elements();
-        }
 
         /// <summary>
         /// Parses and processes the asset records from the opened Fast File's zone.
@@ -365,9 +289,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath,
-                                                      _openedFastFile.ZoneFilePath,
-                                                      _openedFastFile);
+                _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
                 MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath,
                                 "Saved",
                                 MessageBoxButtons.OK,
@@ -401,9 +323,7 @@ namespace Call_of_Duty_FastFile_Editor
                     try
                     {
                         string newFilePath = saveFileDialog.FileName;
-                        FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath,
-                                                              newFilePath,
-                                                              _openedFastFile);
+                        _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, newFilePath, _openedFastFile);
                         MessageBox.Show("Fast File saved to:\n\n" + newFilePath,
                                         "Saved",
                                         MessageBoxButtons.OK,
@@ -1001,9 +921,7 @@ namespace Call_of_Duty_FastFile_Editor
                 if (_openedFastFile != null && File.Exists(_openedFastFile.FfFilePath))
                 {
                     // Always save before closing
-                    FastFileProcessing.RecompressFastFile(_openedFastFile.FfFilePath,
-                                                          _openedFastFile.ZoneFilePath,
-                                                          _openedFastFile);
+                    _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
 
                     // We no longer have a form‑level dirty flag to clear
                     ResetAllViews();
@@ -1409,6 +1327,82 @@ namespace Call_of_Duty_FastFile_Editor
             var zoneData = _openedFastFile.OpenedFastFileZone.Data;
             var hexForm = new ZoneHexViewForm(zoneData);
             hexForm.Show();
+        }
+
+        private void COD5ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_openedFastFile != null)
+            {
+                SaveCloseFastFileAndCleanUp();
+            }
+
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Select a COD5 Fast File",
+                Filter = "Fast Files (*.ff)|*.ff"
+            };
+
+            if (openFileDialog.ShowDialog() != DialogResult.OK)
+            {
+                return;
+            }
+
+            try
+            {
+                _openedFastFile = new FastFile(openFileDialog.FileName);
+                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile.FastFileName, _openedFastFile.IsCod4File);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to read FastFile header: {ex.Message}", "Header Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (_openedFastFile.IsValid)
+            {
+                try
+                {
+                    // Assign the correct handler for the opened file
+                    _fastFileHandler = FastFileHandlerFactory.GetHandler(_openedFastFile);
+
+                    // Show the opened FF path in the program's title text
+                    this.SetProgramTitle(_openedFastFile.FfFilePath);
+
+                    // Decompress the Fast File to get the zone file
+                    _fastFileHandler.Decompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
+
+                    // Load & parse that zone in one go
+                    _openedFastFile.LoadZone();
+
+                    // 3) Parse the asset pool out of the newly‐loaded zone
+                    _openedFastFile.OpenedFastFileZone.ParseAssetPool();
+
+                    // Here is where the asset records actual data is parsed throughout the zone
+                    LoadAssetRecordsData();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to parse zone: {ex.Message}", "Zone Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                try
+                {
+                    // Load all the parsed data from the zone file to the UI
+                    LoadZoneDataToUI();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Loading data failed: {ex.Message}", "Data Loading Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid FastFile!\n\nThe FastFile you have selected is not a valid PS3 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                return;
+            }
+            EnableUI_Elements();
         }
     }
 }

@@ -4,14 +4,14 @@ using Call_of_Duty_FastFile_Editor.Models;
 
 namespace Call_of_Duty_FastFile_Editor.IO
 {
-    public static class FastFileProcessing
+    public class CoD5FastFileHandler : IFastFileHandler
     {
         /// <summary>
         /// Decompress the FastFile to get a zone file.
         /// </summary>
         /// <param name="inputFilePath"></param>
         /// <param name="outputFilePath"></param>
-        public static void DecompressFastFile(string inputFilePath, string outputFilePath)
+        public void Decompress(string inputFilePath, string outputFilePath)
         {
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
@@ -41,31 +41,13 @@ namespace Call_of_Duty_FastFile_Editor.IO
         }
 
         /// <summary>
-        /// Decompresses the specified byte array using the Zlib algorithm.
-        /// </summary>
-        /// <param name="compressedData"></param>
-        /// <returns></returns>
-        private static byte[] DecompressFF(byte[] compressedData)
-        {
-            using (MemoryStream input = new MemoryStream(compressedData))
-            using (MemoryStream output = new MemoryStream())
-            {
-                using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
-                {
-                    deflateStream.CopyTo(output);
-                }
-                return output.ToArray();
-            }
-        }
-
-        /// <summary>
         /// Recompress the extracted zone file back into a FastFile.
         /// Saves any changes to the zone in the FastFile.
         /// </summary>
         /// <param name="ffFilePath"></param>
         /// <param name="zoneFilePath"></param>
         /// <param name="openedFastFile"></param>
-        public static void RecompressFastFile(string ffFilePath, string zoneFilePath, FastFile openedFastFile)
+        public void Recompress(string ffFilePath, string zoneFilePath, FastFile openedFastFile)
         {
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
@@ -73,14 +55,8 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 // Write header to the new file
                 binaryWriter.Write(Constants.FastFiles.IWffu100_header);
 
-                if (openedFastFile.IsCod5File)
-                {
-                    binaryWriter.Write(Constants.FastFiles.WaW_VersionValue);
-                }
-                else if (openedFastFile.IsCod4File)
-                {
-                    binaryWriter.Write(Constants.FastFiles.CoD4_VersionValue);
-                }
+                // For WaW (CoD5), always use WaW_VersionValue
+                binaryWriter.Write(Constants.FastFiles.WaW_VersionValue);
 
                 int chunkSize = 65536;
                 while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length)
@@ -106,7 +82,25 @@ namespace Call_of_Duty_FastFile_Editor.IO
             }
         }
 
-        private static byte[] CompressFF(byte[] uncompressedData)
+        /// <summary>
+        /// Decompresses the specified byte array using the Zlib algorithm.
+        /// </summary>
+        /// <param name="compressedData"></param>
+        /// <returns></returns>
+        private byte[] DecompressFF(byte[] compressedData)
+        {
+            using (MemoryStream input = new MemoryStream(compressedData))
+            using (MemoryStream output = new MemoryStream())
+            {
+                using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
+                {
+                    deflateStream.CopyTo(output);
+                }
+                return output.ToArray();
+            }
+        }
+
+        private byte[] CompressFF(byte[] uncompressedData)
         {
             using (MemoryStream memoryStream = new MemoryStream())
             {
