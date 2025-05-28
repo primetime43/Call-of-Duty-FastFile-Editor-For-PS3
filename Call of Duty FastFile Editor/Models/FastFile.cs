@@ -30,7 +30,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 throw new FileNotFoundException($"FastFile not found: {filePath}", filePath);
 
             // Defer loading .zone until after you decompress it:
-            OpenedFastFileZone = new ZoneFile(ZoneFilePath);
+            OpenedFastFileZone = new ZoneFile(ZoneFilePath, this);
 
             OpenedFastFileHeader = new FastFileHeader(filePath);
         }
@@ -40,7 +40,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// </summary>
         public void LoadZone()
         {
-            OpenedFastFileZone = ZoneFile.Load(ZoneFilePath);
+            OpenedFastFileZone = ZoneFile.Load(ZoneFilePath, this);
         }
 
         public class FastFileHeader

@@ -29,6 +29,8 @@ namespace Call_of_Duty_FastFile_Editor
             menuStripTopToolbar = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
+            COD5ToolStripMenuItem = new ToolStripMenuItem();
+            cOD4ToolStripMenuItem = new ToolStripMenuItem();
             saveFastFileToolStripMenuItem = new ToolStripMenuItem();
             saveFastFileAsToolStripMenuItem = new ToolStripMenuItem();
             toolStripMenuItem1 = new ToolStripMenuItem();
@@ -88,8 +90,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage = new TabPage();
             zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
-            COD5ToolStripMenuItem = new ToolStripMenuItem();
-            cOD4ToolStripMenuItem = new ToolStripMenuItem();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -176,6 +176,20 @@ namespace Call_of_Duty_FastFile_Editor
             openFastFileToolStripMenuItem.Name = "openFastFileToolStripMenuItem";
             openFastFileToolStripMenuItem.Size = new Size(286, 24);
             openFastFileToolStripMenuItem.Text = "Open Fast File";
+            // 
+            // COD5ToolStripMenuItem
+            // 
+            COD5ToolStripMenuItem.Name = "COD5ToolStripMenuItem";
+            COD5ToolStripMenuItem.Size = new Size(180, 24);
+            COD5ToolStripMenuItem.Text = "COD5";
+            COD5ToolStripMenuItem.Click += COD5ToolStripMenuItem_Click;
+            // 
+            // cOD4ToolStripMenuItem
+            // 
+            cOD4ToolStripMenuItem.Name = "cOD4ToolStripMenuItem";
+            cOD4ToolStripMenuItem.Size = new Size(180, 24);
+            cOD4ToolStripMenuItem.Text = "COD4";
+            cOD4ToolStripMenuItem.Click += cOD4ToolStripMenuItem_Click;
             // 
             // saveFastFileToolStripMenuItem
             // 
@@ -532,7 +546,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTabPage.Location = new Point(4, 24);
             stringTablesTabPage.Name = "stringTablesTabPage";
             stringTablesTabPage.Padding = new Padding(3);
-            stringTablesTabPage.Size = new Size(1442, 745);
+            stringTablesTabPage.Size = new Size(1442, 749);
             stringTablesTabPage.TabIndex = 3;
             stringTablesTabPage.Text = "String Tables";
             stringTablesTabPage.UseVisualStyleBackColor = true;
@@ -562,7 +576,7 @@ namespace Call_of_Duty_FastFile_Editor
             collision_Map_AssetTabPage.Location = new Point(4, 24);
             collision_Map_AssetTabPage.Name = "collision_Map_AssetTabPage";
             collision_Map_AssetTabPage.Padding = new Padding(3);
-            collision_Map_AssetTabPage.Size = new Size(1442, 745);
+            collision_Map_AssetTabPage.Size = new Size(1442, 749);
             collision_Map_AssetTabPage.TabIndex = 4;
             collision_Map_AssetTabPage.Text = "Collision Map Data";
             collision_Map_AssetTabPage.UseVisualStyleBackColor = true;
@@ -582,7 +596,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeTabPage.Location = new Point(4, 24);
             localizeTabPage.Name = "localizeTabPage";
             localizeTabPage.Padding = new Padding(3);
-            localizeTabPage.Size = new Size(1442, 745);
+            localizeTabPage.Size = new Size(1442, 749);
             localizeTabPage.TabIndex = 6;
             localizeTabPage.Text = "Localize";
             localizeTabPage.UseVisualStyleBackColor = true;
@@ -593,7 +607,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.Dock = DockStyle.Fill;
             localizeListView.Location = new Point(3, 3);
             localizeListView.Name = "localizeListView";
-            localizeListView.Size = new Size(1436, 739);
+            localizeListView.Size = new Size(1436, 743);
             localizeListView.TabIndex = 0;
             localizeListView.UseCompatibleStateImageBehavior = false;
             localizeListView.MouseDown += listView_MouseDownCopy;
@@ -604,7 +618,7 @@ namespace Call_of_Duty_FastFile_Editor
             tagsTabPage.Location = new Point(4, 24);
             tagsTabPage.Name = "tagsTabPage";
             tagsTabPage.Padding = new Padding(3);
-            tagsTabPage.Size = new Size(1442, 745);
+            tagsTabPage.Size = new Size(1442, 749);
             tagsTabPage.TabIndex = 2;
             tagsTabPage.Text = "Tags";
             tagsTabPage.UseVisualStyleBackColor = true;
@@ -626,7 +640,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolTabPage.Location = new Point(4, 24);
             assetPoolTabPage.Name = "assetPoolTabPage";
             assetPoolTabPage.Padding = new Padding(3);
-            assetPoolTabPage.Size = new Size(1442, 745);
+            assetPoolTabPage.Size = new Size(1442, 749);
             assetPoolTabPage.TabIndex = 5;
             assetPoolTabPage.Text = "Asset Pool";
             assetPoolTabPage.UseVisualStyleBackColor = true;
@@ -637,7 +651,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Dock = DockStyle.Fill;
             assetPoolListView.Location = new Point(3, 3);
             assetPoolListView.Name = "assetPoolListView";
-            assetPoolListView.Size = new Size(1436, 739);
+            assetPoolListView.Size = new Size(1436, 743);
             assetPoolListView.TabIndex = 0;
             assetPoolListView.UseCompatibleStateImageBehavior = false;
             assetPoolListView.MouseDown += listView_MouseDownCopy;
@@ -648,7 +662,7 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage.Location = new Point(4, 24);
             zoneFileTabPage.Name = "zoneFileTabPage";
             zoneFileTabPage.Padding = new Padding(3);
-            zoneFileTabPage.Size = new Size(1442, 745);
+            zoneFileTabPage.Size = new Size(1442, 749);
             zoneFileTabPage.TabIndex = 1;
             zoneFileTabPage.Text = "Zone Header";
             zoneFileTabPage.UseVisualStyleBackColor = true;
@@ -662,19 +676,6 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.Size = new Size(493, 432);
             zoneInfoDataGridView.TabIndex = 0;
             zoneInfoDataGridView.MouseDown += dataGrid_MouseDownCopy;
-            // 
-            // COD5ToolStripMenuItem
-            // 
-            COD5ToolStripMenuItem.Name = "COD5ToolStripMenuItem";
-            COD5ToolStripMenuItem.Size = new Size(180, 24);
-            COD5ToolStripMenuItem.Text = "COD5";
-            COD5ToolStripMenuItem.Click += COD5ToolStripMenuItem_Click;
-            // 
-            // cOD4ToolStripMenuItem
-            // 
-            cOD4ToolStripMenuItem.Name = "cOD4ToolStripMenuItem";
-            cOD4ToolStripMenuItem.Size = new Size(180, 24);
-            cOD4ToolStripMenuItem.Text = "COD4";
             // 
             // MainWindowForm
             // 

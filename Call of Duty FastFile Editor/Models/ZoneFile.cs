@@ -1,12 +1,15 @@
-﻿using System.Net;
-using System.Text;
-using Call_of_Duty_FastFile_Editor.Services;
+﻿using Call_of_Duty_FastFile_Editor.Services;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
+using System.Net;
+using System.Text;
+using static Call_of_Duty_FastFile_Editor.Constants;
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
     public class ZoneFile
     {
+        public FastFile ParentFastFile { get; set; }
+
         /// <summary>The full path to the .zone file.</summary>
         public string FilePath { get; private set; }
 
@@ -16,17 +19,21 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// <summary>
         /// Constructs the wrapper; actual loading is done in Load().
         /// </summary>
-        public ZoneFile(string path)
+        public ZoneFile(string path, FastFile currentFF)
         {
-            FilePath = path;
+            FilePath = path ?? throw new ArgumentNullException(nameof(path));
+            ParentFastFile = currentFF ?? throw new ArgumentNullException(nameof(currentFF));
         }
 
         /// <summary>
         /// Creates a ZoneFile, loads its bytes, and reads its header fields.
         /// </summary>
-        public static ZoneFile Load(string path)
+        public static ZoneFile Load(string path, FastFile fastFile)
         {
-            var z = new ZoneFile(path);
+            if (fastFile == null)
+                throw new ArgumentNullException(nameof(fastFile));
+
+            var z = new ZoneFile(path, fastFile);
             z.LoadData();
             z.ReadHeaderFields();
             return z;

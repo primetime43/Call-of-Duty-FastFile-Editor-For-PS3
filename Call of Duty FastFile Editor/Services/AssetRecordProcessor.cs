@@ -48,70 +48,141 @@ namespace Call_of_Duty_FastFile_Editor.Services
                             ? previousRecordEndOffset
                             : zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset);
 
-                    // Process the record based on its type.
-                    switch (zoneAssetRecords[i].AssetType)
+                    if (openedFastFile.IsCod4File)
                     {
-                        case ZoneFileAssetType_COD5.rawfile:
-                            {
-                                // Try to extract a raw file using the no-pattern method first.
-                                RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
-                                    // If no-pattern extraction fails, fall back to pattern matching.
-                                    ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(openedFastFile.ZoneFilePath, startingOffset);
-
-                                if (node != null)
+                        // Process the record based on its type.
+                        switch (zoneAssetRecords[i].AssetType_COD4)
+                        {
+                            case ZoneFileAssetType_COD4.rawfile:
                                 {
-                                    // Set the extraction method description based on the offset used.
+                                    // Try to extract a raw file using the no-pattern method first.
+                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
+                                        // If no-pattern extraction fails, fall back to pattern matching.
+                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(openedFastFile.ZoneFilePath, startingOffset);
+
+                                    if (node != null)
+                                    {
+                                        // Set the extraction method description based on the offset used.
+                                        assetRecordMethod = (previousRecordEndOffset > 0)
+                                            ? "Raw file parsed using previous record's offset."
+                                            : "Raw file parsed from asset pool end using pattern matching.";
+                                        result.RawFileNodes.Add(node);
+                                        UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    break;
+                                }
+                            case ZoneFileAssetType_COD4.stringtable:
+                                {
+                                    // Parse a string table using a similar conditional approach.
+                                    StringTable table = (previousRecordEndOffset > 0)
+                                        ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
+                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset);
+
+                                    if (table != null)
+                                    {
+                                        assetRecordMethod = (previousRecordEndOffset > 0)
+                                            ? "String table parsed using previous record's offset."
+                                            : "String table parsed using pattern matching because previous record end was unknown.";
+                                        result.StringTables.Add(table);
+                                        UpdateAssetRecord(zoneAssetRecords, i, table, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    break;
+                                }
+                            case ZoneFileAssetType_COD4.localize:
+                                {
+                                    // Use a ternary operator to choose between the no-pattern and pattern methods.
+                                    var tuple = (previousRecordEndOffset > 0)
+                                        ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
+                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset);
+
+                                    LocalizedEntry localizedEntry = tuple.entry;
                                     assetRecordMethod = (previousRecordEndOffset > 0)
-                                        ? "Raw file parsed using previous record's offset."
-                                        : "Raw file parsed from asset pool end using pattern matching.";
-                                    result.RawFileNodes.Add(node);
-                                    UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
-                                    indexOfLastAssetRecordParsed = i;
-                                }
-                                break;
-                            }
-                        case ZoneFileAssetType_COD5.stringtable:
-                            {
-                                // Parse a string table using a similar conditional approach.
-                                StringTable table = (previousRecordEndOffset > 0)
-                                    ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
-                                    : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset);
+                                        ? "Localized asset parsed using previous record's offset."
+                                        : "Localized asset parsed using pattern matching because previous record end was unknown.";
 
-                                if (table != null)
-                                {
-                                    assetRecordMethod = (previousRecordEndOffset > 0)
-                                        ? "String table parsed using previous record's offset."
-                                        : "String table parsed using pattern matching because previous record end was unknown.";
-                                    result.StringTables.Add(table);
-                                    UpdateAssetRecord(zoneAssetRecords, i, table, assetRecordMethod);
-                                    indexOfLastAssetRecordParsed = i;
+                                    if (localizedEntry != null)
+                                    {
+                                        result.LocalizedEntries.Add(localizedEntry);
+                                        UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    break;
                                 }
+                            default:
+                                // If asset type is not handled, do nothing.
                                 break;
-                            }
-                        case ZoneFileAssetType_COD5.localize:
-                            {
-                                // Use a ternary operator to choose between the no-pattern and pattern methods.
-                                var tuple = (previousRecordEndOffset > 0)
-                                    ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
-                                    : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset);
-
-                                LocalizedEntry localizedEntry = tuple.entry;
-                                assetRecordMethod = (previousRecordEndOffset > 0)
-                                    ? "Localized asset parsed using previous record's offset."
-                                    : "Localized asset parsed using pattern matching because previous record end was unknown.";
-
-                                if (localizedEntry != null)
-                                {
-                                    result.LocalizedEntries.Add(localizedEntry);
-                                    UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
-                                    indexOfLastAssetRecordParsed = i;
-                                }
-                                break;
-                            }
-                        default:
-                            // If asset type is not handled, do nothing.
-                            break;
+                        }
                     }
+                    else if (openedFastFile.IsCod5File)
+                    {
+                        // Process the record based on its type.
+                        switch (zoneAssetRecords[i].AssetType_COD5)
+                        {
+                            case ZoneFileAssetType_COD5.rawfile:
+                                {
+                                    // Try to extract a raw file using the no-pattern method first.
+                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
+                                        // If no-pattern extraction fails, fall back to pattern matching.
+                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(openedFastFile.ZoneFilePath, startingOffset);
+
+                                    if (node != null)
+                                    {
+                                        // Set the extraction method description based on the offset used.
+                                        assetRecordMethod = (previousRecordEndOffset > 0)
+                                            ? "Raw file parsed using previous record's offset."
+                                            : "Raw file parsed from asset pool end using pattern matching.";
+                                        result.RawFileNodes.Add(node);
+                                        UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    break;
+                                }
+                            case ZoneFileAssetType_COD5.stringtable:
+                                {
+                                    // Parse a string table using a similar conditional approach.
+                                    StringTable table = (previousRecordEndOffset > 0)
+                                        ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
+                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset);
+
+                                    if (table != null)
+                                    {
+                                        assetRecordMethod = (previousRecordEndOffset > 0)
+                                            ? "String table parsed using previous record's offset."
+                                            : "String table parsed using pattern matching because previous record end was unknown.";
+                                        result.StringTables.Add(table);
+                                        UpdateAssetRecord(zoneAssetRecords, i, table, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    break;
+                                }
+                            case ZoneFileAssetType_COD5.localize:
+                                {
+                                    // Use a ternary operator to choose between the no-pattern and pattern methods.
+                                    var tuple = (previousRecordEndOffset > 0)
+                                        ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
+                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset);
+
+                                    LocalizedEntry localizedEntry = tuple.entry;
+                                    assetRecordMethod = (previousRecordEndOffset > 0)
+                                        ? "Localized asset parsed using previous record's offset."
+                                        : "Localized asset parsed using pattern matching because previous record end was unknown.";
+
+                                    if (localizedEntry != null)
+                                    {
+                                        result.LocalizedEntries.Add(localizedEntry);
+                                        UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    break;
+                                }
+                            default:
+                                // If asset type is not handled, do nothing.
+                                break;
+                        }
+                    }
+
                 }
                 catch (Exception ex)
                 {
