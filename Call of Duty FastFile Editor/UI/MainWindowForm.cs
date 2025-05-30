@@ -15,7 +15,6 @@ namespace Call_of_Duty_FastFile_Editor
 {
     public partial class MainWindowForm : Form
     {
-        private string _originalFastFilesPath = Path.Combine(Application.StartupPath, "Original Fast Files");
         private TreeNode _previousSelectedNode;
         private readonly IRawFileService _rawFileService;
 
@@ -64,9 +63,6 @@ namespace Call_of_Duty_FastFile_Editor
             InitializeComponent();
             _rawFileService = rawFileService;
             textEditorControlEx1.SyntaxHighlighting = "C#";
-
-            DirectoryInfo directoryInfo = new DirectoryInfo(_originalFastFilesPath);
-            directoryInfo.Attributes |= FileAttributes.Hidden;
             this.SetProgramTitle();
 
             // Universal toolstrip menu item
