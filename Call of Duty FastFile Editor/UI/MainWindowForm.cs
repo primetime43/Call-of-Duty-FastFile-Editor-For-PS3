@@ -3,7 +3,6 @@ using Call_of_Duty_FastFile_Editor.IO;
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.UI;
 using System.Text.RegularExpressions;
-using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 using System.Diagnostics;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
 using Call_of_Duty_FastFile_Editor.Constants;
@@ -423,38 +422,6 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 MessageBox.Show($"Syntax check failed: {ex.Message}", "Syntax Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        /// <summary>
-        /// Downloads the default Fast File for COD5.
-        /// </summary>
-        private void defaultffToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            DownloadManager.DownloadFile("default.ff", Path.Combine("Original Fast Files", "COD5"));
-        }
-
-        /// <summary>
-        /// Downloads the patch_mp.ff Fast File for COD5.
-        /// </summary>
-        private void patchmpffToolStripMenuItem1_Click(object sender, EventArgs e)
-        {
-            DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD5"));
-        }
-
-        /// <summary>
-        /// Downloads the nazi_zombie_factory_patch.ff Fast File for COD5.
-        /// </summary>
-        private void nazizombiefactorypatchffToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            DownloadManager.DownloadFile("nazi_zombie_factory_patch.ff", Path.Combine("Original Fast Files", "COD5"));
-        }
-
-        /// <summary>
-        /// Downloads the patch_mp.ff Fast File for COD4.
-        /// </summary>
-        private void patchmpffToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            DownloadManager.DownloadFile("patch_mp.ff", Path.Combine("Original Fast Files", "COD4"));
         }
 
         private async void checkForUpdate()

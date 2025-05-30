@@ -43,17 +43,6 @@ namespace Call_of_Duty_FastFile_Editor
             removeCommentsToolStripMenuItem = new ToolStripMenuItem();
             checkSyntaxToolStripMenuItem = new ToolStripMenuItem();
             toolsToolStripMenuItem = new ToolStripMenuItem();
-            originalFastFilesToolStripMenuItem = new ToolStripMenuItem();
-            worldAtWarToolStripMenuItem = new ToolStripMenuItem();
-            defaultffToolStripMenuItem = new ToolStripMenuItem();
-            patchmpffToolStripMenuItem1 = new ToolStripMenuItem();
-            patchffNachtDerUntotenToolStripMenuItem = new ToolStripMenuItem();
-            patchffZombieVerruckToolStripMenuItem = new ToolStripMenuItem();
-            nazizombiesumpfpatchffToolStripMenuItem = new ToolStripMenuItem();
-            nazizombiefactorypatchffToolStripMenuItem = new ToolStripMenuItem();
-            modernWarfareToolStripMenuItem = new ToolStripMenuItem();
-            patchmpffToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator2 = new ToolStripSeparator();
             injectFileToolStripMenuItem = new ToolStripMenuItem();
             rawFileToolsMenuItem = new ToolStripMenuItem();
             increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
@@ -180,14 +169,14 @@ namespace Call_of_Duty_FastFile_Editor
             // COD5ToolStripMenuItem
             // 
             COD5ToolStripMenuItem.Name = "COD5ToolStripMenuItem";
-            COD5ToolStripMenuItem.Size = new Size(180, 24);
+            COD5ToolStripMenuItem.Size = new Size(117, 24);
             COD5ToolStripMenuItem.Text = "COD5";
             COD5ToolStripMenuItem.Click += COD5ToolStripMenuItem_Click;
             // 
             // cOD4ToolStripMenuItem
             // 
             cOD4ToolStripMenuItem.Name = "cOD4ToolStripMenuItem";
-            cOD4ToolStripMenuItem.Size = new Size(180, 24);
+            cOD4ToolStripMenuItem.Size = new Size(117, 24);
             cOD4ToolStripMenuItem.Text = "COD4";
             cOD4ToolStripMenuItem.Click += cOD4ToolStripMenuItem_Click;
             // 
@@ -275,85 +264,10 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { originalFastFilesToolStripMenuItem, toolStripSeparator2, injectFileToolStripMenuItem, rawFileToolsMenuItem, extractAllRawFilesToolStripMenuItem, toolStripMenuItem2 });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { injectFileToolStripMenuItem, rawFileToolsMenuItem, extractAllRawFilesToolStripMenuItem, toolStripMenuItem2 });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
-            // 
-            // originalFastFilesToolStripMenuItem
-            // 
-            originalFastFilesToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { worldAtWarToolStripMenuItem, modernWarfareToolStripMenuItem });
-            originalFastFilesToolStripMenuItem.Name = "originalFastFilesToolStripMenuItem";
-            originalFastFilesToolStripMenuItem.Size = new Size(210, 24);
-            originalFastFilesToolStripMenuItem.Text = "Original Fast Files";
-            // 
-            // worldAtWarToolStripMenuItem
-            // 
-            worldAtWarToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { defaultffToolStripMenuItem, patchmpffToolStripMenuItem1, patchffNachtDerUntotenToolStripMenuItem, patchffZombieVerruckToolStripMenuItem, nazizombiesumpfpatchffToolStripMenuItem, nazizombiefactorypatchffToolStripMenuItem });
-            worldAtWarToolStripMenuItem.Name = "worldAtWarToolStripMenuItem";
-            worldAtWarToolStripMenuItem.Size = new Size(239, 24);
-            worldAtWarToolStripMenuItem.Text = "World at War [COD5]";
-            // 
-            // defaultffToolStripMenuItem
-            // 
-            defaultffToolStripMenuItem.Name = "defaultffToolStripMenuItem";
-            defaultffToolStripMenuItem.Size = new Size(269, 24);
-            defaultffToolStripMenuItem.Text = "default.ff";
-            defaultffToolStripMenuItem.Click += defaultffToolStripMenuItem_Click;
-            // 
-            // patchmpffToolStripMenuItem1
-            // 
-            patchmpffToolStripMenuItem1.Name = "patchmpffToolStripMenuItem1";
-            patchmpffToolStripMenuItem1.Size = new Size(269, 24);
-            patchmpffToolStripMenuItem1.Text = "patch_mp.ff";
-            patchmpffToolStripMenuItem1.Click += patchmpffToolStripMenuItem1_Click;
-            // 
-            // patchffNachtDerUntotenToolStripMenuItem
-            // 
-            patchffNachtDerUntotenToolStripMenuItem.Enabled = false;
-            patchffNachtDerUntotenToolStripMenuItem.Name = "patchffNachtDerUntotenToolStripMenuItem";
-            patchffNachtDerUntotenToolStripMenuItem.Size = new Size(269, 24);
-            patchffNachtDerUntotenToolStripMenuItem.Text = "patch.ff - Nacht Der Untoten";
-            // 
-            // patchffZombieVerruckToolStripMenuItem
-            // 
-            patchffZombieVerruckToolStripMenuItem.Enabled = false;
-            patchffZombieVerruckToolStripMenuItem.Name = "patchffZombieVerruckToolStripMenuItem";
-            patchffZombieVerruckToolStripMenuItem.Size = new Size(269, 24);
-            patchffZombieVerruckToolStripMenuItem.Text = "patch.ff - Zombie Verrückt";
-            // 
-            // nazizombiesumpfpatchffToolStripMenuItem
-            // 
-            nazizombiesumpfpatchffToolStripMenuItem.Enabled = false;
-            nazizombiesumpfpatchffToolStripMenuItem.Name = "nazizombiesumpfpatchffToolStripMenuItem";
-            nazizombiesumpfpatchffToolStripMenuItem.Size = new Size(269, 24);
-            nazizombiesumpfpatchffToolStripMenuItem.Text = "nazi_zombie_sumpf_patch.ff";
-            // 
-            // nazizombiefactorypatchffToolStripMenuItem
-            // 
-            nazizombiefactorypatchffToolStripMenuItem.Name = "nazizombiefactorypatchffToolStripMenuItem";
-            nazizombiefactorypatchffToolStripMenuItem.Size = new Size(269, 24);
-            nazizombiefactorypatchffToolStripMenuItem.Text = "nazi_zombie_factory_patch.ff";
-            nazizombiefactorypatchffToolStripMenuItem.Click += nazizombiefactorypatchffToolStripMenuItem_Click;
-            // 
-            // modernWarfareToolStripMenuItem
-            // 
-            modernWarfareToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { patchmpffToolStripMenuItem });
-            modernWarfareToolStripMenuItem.Name = "modernWarfareToolStripMenuItem";
-            modernWarfareToolStripMenuItem.Size = new Size(239, 24);
-            modernWarfareToolStripMenuItem.Text = "Modern Warfare [COD4]";
-            // 
-            // patchmpffToolStripMenuItem
-            // 
-            patchmpffToolStripMenuItem.Name = "patchmpffToolStripMenuItem";
-            patchmpffToolStripMenuItem.Size = new Size(156, 24);
-            patchmpffToolStripMenuItem.Text = "patch_mp.ff";
-            patchmpffToolStripMenuItem.Click += patchmpffToolStripMenuItem_Click;
-            // 
-            // toolStripSeparator2
-            // 
-            toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new Size(207, 6);
             // 
             // injectFileToolStripMenuItem
             // 
@@ -738,16 +652,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem removeCommentsToolStripMenuItem;
         private ToolStripMenuItem checkSyntaxToolStripMenuItem;
         private ToolStripMenuItem searchRawFileTxtMenuItem;
-        private ToolStripMenuItem originalFastFilesToolStripMenuItem;
-        private ToolStripMenuItem modernWarfareToolStripMenuItem;
-        private ToolStripMenuItem patchmpffToolStripMenuItem;
-        private ToolStripMenuItem worldAtWarToolStripMenuItem;
-        private ToolStripMenuItem defaultffToolStripMenuItem;
-        private ToolStripMenuItem patchmpffToolStripMenuItem1;
-        private ToolStripMenuItem patchffNachtDerUntotenToolStripMenuItem;
-        private ToolStripMenuItem patchffZombieVerruckToolStripMenuItem;
-        private ToolStripMenuItem nazizombiesumpfpatchffToolStripMenuItem;
-        private ToolStripMenuItem nazizombiefactorypatchffToolStripMenuItem;
         private ToolStripMenuItem injectFileToolStripMenuItem;
         private ContextMenuStrip contextMenuStripRawFiles;
         private ToolStripMenuItem exportFileMenuItem;
@@ -774,7 +678,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ListView stringTableListView;
         private TabPage localizeTabPage;
         private ListView localizeListView;
-        private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem extractAllRawFilesToolStripMenuItem;
         private ToolStripMenuItem increaseFileSizeToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
