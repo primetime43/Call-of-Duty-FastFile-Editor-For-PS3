@@ -83,7 +83,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
                         IsCod4File = true;
                         IsValid = true;
                     }
-                    else if (GameVersion == FastFileHeaderConstants.VersionValueWaW)
+                    else if (GameVersion == FastFileHeaderConstants.VersionValueCoD5)
                     {
                         IsCod5File = true;
                         IsValid = true;

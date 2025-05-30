@@ -32,7 +32,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
             }
 
             // Decide the prefix based on the flag
-            var gameString = isCod4File ? "COD4" : "WaW";
+            var gameString = isCod4File ? "COD4" : "COD5";
             statusLabel.Text = $"{gameString}: {Path.GetFileName(fileName)}";
             statusLabel.Visible = true;
         }
