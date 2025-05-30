@@ -33,7 +33,7 @@ namespace Call_of_Duty_FastFile_Editor.Constants
         public static readonly byte[] CoD4VersionValue = { 0x00, 0x00, 0x00, 0x01 };
         public const int PCVersionValueCoD4 = 0x5;
         public const int VersionValueCoD5 = 0x183;
-        public static readonly byte[] WaWVersionValue = { 0x00, 0x00, 0x01, 0x83 };
+        public static readonly byte[] CoD5VersionValue = { 0x00, 0x00, 0x01, 0x83 };
         public const int PCVersionValueCoD5 = 0x183;
     }
 }
