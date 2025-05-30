@@ -1147,7 +1147,6 @@ namespace Call_of_Duty_FastFile_Editor
             stringTableListView.Items.Clear();
             stringTableListView.Columns.Clear();
             stringTableTreeView.Nodes.Clear();
-            statusStripBottom.Items.Clear();
             tagsListView.Items.Clear();
             tagsListView.Columns.Clear();
             localizeListView.Items.Clear();
@@ -1160,6 +1159,10 @@ namespace Call_of_Duty_FastFile_Editor
             }
             zoneInfoDataGridView.DataSource = null;
             textEditorControlEx1.ResetText();
+            loadedFileNameStatusLabel.Visible = false;
+            selectedFileMaxSizeStatusLabel.Visible = false;
+            selectedItemStatusLabel.Visible = false;
+            selectedFileCurrentSizeStatusLabel.Visible = false;
             this.SetProgramTitle();
         }
 
