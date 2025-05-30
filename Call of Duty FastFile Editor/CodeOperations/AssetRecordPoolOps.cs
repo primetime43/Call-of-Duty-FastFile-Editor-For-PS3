@@ -1,5 +1,5 @@
 ﻿using Call_of_Duty_FastFile_Editor.Models;
-using System.Diagnostics;
+using Call_of_Duty_FastFile_Editor.Constants;
 
 namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
@@ -32,7 +32,7 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                 fs.Write(newRecord, 0, newRecord.Length);
 
                 // Update the AssetRecordCount field in the header.
-                int assetRecordCountOffset = Constants.ZoneFile.AssetRecordCountOffset;
+                int assetRecordCountOffset = ZoneFileHeaderConstants.AssetRecordCountOffset;
                 fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
                 byte[] countBytes = new byte[4];
                 fs.Read(countBytes, 0, countBytes.Length);

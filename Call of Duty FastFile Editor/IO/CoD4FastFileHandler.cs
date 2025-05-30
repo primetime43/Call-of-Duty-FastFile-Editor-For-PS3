@@ -1,6 +1,7 @@
 ﻿using Call_of_Duty_FastFile_Editor.Models;
 using Ionic.Zlib;
 using System.Text;
+using Call_of_Duty_FastFile_Editor.Constants;
 
 namespace Call_of_Duty_FastFile_Editor.IO
 {
@@ -19,7 +20,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
             {
-                binaryReader.BaseStream.Position = Constants.FastFiles.HeaderLength;
+                binaryReader.BaseStream.Position = FastFileHeaderConstants.HeaderLength;
 
                 try
                 {
@@ -56,10 +57,10 @@ namespace Call_of_Duty_FastFile_Editor.IO
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
             {
                 // Write header to the new file
-                binaryWriter.Write(Constants.FastFiles.IWffu100_header);
+                binaryWriter.Write(FastFileHeaderConstants.IWffu100Header);
 
                 // For CoD4, always use CoD4_VersionValue
-                binaryWriter.Write(Constants.FastFiles.CoD4_VersionValue);
+                binaryWriter.Write(FastFileHeaderConstants.CoD4VersionValue);
 
                 int chunkSize = 65536;
                 while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length)

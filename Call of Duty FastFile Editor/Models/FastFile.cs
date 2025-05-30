@@ -1,7 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Net;
+﻿using System.Net;
 using System.Text;
+using Call_of_Duty_FastFile_Editor.Constants;
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
@@ -77,14 +76,14 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 IsValid = false;
 
                 // Check the FastFileMagic and GameVersion to determine validity
-                if (FastFileMagic == Constants.FastFiles.UnSignedFF)
+                if (FastFileMagic == FastFileHeaderConstants.UnSignedFF)
                 {
-                    if (GameVersion == Constants.FastFiles.VersionValueCoD4)
+                    if (GameVersion == FastFileHeaderConstants.VersionValueCoD4)
                     {
                         IsCod4File = true;
                         IsValid = true;
                     }
-                    else if (GameVersion == Constants.FastFiles.VersionValueWaW)
+                    else if (GameVersion == FastFileHeaderConstants.VersionValueWaW)
                     {
                         IsCod5File = true;
                         IsValid = true;

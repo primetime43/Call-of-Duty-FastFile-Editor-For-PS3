@@ -2,7 +2,7 @@
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
 using System.Net;
 using System.Text;
-using static Call_of_Duty_FastFile_Editor.Constants;
+using Call_of_Duty_FastFile_Editor.Constants;
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
@@ -75,18 +75,18 @@ namespace Call_of_Duty_FastFile_Editor.Models
         // Mapping of property names to their offsets (pulled from the Constants).
         private readonly Dictionary<string, int> _headerFieldOffsets = new Dictionary<string, int>
         {
-            { "FileSize", Constants.ZoneFile.ZoneSizeOffset },
-            { "Unknown1", Constants.ZoneFile.Unknown1Offset },
-            { "Unknown2", Constants.ZoneFile.Unknown2Offset },
-            { "Unknown3", Constants.ZoneFile.Unknown3Offset },
-            { "Unknown4", Constants.ZoneFile.Unknown4Offset },
-            { "Unknown5", Constants.ZoneFile.Unknown5Offset },
-            { "Unknown6", Constants.ZoneFile.Unknown6Offset },
-            { "Unknown7", Constants.ZoneFile.Unknown7Offset },
-            { "Unknown8", Constants.ZoneFile.Unknown8Offset },
-            { "TagCount", Constants.ZoneFile.TagCountOffset },
-            { "Unknown10", Constants.ZoneFile.Unknown10Offset },
-            { "AssetRecordCount", Constants.ZoneFile.AssetRecordCountOffset }
+            { "FileSize", ZoneFileHeaderConstants.ZoneSizeOffset },
+            { "Unknown1", ZoneFileHeaderConstants.Unknown1Offset },
+            { "Unknown2", ZoneFileHeaderConstants.Unknown2Offset },
+            { "Unknown3", ZoneFileHeaderConstants.Unknown3Offset },
+            { "Unknown4", ZoneFileHeaderConstants.Unknown4Offset },
+            { "Unknown5", ZoneFileHeaderConstants.Unknown5Offset },
+            { "Unknown6", ZoneFileHeaderConstants.Unknown6Offset },
+            { "Unknown7", ZoneFileHeaderConstants.Unknown7Offset },
+            { "Unknown8", ZoneFileHeaderConstants.Unknown8Offset },
+            { "TagCount", ZoneFileHeaderConstants.TagCountOffset },
+            { "Unknown10", ZoneFileHeaderConstants.Unknown10Offset },
+            { "AssetRecordCount", ZoneFileHeaderConstants.AssetRecordCountOffset }
         };
 
         /// <summary>Reloads Data from disk.</summary>

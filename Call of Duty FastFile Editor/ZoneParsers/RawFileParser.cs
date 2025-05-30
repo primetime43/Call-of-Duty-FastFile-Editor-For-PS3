@@ -3,6 +3,7 @@ using Call_of_Duty_FastFile_Editor.Services;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using Call_of_Duty_FastFile_Editor.Constants;
 
 namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 {
@@ -110,7 +111,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
             byte[] fileData = File.ReadAllBytes(zoneFilePath);
             // Use the plain text patterns from our constants.
-            string[] patternStrings = Constants.RawFiles.FileNamePatternStrings;
+            string[] patternStrings = RawFileConstants.FileNamePatternStrings;
             // We'll also use this same array for extension filtering.
             string[] validExtensions = patternStrings;
 
@@ -241,7 +242,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             byte[] fileData = File.ReadAllBytes(zoneFilePath);
 
             // Use the centralized patterns from Constants
-            byte[][] patterns = Constants.RawFiles.FileNamePatterns;
+            byte[][] patterns = RawFileConstants.FileNamePatterns;
 
             using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(fileData), Encoding.Default))
             {

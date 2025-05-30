@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using Call_of_Duty_FastFile_Editor.Original_Fast_Files;
 using System.Diagnostics;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
-using static Call_of_Duty_FastFile_Editor.Constants.Application;
+using Call_of_Duty_FastFile_Editor.Constants;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.Services;
 using System.ComponentModel;
@@ -466,12 +466,12 @@ namespace Call_of_Duty_FastFile_Editor
                 if (release != null)
                 {
                     int latestReleaseInt = ReleaseChecker.convertVersionToInt(release.tag_name);
-                    int localProgramVersionInt = ReleaseChecker.convertVersionToInt(programVersion);
+                    int localProgramVersionInt = ReleaseChecker.convertVersionToInt(ApplicationConstants.ProgramVersion);
 
                     if (latestReleaseInt > localProgramVersionInt)
                     {
                         DialogResult result = MessageBox.Show(
-                            "Current version: " + programVersion + "\nNew release available: " + release.name + " (" + release.tag_name + ")\nDo you want to download it?",
+                            "Current version: " + ApplicationConstants.ProgramVersion + "\nNew release available: " + release.name + " (" + release.tag_name + ")\nDo you want to download it?",
                             "New Release",
                             MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question
@@ -587,7 +587,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
 
             string fileExtension = Path.GetExtension(selectedNode.FileName);
-            string validExtensions = string.Join(",", Constants.RawFiles.FileNamePatternStrings);
+            string validExtensions = string.Join(",", RawFileConstants.FileNamePatternStrings);
 
             _rawFileService.ExportRawFile(selectedNode, fileExtension);
         }
@@ -1310,7 +1310,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(about, "About Call of Duty Fast File Editor");
+            MessageBox.Show(ApplicationConstants.About, "About Call of Duty Fast File Editor");
         }
 
         private void CheckForUpdatesToolStripMenuItem_Click(object sender, EventArgs e)

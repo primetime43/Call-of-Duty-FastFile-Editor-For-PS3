@@ -1,4 +1,5 @@
-﻿namespace Call_of_Duty_FastFile_Editor.UI
+﻿using Call_of_Duty_FastFile_Editor.Constants;
+namespace Call_of_Duty_FastFile_Editor.UI
 {
     public static class UIManager
     {
@@ -7,8 +8,8 @@
         /// </summary>
         public static void SetProgramTitle(this Form mainForm, string fastFilePath)
         {
-            string version = Constants.Application.programVersion;
-            string programName = Constants.Application.programName;
+            string version = ApplicationConstants.ProgramVersion;
+            string programName = ApplicationConstants.ProgramName;
             mainForm.Text = $"{programName} - {version} - [{fastFilePath}]";
         }
 
@@ -17,8 +18,8 @@
         /// </summary>
         public static void SetProgramTitle(this Form mainForm)
         {
-            string version = Constants.Application.programVersion;
-            string programName = Constants.Application.programName;
+            string version = ApplicationConstants.ProgramVersion;
+            string programName = ApplicationConstants.ProgramName;
             mainForm.Text = $"{programName} - {version}";
         }
 
