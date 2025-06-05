@@ -56,7 +56,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public uint Unknown3 { get; private set; }
         public uint Unknown4 { get; private set; }
         public uint Unknown5 { get; private set; }
-        public uint Unknown6 { get; private set; }
+        public uint EndOfFileDataPointer { get; private set; }
         public uint Unknown7 { get; private set; }
         public uint Unknown8 { get; private set; }
         public uint TagCount { get; private set; }
@@ -81,7 +81,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             { "Unknown3", ZoneFileHeaderConstants.Unknown3Offset },
             { "Unknown4", ZoneFileHeaderConstants.Unknown4Offset },
             { "Unknown5", ZoneFileHeaderConstants.Unknown5Offset },
-            { "Unknown6", ZoneFileHeaderConstants.Unknown6Offset },
+            { "EndOfFileDataPointer", ZoneFileHeaderConstants.EndOfFileDataPointer }, // end of data is FileSize + 36 bytes?
             { "Unknown7", ZoneFileHeaderConstants.Unknown7Offset },
             { "Unknown8", ZoneFileHeaderConstants.Unknown8Offset },
             { "TagCount", ZoneFileHeaderConstants.TagCountOffset },
@@ -133,7 +133,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             Unknown3 = HeaderFieldValues[nameof(Unknown3)];
             Unknown4 = HeaderFieldValues[nameof(Unknown4)];
             Unknown5 = HeaderFieldValues[nameof(Unknown5)];
-            Unknown6 = HeaderFieldValues[nameof(Unknown6)];
+            EndOfFileDataPointer = HeaderFieldValues[nameof(EndOfFileDataPointer)];
             Unknown7 = HeaderFieldValues[nameof(Unknown7)];
             Unknown8 = HeaderFieldValues[nameof(Unknown8)];
             TagCount = HeaderFieldValues[nameof(TagCount)];

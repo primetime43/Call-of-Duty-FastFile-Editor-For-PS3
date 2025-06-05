@@ -8,7 +8,7 @@
         public const int Unknown3Offset = 0x0C; // 4 bytes
         public const int Unknown4Offset = 0x10; // 4 bytes
         public const int Unknown5Offset = 0x14; // 4 bytes
-        public const int Unknown6Offset = 0x18; // 4 bytes
+        public const int EndOfFileDataPointer = 0x18; // 4 bytes
         public const int Unknown7Offset = 0x1C; // 4 bytes
         public const int Unknown8Offset = 0x20; // 4 bytes
         public const int TagCountOffset = 0x24; // 4 bytes

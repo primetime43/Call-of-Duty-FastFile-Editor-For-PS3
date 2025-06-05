@@ -33,6 +33,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             // Use AssetRecordCount from header (for both games!)
             int expectedEntries = (int)_zone.AssetRecordCount;
 
+            Debug.WriteLine("Number of assets expected: " + expectedEntries);
+
             int assetCount = 0;
             while (i <= fileLen - 8)
             {

@@ -1,15 +1,15 @@
 ﻿using Call_of_Duty_FastFile_Editor.CodeOperations;
+using Call_of_Duty_FastFile_Editor.Constants;
 using Call_of_Duty_FastFile_Editor.IO;
 using Call_of_Duty_FastFile_Editor.Models;
-using Call_of_Duty_FastFile_Editor.UI;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
-using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
-using Call_of_Duty_FastFile_Editor.Constants;
-using System.Text;
 using Call_of_Duty_FastFile_Editor.Services;
-using System.ComponentModel;
+using Call_of_Duty_FastFile_Editor.UI;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Text;
+using System.Text.RegularExpressions;
+using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
 
 namespace Call_of_Duty_FastFile_Editor
 {
@@ -369,6 +369,16 @@ namespace Call_of_Duty_FastFile_Editor
             );
 
             selectedNode.HasUnsavedChanges = false;
+
+            // >>> Immediately update the status strip after saving <<<
+            UIManager.UpdateStatusStrip(
+                selectedFileMaxSizeStatusLabel,
+                selectedFileCurrentSizeStatusLabel,
+                selectedNode.MaxSize,
+                textEditorControlEx1.Text.Length
+            );
+
+            RefreshZoneData();
         }
 
         /// <summary>
@@ -508,6 +518,17 @@ namespace Call_of_Duty_FastFile_Editor
                                 _rawFileService.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
                             else
                                 _rawFileService.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
+
+                            var selectedNode = GetSelectedRawFileNode();
+                            if (selectedNode == null) return;
+
+                            // >>> Immediately update the status strip after saving <<<
+                            UIManager.UpdateStatusStrip(
+                                selectedFileMaxSizeStatusLabel,
+                                selectedFileCurrentSizeStatusLabel,
+                                selectedNode.MaxSize,
+                                textEditorControlEx1.Text.Length
+                            );
                         }
                         catch (Exception ex)
                         {
@@ -534,6 +555,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     RefreshZoneData();
+                    ReloadAllRawFileNodesAndUI();
                     MessageBox.Show($"File '{rawFileName}' was successfully injected & saved in the zone file.",
                         "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -573,6 +595,7 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
 
             _rawFileService.RenameRawFile(filesTreeView, _openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _rawFileNodes, _openedFastFile);
+            ReloadAllRawFileNodesAndUI();
         }
 
         /// <summary>
@@ -896,7 +919,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     _openedFastFile = null;
-                    MessageBox.Show("Fast File closed.", "Close Complete",
+                    MessageBox.Show("Fast File Saved & Closed.", "Close Complete",
                                     MessageBoxButtons.OK,
                                     MessageBoxIcon.Information);
                 }
@@ -1249,6 +1272,7 @@ namespace Call_of_Duty_FastFile_Editor
                         MessageBox.Show($"File '{selectedNode.FileName}' size increased to {newSize} bytes successfully.",
                             "Size Increase Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         RefreshZoneData();
+                        ReloadAllRawFileNodesAndUI();
                     }
                     catch (Exception ex)
                     {
@@ -1449,5 +1473,17 @@ namespace Call_of_Duty_FastFile_Editor
             }
             EnableUI_Elements();
         }
+
+        // There's a lot of duplicate code around this issue. This needs revisited & fixed/cleaned up
+        private void ReloadAllRawFileNodesAndUI()
+        {
+            // Reparse the raw file nodes from disk
+            _rawFileNodes = RawFileParser.ExtractAllRawFilesSizeAndName(_openedFastFile.ZoneFilePath);
+            RawFileNode.CurrentZone = _openedFastFile.OpenedFastFileZone;
+
+            // Rebuild UI for files list
+            LoadRawFilesTreeView();
+        }
+
     }
 }
