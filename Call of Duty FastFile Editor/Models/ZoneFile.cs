@@ -72,6 +72,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int AssetPoolStartOffset { get; internal set; }
         public int AssetPoolEndOffset { get; internal set; }
 
+        public int TagSectionStartOffset { get; set; }
+        public int TagSectionEndOffset { get; set; }
+
         // Mapping of property names to their offsets (pulled from the Constants).
         private readonly Dictionary<string, int> _headerFieldOffsets = new Dictionary<string, int>
         {

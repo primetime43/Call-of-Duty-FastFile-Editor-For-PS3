@@ -6,7 +6,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 {
     public class AssetPoolParser
     {
-        private ZoneFile _zone;
+        private readonly ZoneFile _zone;
 
         public AssetPoolParser(ZoneFile zone)
         {
@@ -15,94 +15,77 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         public bool MapZoneAssetsPoolAndGetEndOffset()
         {
-            if (_zone.ZoneFileAssets.ZoneAssetRecords == null)
-                _zone.ZoneFileAssets.ZoneAssetRecords = new List<ZoneAssetRecord>();
-            _zone.ZoneFileAssets.ZoneAssetRecords.Clear();
+            var records = _zone.ZoneFileAssets.ZoneAssetRecords ?? new List<ZoneAssetRecord>();
+            records.Clear();
+            _zone.ZoneFileAssets.ZoneAssetRecords = records;
 
             byte[] data = _zone.Data;
             int fileLen = data.Length;
-            int i = 0;
-            bool foundAnyAsset = false;
-            int assetPoolStart = -1;
-            int endOfPoolOffset = -1;
+            int i;
 
             // Detect game
             bool isCod4 = _zone.ParentFastFile?.IsCod4File ?? false;
             bool isCod5 = _zone.ParentFastFile?.IsCod5File ?? false;
 
-            // Use AssetRecordCount from header (for both games!)
-            int expectedEntries = (int)_zone.AssetRecordCount;
+            // Start after tags, or at file start
+            var tags = TagOperations.FindTags(_zone);
+            i = (tags != null && tags.TagSectionEndOffset > 0) ? tags.TagSectionEndOffset : 0;
 
-            Debug.WriteLine("Number of assets expected: " + expectedEntries);
+            bool foundAnyAsset = false;
+            int assetPoolStart = -1;
+            int endOfPoolOffset = -1;
 
-            if (expectedEntries == -1)
-            {
-                Debug.WriteLine("AssetRecordCount is -1, cannot determine expected number of assets.");
-                return false;
-            }
-
-            int assetCount = 0;
             while (i <= fileLen - 8)
             {
-                // For CoD5: if you want to keep the all-FFs end marker, you can, but it's not needed if you trust AssetRecordCount.
-                // You may still want to check for all-FFs as a sanity check, up to you.
-                if (assetCount >= expectedEntries)
+                // End marker: 0xFF 0xFF 0xFF 0xFF
+                if (data[i] == 0xFF && data[i + 1] == 0xFF && data[i + 2] == 0xFF && data[i + 3] == 0xFF)
                 {
+                    Debug.WriteLine($"[DEBUG] END MARKER FF FF FF FF at 0x{i:X}, breaking.");
                     endOfPoolOffset = i;
                     break;
                 }
 
-                byte[] block = Utilities.GetBytesAtOffset(i, _zone, 8);
+                Debug.WriteLine($"[DEBUG] i=0x{i:X} | {data[i]:X2} {data[i + 1]:X2} {data[i + 2]:X2} {data[i + 3]:X2} {data[i + 4]:X2} {data[i + 5]:X2} {data[i + 6]:X2} {data[i + 7]:X2}");
 
-                int assetTypeInt = (int)Utilities.ReadUInt32AtOffset(i, _zone, isBigEndian: true);
-
-                // Use correct enum depending on game
-                bool isDefined = false;
-                if (isCod4)
-                    isDefined = Enum.IsDefined(typeof(ZoneFileAssetType_COD4), assetTypeInt);
-                else if (isCod5)
-                    isDefined = Enum.IsDefined(typeof(ZoneFileAssetType_COD5), assetTypeInt);
-
-                if (!isDefined)
+                // Asset record: 00 00 00 XX FF FF FF FF
+                if (data[i] == 0x00 && data[i + 1] == 0x00 && data[i + 2] == 0x00
+                    && data[i + 4] == 0xFF && data[i + 5] == 0xFF && data[i + 6] == 0xFF && data[i + 7] == 0xFF)
                 {
-                    i++;
-                    continue;
+                    int assetTypeInt = (int)Utilities.ReadUInt32AtOffset(i, _zone, isBigEndian: true);
+                    bool isDefined =
+                        (isCod4 && Enum.IsDefined(typeof(ZoneFileAssetType_COD4), assetTypeInt)) ||
+                        (isCod5 && Enum.IsDefined(typeof(ZoneFileAssetType_COD5), assetTypeInt));
+
+                    Debug.WriteLine($"[DEBUG] Found potential asset at 0x{i:X}: assetType=0x{assetTypeInt:X} defined={isDefined}");
+
+                    if (isDefined)
+                    {
+                        if (!foundAnyAsset) assetPoolStart = i;
+
+                        var record = new ZoneAssetRecord { AssetPoolRecordOffset = i };
+                        if (isCod4) record.AssetType_COD4 = (ZoneFileAssetType_COD4)assetTypeInt;
+                        else if (isCod5) record.AssetType_COD5 = (ZoneFileAssetType_COD5)assetTypeInt;
+                        records.Add(record);
+
+                        foundAnyAsset = true;
+                        i += 8; // skip to next possible record
+                        continue;
+                    }
                 }
-
-                byte[] paddingBytes = Utilities.GetBytesAtOffset(i + 4, _zone, 4);
-                if (!paddingBytes.All(b => b == 0xFF))
-                {
-                    i++;
-                    continue;
-                }
-
-                if (!foundAnyAsset)
-                    assetPoolStart = i;
-
-                var record = new ZoneAssetRecord
-                {
-                    AssetPoolRecordOffset = i
-                };
-
-                if (isCod4)
-                    record.AssetType_COD4 = (ZoneFileAssetType_COD4)assetTypeInt;
-                else if (isCod5)
-                    record.AssetType_COD5 = (ZoneFileAssetType_COD5)assetTypeInt;
-
-                _zone.ZoneFileAssets.ZoneAssetRecords.Add(record);
-                foundAnyAsset = true;
-                i += 8;
-                assetCount++;
+                i++;
             }
+
+            if (endOfPoolOffset == -1)
+                endOfPoolOffset = i;
 
             _zone.AssetPoolStartOffset = assetPoolStart;
             _zone.AssetPoolEndOffset = endOfPoolOffset;
 
-            Debug.WriteLine($"[MapZoneAssetsPool] Found {_zone.ZoneFileAssets.ZoneAssetRecords.Count} records.");
+            Debug.WriteLine($"[MapZoneAssetsPool] Found {records.Count} records.");
             Debug.WriteLine($"[MapZoneAssetsPool] Start Offset: 0x{_zone.AssetPoolStartOffset:X}");
             Debug.WriteLine($"[MapZoneAssetsPool] End Offset: 0x{_zone.AssetPoolEndOffset:X}");
 
-            return true;
+            return foundAnyAsset;
         }
     }
 }

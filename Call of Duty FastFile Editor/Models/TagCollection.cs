@@ -4,8 +4,13 @@ namespace Call_of_Duty_FastFile_Editor.Models
 {
     public class TagCollection
     {
-        public List<ZoneAsset_TagEntry> TagEntries { get; set; }
-        = new List<ZoneAsset_TagEntry>();
+        public List<ZoneAsset_TagEntry> TagEntries { get; set; } = new List<ZoneAsset_TagEntry>();
+        public int TagSectionStartOffset { get; set; }
+        /// <summary>
+        /// The end offset of the tag section, which is the first 0x00 after the last tag.
+        /// So this includes the last tag + the 0x00 terminator.
+        /// </summary>
+        public int TagSectionEndOffset { get; set; }
     }
 
     public class ZoneAsset_TagEntry
@@ -51,77 +56,55 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public static TagCollection? FindTags(ZoneFile zone)
         {
             byte[] zoneBytes = zone.Data;
-
-            // 1) Locate the block of 0xFFs
             int blockStart = FindLargeFFBlock(zoneBytes);
-            if (blockStart < 0)
-            {
-                // No large run of FF found
-                return null;
-            }
+            if (blockStart < 0) return null;
 
-            // 2) Move offset to first NON-FF byte
             int offset = blockStart;
             while (offset < zoneBytes.Length && zoneBytes[offset] == 0xFF)
-            {
                 offset++;
-            }
 
-            if (offset >= zoneBytes.Length)
+            int tagSectionStart = offset;
+            var tagEntries = new List<ZoneAsset_TagEntry>();
+
+            while (offset + 8 <= zoneBytes.Length)
             {
-                // We reached the end, no tags to parse
-                return null;
-            }
-
-            // We'll collect TagEntry objects here
-            List<ZoneAsset_TagEntry> tagEntries = new List<ZoneAsset_TagEntry>();
-
-            // 3) Read strings until 00 00 00 or out of data
-            while (offset + 3 < zoneBytes.Length)
-            {
-                if (zoneBytes[offset] == 0x00 &&
-                    zoneBytes[offset + 1] == 0x00 &&
-                    zoneBytes[offset + 2] == 0x00)
+                // Check if the next 8 bytes match asset record pattern: 00 00 00 XX FF FF FF FF
+                if (zoneBytes[offset] == 0x00 && zoneBytes[offset + 1] == 0x00 && zoneBytes[offset + 2] == 0x00 &&
+                    zoneBytes[offset + 4] == 0xFF && zoneBytes[offset + 5] == 0xFF &&
+                    zoneBytes[offset + 6] == 0xFF && zoneBytes[offset + 7] == 0xFF)
                 {
+                    // Found start of asset pool
                     break;
                 }
 
-                // Store the offset (this is the *start* of the string)
                 int currentOffset = offset;
-
-                // Read a null-terminated ASCII string
                 string tag = Utilities.ReadStringAtOffset(offset, zone);
 
-                // If valid, add it
-                if (!string.IsNullOrEmpty(tag))
-                {
-                    var entry = new ZoneAsset_TagEntry
-                    {
-                        Tag = tag,
-                        OffsetDec = currentOffset,
-                        OffsetHex = currentOffset.ToString("X") // or "X8" for leading zeros
-                    };
-                    tagEntries.Add(entry);
-                }
-
-                // Advance past the string + null terminator
-                offset += tag.Length + 1;
-
-                // Bounds check
-                if (offset >= zoneBytes.Length)
+                // If we hit a 00 or empty string, just break.
+                if (string.IsNullOrEmpty(tag) || tag.Length > 64) // Arbitrary upper limit to avoid corruption
                     break;
-            }
 
-            // If no tags were read, return null or an empty object
-            if (tagEntries.Count == 0)
-            {
-                return null;
-            }
+                tagEntries.Add(new ZoneAsset_TagEntry
+                {
+                    Tag = tag,
+                    OffsetDec = currentOffset,
+                    OffsetHex = currentOffset.ToString("X")
+                });
 
-            // Return them
+                offset += tag.Length + 1;
+                if (offset >= zoneBytes.Length) break;
+            }
+            int tagSectionEnd = offset;
+
+            // set the TagSectionStartOffset and TagSectionEndOffset for the zone
+            zone.TagSectionStartOffset = tagSectionStart;
+            zone.TagSectionEndOffset = tagSectionEnd; 
+
             return new TagCollection
             {
-                TagEntries = tagEntries
+                TagEntries = tagEntries,
+                TagSectionStartOffset = tagSectionStart,
+                TagSectionEndOffset = tagSectionEnd
             };
         }
     }
