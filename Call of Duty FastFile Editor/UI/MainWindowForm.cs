@@ -1146,14 +1146,11 @@ namespace Call_of_Duty_FastFile_Editor
             // 1) Fully re-read the zone file bytes from disk
             _openedFastFile.OpenedFastFileZone.LoadData();
 
-            // 2) Re-parse the asset pool (start/end offsets, record offsets, etc.)
-            _openedFastFile.OpenedFastFileZone.ParseAssetPool();
-
-            // 3) Re-run your asset record processing logic
+            // 2) Re-run your asset record processing logic
             //    This updates _rawFileNodes, _zoneAssetRecords, _stringTables, etc.
             LoadAssetRecordsData();
 
-            // 4) Rebuild the entire UI
+            // 3) Rebuild the entire UI
             //    (Clears the TreeView/ListViews and reloads all data)
             ResetAllViews();
             LoadZoneDataToUI();
@@ -1367,9 +1364,6 @@ namespace Call_of_Duty_FastFile_Editor
                     // Load & parse that zone in one go
                     _openedFastFile.LoadZone();
 
-                    // 3) Parse the asset pool out of the newly‐loaded zone
-                    _openedFastFile.OpenedFastFileZone.ParseAssetPool();
-
                     // Here is where the asset records actual data is parsed throughout the zone
                     LoadAssetRecordsData();
                 }
@@ -1442,9 +1436,6 @@ namespace Call_of_Duty_FastFile_Editor
 
                     // Load & parse that zone in one go
                     _openedFastFile.LoadZone();
-
-                    // 3) Parse the asset pool out of the newly‐loaded zone
-                    _openedFastFile.OpenedFastFileZone.ParseAssetPool();
 
                     // Here is where the asset records actual data is parsed throughout the zone
                     LoadAssetRecordsData();

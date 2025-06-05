@@ -1,8 +1,7 @@
-﻿using Call_of_Duty_FastFile_Editor.Services;
+﻿using Call_of_Duty_FastFile_Editor.Constants;
+using Call_of_Duty_FastFile_Editor.Services;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
-using System.Net;
-using System.Text;
-using Call_of_Duty_FastFile_Editor.Constants;
+using System.Diagnostics;
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
@@ -36,6 +35,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             var z = new ZoneFile(path, fastFile);
             z.LoadData();
             z.ReadHeaderFields();
+            z.ParseAssetPool();
             return z;
         }
 
@@ -96,7 +96,18 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public void ParseAssetPool()
         {
             var parser = new AssetPoolParser(this);
-            parser.MapZoneAssetsPoolAndGetEndOffset();
+            bool success = parser.MapZoneAssetsPoolAndGetEndOffset();
+            if (!success)
+            {
+                Debug.WriteLine("Asset pool parse failed: AssetRecordCount was -1.");
+                MessageBox.Show(
+                "Failed to parse asset pool!\n\nZone file's AssetRecordCount was -1, cannot determine expected number of assets.",
+                "Parse Failed",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
+
+            }
         }
 
         /// <summary>

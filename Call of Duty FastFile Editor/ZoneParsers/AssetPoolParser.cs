@@ -13,7 +13,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             _zone = zone;
         }
 
-        public void MapZoneAssetsPoolAndGetEndOffset()
+        public bool MapZoneAssetsPoolAndGetEndOffset()
         {
             if (_zone.ZoneFileAssets.ZoneAssetRecords == null)
                 _zone.ZoneFileAssets.ZoneAssetRecords = new List<ZoneAssetRecord>();
@@ -34,6 +34,12 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             int expectedEntries = (int)_zone.AssetRecordCount;
 
             Debug.WriteLine("Number of assets expected: " + expectedEntries);
+
+            if (expectedEntries == -1)
+            {
+                Debug.WriteLine("AssetRecordCount is -1, cannot determine expected number of assets.");
+                return false;
+            }
 
             int assetCount = 0;
             while (i <= fileLen - 8)
@@ -95,6 +101,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             Debug.WriteLine($"[MapZoneAssetsPool] Found {_zone.ZoneFileAssets.ZoneAssetRecords.Count} records.");
             Debug.WriteLine($"[MapZoneAssetsPool] Start Offset: 0x{_zone.AssetPoolStartOffset:X}");
             Debug.WriteLine($"[MapZoneAssetsPool] End Offset: 0x{_zone.AssetPoolEndOffset:X}");
+
+            return true;
         }
     }
 }
