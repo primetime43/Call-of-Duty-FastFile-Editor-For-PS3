@@ -282,6 +282,12 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void saveFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (_openedFastFile == null || _fastFileHandler == null)
+            {
+                MessageBox.Show("No Fast File is currently opened.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             try
             {
                 _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
@@ -308,6 +314,12 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void saveFastFileAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (_openedFastFile == null || _fastFileHandler == null)
+            {
+                MessageBox.Show("No Fast File is currently opened.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             using (var saveFileDialog = new SaveFileDialog())
             {
                 saveFileDialog.Filter = "Fast Files (*.ff)|*.ff|All Files (*.*)|*.*";
@@ -1183,6 +1195,8 @@ namespace Call_of_Duty_FastFile_Editor
             selectedFileMaxSizeStatusLabel.Visible = false;
             selectedItemStatusLabel.Visible = false;
             selectedFileCurrentSizeStatusLabel.Visible = false;
+            saveFastFileToolStripMenuItem.Enabled = false;
+            saveFastFileAsToolStripMenuItem.Enabled = false;    
             this.SetProgramTitle();
         }
 

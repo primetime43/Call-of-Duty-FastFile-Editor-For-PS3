@@ -66,22 +66,29 @@ namespace Call_of_Duty_FastFile_Editor.Models
             int tagSectionStart = offset;
             var tagEntries = new List<ZoneAsset_TagEntry>();
 
+            // Keep going until we see asset record pool, not just zeros!
             while (offset + 8 <= zoneBytes.Length)
             {
-                // Check if the next 8 bytes match asset record pattern: 00 00 00 XX FF FF FF FF
+                // Check if we are at the start of the asset record pool
                 if (zoneBytes[offset] == 0x00 && zoneBytes[offset + 1] == 0x00 && zoneBytes[offset + 2] == 0x00 &&
                     zoneBytes[offset + 4] == 0xFF && zoneBytes[offset + 5] == 0xFF &&
                     zoneBytes[offset + 6] == 0xFF && zoneBytes[offset + 7] == 0xFF)
                 {
-                    // Found start of asset pool
+                    // Found asset record pool start
                     break;
+                }
+
+                // Skip padding zeros between tags (not the 8-byte asset record pattern)
+                if (zoneBytes[offset] == 0x00)
+                {
+                    offset++;
+                    continue;
                 }
 
                 int currentOffset = offset;
                 string tag = Utilities.ReadStringAtOffset(offset, zone);
 
-                // If we hit a 00 or empty string, just break.
-                if (string.IsNullOrEmpty(tag) || tag.Length > 64) // Arbitrary upper limit to avoid corruption
+                if (string.IsNullOrEmpty(tag) || tag.Length > 128)
                     break;
 
                 tagEntries.Add(new ZoneAsset_TagEntry
@@ -92,13 +99,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 });
 
                 offset += tag.Length + 1;
-                if (offset >= zoneBytes.Length) break;
             }
             int tagSectionEnd = offset;
 
-            // set the TagSectionStartOffset and TagSectionEndOffset for the zone
             zone.TagSectionStartOffset = tagSectionStart;
-            zone.TagSectionEndOffset = tagSectionEnd; 
+            zone.TagSectionEndOffset = tagSectionEnd;
 
             return new TagCollection
             {
