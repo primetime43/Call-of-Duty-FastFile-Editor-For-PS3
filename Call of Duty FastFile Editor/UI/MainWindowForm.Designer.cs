@@ -45,6 +45,7 @@ namespace Call_of_Duty_FastFile_Editor
             toolsToolStripMenuItem = new ToolStripMenuItem();
             injectFileToolStripMenuItem = new ToolStripMenuItem();
             rawFileToolsMenuItem = new ToolStripMenuItem();
+            reloadRawFilesPatternMatchingToolStripMenuItem = new ToolStripMenuItem();
             increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
             searchRawFileTxtMenuItem = new ToolStripMenuItem();
             extractAllRawFilesToolStripMenuItem = new ToolStripMenuItem();
@@ -278,21 +279,29 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // rawFileToolsMenuItem
             // 
-            rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { increaseRawFileSizeToolStripMenuItem, searchRawFileTxtMenuItem });
+            rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { reloadRawFilesPatternMatchingToolStripMenuItem, increaseRawFileSizeToolStripMenuItem, searchRawFileTxtMenuItem });
             rawFileToolsMenuItem.Name = "rawFileToolsMenuItem";
             rawFileToolsMenuItem.Size = new Size(210, 24);
             rawFileToolsMenuItem.Text = "Raw File Tools";
             // 
+            // reloadRawFilesPatternMatchingToolStripMenuItem
+            // 
+            reloadRawFilesPatternMatchingToolStripMenuItem.Name = "reloadRawFilesPatternMatchingToolStripMenuItem";
+            reloadRawFilesPatternMatchingToolStripMenuItem.Size = new Size(316, 24);
+            reloadRawFilesPatternMatchingToolStripMenuItem.Text = "Reload Raw Files (Pattern Matching)";
+            reloadRawFilesPatternMatchingToolStripMenuItem.ToolTipText = "Reload raw files using pattern matching.\nUse this option if some raw files do not appear or load correctly with the standard method.";
+            reloadRawFilesPatternMatchingToolStripMenuItem.Click += reloadRawFilesPatternMatchingToolStripMenuItem_Click;
+            // 
             // increaseRawFileSizeToolStripMenuItem
             // 
             increaseRawFileSizeToolStripMenuItem.Name = "increaseRawFileSizeToolStripMenuItem";
-            increaseRawFileSizeToolStripMenuItem.Size = new Size(222, 24);
+            increaseRawFileSizeToolStripMenuItem.Size = new Size(316, 24);
             increaseRawFileSizeToolStripMenuItem.Text = "Increase Raw File Size";
             // 
             // searchRawFileTxtMenuItem
             // 
             searchRawFileTxtMenuItem.Name = "searchRawFileTxtMenuItem";
-            searchRawFileTxtMenuItem.Size = new Size(222, 24);
+            searchRawFileTxtMenuItem.Size = new Size(316, 24);
             searchRawFileTxtMenuItem.Text = "Search Raw File Text";
             searchRawFileTxtMenuItem.Click += searchRawFileTxtMenuItem_Click;
             // 
@@ -460,7 +469,7 @@ namespace Call_of_Duty_FastFile_Editor
             stringTablesTabPage.Location = new Point(4, 24);
             stringTablesTabPage.Name = "stringTablesTabPage";
             stringTablesTabPage.Padding = new Padding(3);
-            stringTablesTabPage.Size = new Size(1442, 745);
+            stringTablesTabPage.Size = new Size(1442, 749);
             stringTablesTabPage.TabIndex = 3;
             stringTablesTabPage.Text = "String Tables";
             stringTablesTabPage.UseVisualStyleBackColor = true;
@@ -490,7 +499,7 @@ namespace Call_of_Duty_FastFile_Editor
             collision_Map_AssetTabPage.Location = new Point(4, 24);
             collision_Map_AssetTabPage.Name = "collision_Map_AssetTabPage";
             collision_Map_AssetTabPage.Padding = new Padding(3);
-            collision_Map_AssetTabPage.Size = new Size(1442, 745);
+            collision_Map_AssetTabPage.Size = new Size(1442, 749);
             collision_Map_AssetTabPage.TabIndex = 4;
             collision_Map_AssetTabPage.Text = "Collision Map Data";
             collision_Map_AssetTabPage.UseVisualStyleBackColor = true;
@@ -510,7 +519,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeTabPage.Location = new Point(4, 24);
             localizeTabPage.Name = "localizeTabPage";
             localizeTabPage.Padding = new Padding(3);
-            localizeTabPage.Size = new Size(1442, 745);
+            localizeTabPage.Size = new Size(1442, 749);
             localizeTabPage.TabIndex = 6;
             localizeTabPage.Text = "Localize";
             localizeTabPage.UseVisualStyleBackColor = true;
@@ -521,7 +530,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.Dock = DockStyle.Fill;
             localizeListView.Location = new Point(3, 3);
             localizeListView.Name = "localizeListView";
-            localizeListView.Size = new Size(1436, 739);
+            localizeListView.Size = new Size(1436, 743);
             localizeListView.TabIndex = 0;
             localizeListView.UseCompatibleStateImageBehavior = false;
             localizeListView.MouseDown += listView_MouseDownCopy;
@@ -532,7 +541,7 @@ namespace Call_of_Duty_FastFile_Editor
             tagsTabPage.Location = new Point(4, 24);
             tagsTabPage.Name = "tagsTabPage";
             tagsTabPage.Padding = new Padding(3);
-            tagsTabPage.Size = new Size(1442, 745);
+            tagsTabPage.Size = new Size(1442, 749);
             tagsTabPage.TabIndex = 2;
             tagsTabPage.Text = "Tags";
             tagsTabPage.UseVisualStyleBackColor = true;
@@ -554,7 +563,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolTabPage.Location = new Point(4, 24);
             assetPoolTabPage.Name = "assetPoolTabPage";
             assetPoolTabPage.Padding = new Padding(3);
-            assetPoolTabPage.Size = new Size(1442, 745);
+            assetPoolTabPage.Size = new Size(1442, 749);
             assetPoolTabPage.TabIndex = 5;
             assetPoolTabPage.Text = "Asset Pool";
             assetPoolTabPage.UseVisualStyleBackColor = true;
@@ -565,7 +574,7 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.Dock = DockStyle.Fill;
             assetPoolListView.Location = new Point(3, 3);
             assetPoolListView.Name = "assetPoolListView";
-            assetPoolListView.Size = new Size(1436, 739);
+            assetPoolListView.Size = new Size(1436, 743);
             assetPoolListView.TabIndex = 0;
             assetPoolListView.UseCompatibleStateImageBehavior = false;
             assetPoolListView.MouseDown += listView_MouseDownCopy;
@@ -576,7 +585,7 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage.Location = new Point(4, 24);
             zoneFileTabPage.Name = "zoneFileTabPage";
             zoneFileTabPage.Padding = new Padding(3);
-            zoneFileTabPage.Size = new Size(1442, 745);
+            zoneFileTabPage.Size = new Size(1442, 749);
             zoneFileTabPage.TabIndex = 1;
             zoneFileTabPage.Text = "Zone Header";
             zoneFileTabPage.UseVisualStyleBackColor = true;
@@ -685,5 +694,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem toolStripMenuItem2;
         private ToolStripMenuItem COD5ToolStripMenuItem;
         private ToolStripMenuItem cOD4ToolStripMenuItem;
+        private ToolStripMenuItem reloadRawFilesPatternMatchingToolStripMenuItem;
     }
 }

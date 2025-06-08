@@ -104,14 +104,15 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         /// </param>
         /// <returns>The first matching RawFileNode or null if none is found.</returns>
 
-        public static RawFileNode ExtractSingleRawFileNodeWithPattern(string zoneFilePath, int startOffset = 0)
+        public static RawFileNode ExtractSingleRawFileNodeWithPattern(byte[] fileData, int startOffset = 0)
         {
             Debug.WriteLine("================================ Start of raw file node search =============================================");
             Debug.WriteLine($"[ExtractSingleRawFileNodeWithPattern] Starting search at 0x{startOffset:X}");
 
-            byte[] fileData = File.ReadAllBytes(zoneFilePath);
             // Use the plain text patterns from our constants.
             string[] patternStrings = RawFileConstants.FileNamePatternStrings;
+
+            var patternBytes = patternStrings.Select(s => Encoding.ASCII.GetBytes(s + "\0")).ToList();
             // We'll also use this same array for extension filtering.
             string[] validExtensions = patternStrings;
 
@@ -121,28 +122,18 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             // Scan the file data from startOffset to the end.
             for (int i = startOffset; i < fileData.Length; i++)
             {
-                foreach (var patternStr in patternStrings)
+                for (int p = 0; p < patternBytes.Count; p++)
                 {
-                    // Append a null terminator so the byte pattern matches the file data.
-                    byte[] pattern = Encoding.ASCII.GetBytes(patternStr + "\0");
+                    var pattern = patternBytes[p];
                     // Only attempt if there is enough room left in the file.
                     if (i <= fileData.Length - pattern.Length)
                     {
-                        bool match = true;
-                        for (int j = 0; j < pattern.Length; j++)
-                        {
-                            if (fileData[i + j] != pattern[j])
-                            {
-                                match = false;
-                                break;
-                            }
-                        }
-                        if (match)
+                        if (fileData.AsSpan(i, pattern.Length).SequenceEqual(pattern))
                         {
                             foundIndex = i;
-                            foundPatternStr = patternStr;
+                            foundPatternStr = patternStrings[p];
                             Debug.WriteLine($"[PatternFound] Pattern '{foundPatternStr}' found at offset 0x{i:X}");
-                            goto FoundMatch; // Break out of both loops.
+                            goto FoundMatch;
                         }
                     }
                 }
@@ -211,8 +202,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
                 Debug.WriteLine("================================ End of raw file node search =============================================");
 
-                string fileContent = ReadFileContentAfterName(zoneFilePath, patternIndex, maxSize);
-                byte[] fileBytes = ExtractBinaryContent(zoneFilePath, patternIndex, maxSize);
+                string fileContent = ReadFileContentAfterName(fileData, patternIndex, maxSize);
+                byte[] fileBytes = ExtractBinaryContent(fileData, patternIndex, maxSize);
 
                 RawFileNode node = new RawFileNode
                 {
@@ -241,8 +232,9 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             List<RawFileNode> rawFileNodes = new List<RawFileNode>();
             byte[] fileData = File.ReadAllBytes(zoneFilePath);
 
-            // Use the centralized patterns from Constants
-            byte[][] patterns = RawFileConstants.FileNamePatterns;
+            byte[][] patterns = RawFileConstants.FileNamePatternStrings
+            .Select(s => Encoding.ASCII.GetBytes(s + "\0"))
+            .ToArray();
 
             using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(fileData), Encoding.Default))
             {
@@ -250,73 +242,47 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 {
                     for (int i = 0; i <= fileData.Length - pattern.Length; i++)
                     {
-                        // Check if the pattern matches exactly at this position
-                        bool match = true;
-                        for (int j = 0; j < pattern.Length; j++)
+                        if (fileData.AsSpan(i, pattern.Length).SequenceEqual(pattern))
                         {
-                            if (fileData[i + j] != pattern[j])
+                            int patternIndex = i;
+                            int ffffPosition = patternIndex - 1;
+                            while (ffffPosition >= 4 &&
+                                   !(fileData[ffffPosition] == 0xFF &&
+                                     fileData[ffffPosition - 1] == 0xFF &&
+                                     fileData[ffffPosition - 2] == 0xFF &&
+                                     fileData[ffffPosition - 3] == 0xFF))
                             {
-                                match = false;
-                                break;
+                                ffffPosition--;
                             }
-                        }
 
-                        if (!match)
-                        {
-                            continue;
-                        }
+                            if (ffffPosition < 4 || fileData[ffffPosition + 1] == 0x00)
+                                continue;
 
-                        int patternIndex = i;
-
-                        // Debugging information: show the matched bytes
-                        //byte[] matchedBytes = new byte[pattern.Length];
-                        //Array.Copy(fileData, patternIndex, matchedBytes, 0, pattern.Length);
-                        //string matchedBytesHex = BitConverter.ToString(matchedBytes).Replace("-", " ");
-                        //MessageBox.Show($"Pattern: {BitConverter.ToString(pattern).Replace("-", "\\x")}\nPattern Index: {patternIndex:X}\nMatched Bytes: {matchedBytesHex}", "Pattern Match Debug Info");
-
-                        // Move backwards to find the FF FF FF FF sequence
-                        int ffffPosition = patternIndex - 1;
-                        while (ffffPosition >= 4 && !(fileData[ffffPosition] == 0xFF && fileData[ffffPosition - 1] == 0xFF && fileData[ffffPosition - 2] == 0xFF && fileData[ffffPosition - 3] == 0xFF))
-                        {
-                            ffffPosition--;
-                        }
-
-                        // Ensure the sequence is valid (not followed by \x00 and not part of a different structure)
-                        if (ffffPosition < 4 || fileData[ffffPosition + 1] == 0x00)
-                        {
-                            continue;
-                        }
-
-                        // The size is stored right before the FF FF FF FF sequence
-                        int sizePosition = ffffPosition - 7;
-                        if (sizePosition >= 0)
-                        {
-                            binaryReader.BaseStream.Position = sizePosition;
-                            int maxSize = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
-
-                            // The file name starts right after the FF FF FF FF sequence
-                            int fileNameStart = ffffPosition + 1;
-                            string fileName = ExtractFullFileName(fileData, fileNameStart);
-
-                            if (!string.IsNullOrEmpty(fileName) && !fileName.Contains("\x00"))
+                            int sizePosition = ffffPosition - 7;
+                            if (sizePosition >= 0)
                             {
-                                // Read the file content
-                                string fileContent = ReadFileContentAfterName(zoneFilePath, patternIndex, maxSize);
+                                binaryReader.BaseStream.Position = sizePosition;
+                                int maxSize = IPAddress.NetworkToHostOrder(binaryReader.ReadInt32());
 
-                                byte[] fileBytes = null;
-                                // Extract binary data
-                                fileBytes = ExtractBinaryContent(zoneFilePath, patternIndex, maxSize);
-                                int headerStart = sizePosition - 4;
+                                int fileNameStart = ffffPosition + 1;
+                                string fileName = ExtractFullFileName(fileData, fileNameStart);
 
-                                rawFileNodes.Add(new RawFileNode
+                                if (!string.IsNullOrEmpty(fileName) && !fileName.Contains("\x00"))
                                 {
-                                    PatternIndexPosition = patternIndex,
-                                    MaxSize = maxSize,
-                                    StartOfFileHeader = headerStart,
-                                    FileName = fileName,
-                                    RawFileContent = fileContent,
-                                    RawFileBytes = fileBytes
-                                });
+                                    string fileContent = ReadFileContentAfterName(fileData, patternIndex, maxSize);
+                                    byte[] fileBytes = ExtractBinaryContent(fileData, patternIndex, maxSize);
+                                    int headerStart = sizePosition - 4;
+
+                                    rawFileNodes.Add(new RawFileNode
+                                    {
+                                        PatternIndexPosition = patternIndex,
+                                        MaxSize = maxSize,
+                                        StartOfFileHeader = headerStart,
+                                        FileName = fileName,
+                                        RawFileContent = fileContent,
+                                        RawFileBytes = fileBytes
+                                    });
+                                }
                             }
                         }
                     }
@@ -329,10 +295,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         #endregion
 
         #region Helper Methods
-        private static byte[] ExtractBinaryContent(string filePath, int patternIndex, int maxSize)
+        private static byte[] ExtractBinaryContent(byte[] fileData, int patternIndex, int maxSize)
         {
-            byte[] fileData = File.ReadAllBytes(filePath);
-
             // Move to the position after the name's null terminator
             int contentStartPosition = patternIndex;
             while (contentStartPosition < fileData.Length && fileData[contentStartPosition] != 0x00)
@@ -373,10 +337,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             return fileName.ToString();
         }
 
-        private static string ReadFileContentAfterName(string filePath, int startPosition, int maxSize)
+        private static string ReadFileContentAfterName(byte[] fileData, int startPosition, int maxSize)
         {
-            byte[] fileData = File.ReadAllBytes(filePath);
-
             // Move to the position after the name's null terminator
             int contentStartPosition = startPosition;
             while (contentStartPosition < fileData.Length && fileData[contentStartPosition] != 0x00)

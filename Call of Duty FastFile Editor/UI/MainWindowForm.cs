@@ -91,7 +91,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Parses and processes the asset records from the opened Fast File's zone.
         /// </summary>
-        private void LoadAssetRecordsData()
+        private void LoadAssetRecordsData(bool forcePatternMatching = false)
         {
             // Set the zone asset records to this form's field
             _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords;
@@ -102,7 +102,7 @@ namespace Call_of_Duty_FastFile_Editor
 
             // Anything that needs to be displayed for the asset pool view tab should be loaded here
 
-            _processResult = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords);
+            _processResult = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords, forcePatternMatching);
 
             // store the typed lists
             _rawFileNodes = _processResult.RawFileNodes;
@@ -1196,7 +1196,7 @@ namespace Call_of_Duty_FastFile_Editor
             selectedItemStatusLabel.Visible = false;
             selectedFileCurrentSizeStatusLabel.Visible = false;
             saveFastFileToolStripMenuItem.Enabled = false;
-            saveFastFileAsToolStripMenuItem.Enabled = false;    
+            saveFastFileAsToolStripMenuItem.Enabled = false;
             this.SetProgramTitle();
         }
 
@@ -1490,5 +1490,11 @@ namespace Call_of_Duty_FastFile_Editor
             LoadRawFilesTreeView();
         }
 
+        private void reloadRawFilesPatternMatchingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            LoadAssetRecordsData(forcePatternMatching: true);
+            ResetAllViews();
+            LoadZoneDataToUI();
+        }
     }
 }

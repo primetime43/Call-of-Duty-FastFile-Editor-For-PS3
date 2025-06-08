@@ -12,12 +12,20 @@ namespace Call_of_Duty_FastFile_Editor.Services
     {
         /// <summary>
         /// Processes the given zone asset records, extracting various asset types
-        /// (such as RawFileNode, StringTable, and Localize) and returns them in a ZoneAssetRecords object.
+        /// and returns them in a ZoneAssetRecords object.
         /// </summary>
         /// <param name="openedFastFile">The FastFile object containing the zone data.</param>
         /// <param name="zoneAssetRecords">The list of asset records extracted from the zone.</param>
+        /// <param name="forcePatternMatching">
+        /// If true, raw files will be parsed using pattern matching, which overrides the default structured parsing.
+        /// Use this option when the standard parsing does not correctly detect raw files.
+        /// </param>
         /// <returns>A ZoneAssetRecords object containing updated asset lists and records.</returns>
-        public static AssetRecordCollection ProcessAssetRecords(FastFile openedFastFile, List<ZoneAssetRecord> zoneAssetRecords)
+        public static AssetRecordCollection ProcessAssetRecords(
+            FastFile openedFastFile,
+            List<ZoneAssetRecord> zoneAssetRecords,
+            bool forcePatternMatching = false
+        )
         {
             // Create the result container.
             AssetRecordCollection result = new AssetRecordCollection();
@@ -26,6 +34,9 @@ namespace Call_of_Duty_FastFile_Editor.Services
             int indexOfLastAssetRecordParsed = 0;
             int previousRecordEndOffset = 0;
             string assetRecordMethod = string.Empty;
+
+            // Load file data ONCE for pattern matching
+            byte[] zoneFileData = System.IO.File.ReadAllBytes(openedFastFile.ZoneFilePath);
 
             // Loop through each asset record.
             for (int i = 0; i < zoneAssetRecords.Count; i++)
@@ -55,10 +66,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         {
                             case ZoneFileAssetType_COD4.rawfile:
                                 {
-                                    // Try to extract a raw file using the no-pattern method first.
-                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
-                                        // If no-pattern extraction fails, fall back to pattern matching.
-                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(openedFastFile.ZoneFilePath, startingOffset);
+                                    RawFileNode node = forcePatternMatching
+                                    ? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset)
+                                    : RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
+                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset);
 
                                     if (node != null)
                                     {
@@ -74,10 +85,12 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 }
                             case ZoneFileAssetType_COD4.stringtable:
                                 {
-                                    // Parse a string table using a similar conditional approach.
-                                    StringTable table = (previousRecordEndOffset > 0)
+                                    StringTable table = forcePatternMatching
+                                    ? StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset)
+                                    : (previousRecordEndOffset > 0
                                         ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
-                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset);
+                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset));
+
 
                                     if (table != null)
                                     {
@@ -92,10 +105,11 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 }
                             case ZoneFileAssetType_COD4.localize:
                                 {
-                                    // Use a ternary operator to choose between the no-pattern and pattern methods.
-                                    var tuple = (previousRecordEndOffset > 0)
+                                    var tuple = forcePatternMatching
+                                    ? LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset)
+                                    : (previousRecordEndOffset > 0
                                         ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
-                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset);
+                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset));
 
                                     LocalizedEntry localizedEntry = tuple.entry;
                                     assetRecordMethod = (previousRecordEndOffset > 0)
@@ -122,10 +136,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         {
                             case ZoneFileAssetType_COD5.rawfile:
                                 {
-                                    // Try to extract a raw file using the no-pattern method first.
-                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
-                                        // If no-pattern extraction fails, fall back to pattern matching.
-                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(openedFastFile.ZoneFilePath, startingOffset);
+                                    RawFileNode node = forcePatternMatching
+                                    ? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset)
+                                    : RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
+                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset);
 
                                     if (node != null)
                                     {
@@ -141,10 +155,11 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 }
                             case ZoneFileAssetType_COD5.stringtable:
                                 {
-                                    // Parse a string table using a similar conditional approach.
-                                    StringTable table = (previousRecordEndOffset > 0)
+                                    StringTable table = forcePatternMatching
+                                    ? StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset)
+                                    : (previousRecordEndOffset > 0
                                         ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
-                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset);
+                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset));
 
                                     if (table != null)
                                     {
@@ -159,10 +174,12 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 }
                             case ZoneFileAssetType_COD5.localize:
                                 {
-                                    // Use a ternary operator to choose between the no-pattern and pattern methods.
-                                    var tuple = (previousRecordEndOffset > 0)
+                                    var tuple = forcePatternMatching
+                                    ? LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset)
+                                    : (previousRecordEndOffset > 0
                                         ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
-                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset);
+                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset));
+
 
                                     LocalizedEntry localizedEntry = tuple.entry;
                                     assetRecordMethod = (previousRecordEndOffset > 0)
