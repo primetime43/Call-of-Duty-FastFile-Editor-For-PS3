@@ -1,10 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Compile Update="UI\FileStructureInfoForm.cs">
+    <Compile Update="UI\RawFileSearcherForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="UI\MainWindowForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\RawFileSizeAdjust.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\RenameDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\ZoneHexViewForm.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

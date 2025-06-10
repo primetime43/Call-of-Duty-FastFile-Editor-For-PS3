@@ -1,14 +1,40 @@
-﻿namespace Call_of_Duty_FastFile_Editor.UI
+﻿using Call_of_Duty_FastFile_Editor.Constants;
+namespace Call_of_Duty_FastFile_Editor.UI
 {
     public static class UIManager
     {
-        public static void UpdateLoadedFileNameStatusStrip(ToolStripStatusLabel statusLabel, string filePath)
+        /// <summary>
+        /// Sets the main window’s title bar to include the program name, version and the opened .ff path.
+        /// </summary>
+        public static void SetProgramTitle(this Form mainForm, string fastFilePath)
         {
-            if (!string.IsNullOrEmpty(filePath))
+            string version = ApplicationConstants.ProgramVersion;
+            string programName = ApplicationConstants.ProgramName;
+            mainForm.Text = $"{programName} - {version} - [{fastFilePath}]";
+        }
+
+        /// <summary>
+        /// Sets the main window’s title bar to include the program name, version.
+        /// </summary>
+        public static void SetProgramTitle(this Form mainForm)
+        {
+            string version = ApplicationConstants.ProgramVersion;
+            string programName = ApplicationConstants.ProgramName;
+            mainForm.Text = $"{programName} - {version}";
+        }
+
+        public static void UpdateLoadedFileNameStatusStrip(ToolStripStatusLabel statusLabel, string fileName, bool isCod4File)
+        {
+            if (string.IsNullOrEmpty(fileName))
             {
-                statusLabel.Text = Path.GetFileName(filePath);
-                statusLabel.Visible = true;
+                statusLabel.Visible = false;
+                return;
             }
+
+            // Decide the prefix based on the flag
+            var gameString = isCod4File ? "COD4" : "COD5";
+            statusLabel.Text = $"{gameString}: {Path.GetFileName(fileName)}";
+            statusLabel.Visible = true;
         }
 
         public static void UpdateSelectedFileStatusStrip(ToolStripStatusLabel statusLabel, string fileName)
@@ -29,7 +55,7 @@
             currentSizeLabel.Visible = true;
         }
 
-        public static void SetTreeNodeColors(TreeView treeView)
+        public static void SetRawFileTreeNodeColors(TreeView treeView)
         {
             foreach (TreeNode node in treeView.Nodes)
             {

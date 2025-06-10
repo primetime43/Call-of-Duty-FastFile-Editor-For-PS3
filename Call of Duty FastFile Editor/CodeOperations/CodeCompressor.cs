@@ -1,5 +1,4 @@
-﻿using ICSharpCode.TextEditor;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace Call_of_Duty_FastFile_Editor.CodeOperations
 {
