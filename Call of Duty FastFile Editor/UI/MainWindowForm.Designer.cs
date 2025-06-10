@@ -43,11 +43,11 @@ namespace Call_of_Duty_FastFile_Editor
             removeCommentsToolStripMenuItem = new ToolStripMenuItem();
             checkSyntaxToolStripMenuItem = new ToolStripMenuItem();
             toolsToolStripMenuItem = new ToolStripMenuItem();
-            injectFileToolStripMenuItem = new ToolStripMenuItem();
             rawFileToolsMenuItem = new ToolStripMenuItem();
             reloadRawFilesPatternMatchingToolStripMenuItem = new ToolStripMenuItem();
             increaseRawFileSizeToolStripMenuItem = new ToolStripMenuItem();
             searchRawFileTxtMenuItem = new ToolStripMenuItem();
+            injectFileToolStripMenuItem = new ToolStripMenuItem();
             extractAllRawFilesToolStripMenuItem = new ToolStripMenuItem();
             toolStripMenuItem2 = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
@@ -80,6 +80,7 @@ namespace Call_of_Duty_FastFile_Editor
             zoneFileTabPage = new TabPage();
             zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
+            reportIssuesToolStripMenuItem = new ToolStripMenuItem();
             contextMenuStripRawFiles.SuspendLayout();
             menuStripTopToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -270,13 +271,6 @@ namespace Call_of_Duty_FastFile_Editor
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
             // 
-            // injectFileToolStripMenuItem
-            // 
-            injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
-            injectFileToolStripMenuItem.Size = new Size(210, 24);
-            injectFileToolStripMenuItem.Text = "Inject Raw File";
-            injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
-            // 
             // rawFileToolsMenuItem
             // 
             rawFileToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { reloadRawFilesPatternMatchingToolStripMenuItem, increaseRawFileSizeToolStripMenuItem, searchRawFileTxtMenuItem });
@@ -305,6 +299,13 @@ namespace Call_of_Duty_FastFile_Editor
             searchRawFileTxtMenuItem.Text = "Search Raw File Text";
             searchRawFileTxtMenuItem.Click += searchRawFileTxtMenuItem_Click;
             // 
+            // injectFileToolStripMenuItem
+            // 
+            injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
+            injectFileToolStripMenuItem.Size = new Size(210, 24);
+            injectFileToolStripMenuItem.Text = "Inject Raw File";
+            injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
+            // 
             // extractAllRawFilesToolStripMenuItem
             // 
             extractAllRawFilesToolStripMenuItem.Name = "extractAllRawFilesToolStripMenuItem";
@@ -321,7 +322,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // helpToolStripMenuItem
             // 
-            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { aboutToolStripMenuItem, CheckForUpdatesToolStripMenuItem });
+            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { aboutToolStripMenuItem, CheckForUpdatesToolStripMenuItem, reportIssuesToolStripMenuItem });
             helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             helpToolStripMenuItem.Size = new Size(53, 24);
             helpToolStripMenuItem.Text = "Help";
@@ -600,6 +601,13 @@ namespace Call_of_Duty_FastFile_Editor
             zoneInfoDataGridView.TabIndex = 0;
             zoneInfoDataGridView.MouseDown += dataGrid_MouseDownCopy;
             // 
+            // reportIssuesToolStripMenuItem
+            // 
+            reportIssuesToolStripMenuItem.Name = "reportIssuesToolStripMenuItem";
+            reportIssuesToolStripMenuItem.Size = new Size(195, 24);
+            reportIssuesToolStripMenuItem.Text = "Report Issues";
+            reportIssuesToolStripMenuItem.Click += reportIssuesToolStripMenuItem_Click;
+            // 
             // MainWindowForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -695,5 +703,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem COD5ToolStripMenuItem;
         private ToolStripMenuItem cOD4ToolStripMenuItem;
         private ToolStripMenuItem reloadRawFilesPatternMatchingToolStripMenuItem;
+        private ToolStripMenuItem reportIssuesToolStripMenuItem;
     }
 }

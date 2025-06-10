@@ -3,7 +3,7 @@
     public static class ApplicationConstants
     {
         public const string ProgramName = "Call of Duty Fast File Editor for PS3";
-        public const string ProgramVersion = "v1.0.0";
+        public const string ProgramVersion = "v2.0.0";
         public const string About = $"{ProgramName}\n" +
              "Version: " + ProgramVersion + "\n\n" +
              "Developed by primetime43\n\n" +
@@ -13,7 +13,8 @@
              "Special thanks to:\n" +
              "- BuC-ShoTz\n" +
              "- aerosoul94\n" +
-             "- EliteMossy\n\n" +
+             "- EliteMossy\n" +
+             "- Fixed Username (testing)\n\n" +
              "GitHub: https://github.com/primetime43";
     }
 }

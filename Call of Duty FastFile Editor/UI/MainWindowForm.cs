@@ -1496,5 +1496,23 @@ namespace Call_of_Duty_FastFile_Editor
             ResetAllViews();
             LoadZoneDataToUI();
         }
+
+        private void reportIssuesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string url = "https://github.com/primetime43/Call-of-Duty-FastFile-Editor-For-PS3/issues";
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }
