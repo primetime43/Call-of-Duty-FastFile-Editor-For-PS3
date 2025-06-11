@@ -8,7 +8,8 @@ The PS3 Call of Duty FastFile Editor is a tool for editing Fast Files (.ff) used
 - File Entry Extraction: Extract file entries along with their sizes and names.
 - File Structure Information Display: View file information in both hexadecimal and decimal formats.
 - Syntax Checking: Comprehensive syntax checking for the code within the files to ensure integrity.
-- File Management: Download and save specific Fast Files with a user-friendly interface.
+- Easy to read asset pool record map
+- Manage and manipulate assets in the FastFile's zone
 
 # Usage
 # Decompressing/Recompressing a Fast File
@@ -22,6 +23,23 @@ The PS3 Call of Duty FastFile Editor is a tool for editing Fast Files (.ff) used
 # Syntax Checking
 1. Use the "Check Syntax" option to validate the code.
 2. The editor will show any syntax errors and provide messages.
+
+## Images of v2.0.0
+<details>
+  <summary>Click to view screenshots of version 2.0.0</summary>
+  <p>Main Window with a loaded file</p>
+  <img src="https://github.com/user-attachments/assets/9c476da4-8081-4479-96fe-46ae208b5edf" alt="Main Window with a loaded file">
+  <p>String Tables</p>
+  <img src="https://github.com/user-attachments/assets/6c14f173-cec4-40d2-892a-c626ccace509" alt="String Tables">
+  <p>Localized String Assets</p>
+  <img src="https://github.com/user-attachments/assets/4c29c5d4-7fae-4364-a0c4-12a93e0ab05d" alt="Localized String Assets">
+  <p>Asset Pool Records</p>
+  <img src="https://github.com/user-attachments/assets/866f50ff-dd3e-46c7-834e-984eb28eb81e" alt="Asset Pool Records">
+  <p>Zone Header Addresses</p>
+  <img src="https://github.com/user-attachments/assets/34e82bdc-37d3-4982-859c-9da1f85ef97" alt="Zone Header Addresses">
+  <p>Tags</p>
+  <img src="https://github.com/user-attachments/assets/bfef9118-3ef1-4c58-a7a1-109775bbea73" alt="Tags">
+</details>
 
 ## Images of v1.0.0
 <details>
