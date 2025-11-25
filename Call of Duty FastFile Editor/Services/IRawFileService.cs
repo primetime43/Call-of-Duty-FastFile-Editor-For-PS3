@@ -9,10 +9,18 @@ namespace Call_of_Duty_FastFile_Editor.Services
     {
         /// <summary>
         /// Exports the given raw file node to an external file with the specified extension.
+        /// Includes the zone header for re-injection compatibility.
         /// </summary>
         /// <param name="node">The raw file node to export.</param>
         /// <param name="extension">The file extension to use for the exported file (including the leading dot).</param>
         void ExportRawFile(RawFileNode node, string extension);
+
+        /// <summary>
+        /// Exports only the content of the raw file (without zone header) for external editing.
+        /// </summary>
+        /// <param name="node">The raw file node to export.</param>
+        /// <param name="extension">The file extension to use for the exported file.</param>
+        void ExportRawFileContentOnly(RawFileNode node, string extension);
 
         /// <summary>
         /// Overwrites the content of a raw file inside the zone file, padding or trimming as needed.
@@ -64,11 +72,20 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
         /// <summary>
         /// Appends a brand‑new raw file entry to the end of the asset pool in the zone file.
+        /// The file must include the zone header (FF FF FF FF markers).
         /// </summary>
         /// <param name="zoneFilePath">Path to the decompressed Zone File (.zone).</param>
         /// <param name="filePath">Path to the external file to inject (must include its own header).</param>
         /// <param name="expectedSize">The expected data size for this entry.</param>
         void AppendNewRawFile(string zoneFilePath, string filePath, int expectedSize);
+
+        /// <summary>
+        /// Injects a plain file (without zone header) by creating the header structure.
+        /// </summary>
+        /// <param name="zoneFilePath">Path to the decompressed Zone File (.zone).</param>
+        /// <param name="filePath">Path to the plain file to inject.</param>
+        /// <param name="gamePath">The game path for this file (e.g., "maps/mp/gametypes/dm.gsc").</param>
+        void InjectPlainFile(string zoneFilePath, string filePath, string gamePath);
 
         /// <summary>
         /// Adjusts the maximum size of a raw file node by padding with zeros or shifting data.

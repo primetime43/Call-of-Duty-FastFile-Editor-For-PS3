@@ -24,6 +24,7 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView = new TreeView();
             contextMenuStripRawFiles = new ContextMenuStrip(components);
             exportFileMenuItem = new ToolStripMenuItem();
+            exportContentOnlyMenuItem = new ToolStripMenuItem();
             renameFileToolStripMenuItem = new ToolStripMenuItem();
             increaseFileSizeToolStripMenuItem = new ToolStripMenuItem();
             menuStripTopToolbar = new MenuStrip();
@@ -118,18 +119,26 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // contextMenuStripRawFiles
             // 
-            contextMenuStripRawFiles.Items.AddRange(new ToolStripItem[] { exportFileMenuItem, renameFileToolStripMenuItem, increaseFileSizeToolStripMenuItem });
+            contextMenuStripRawFiles.Items.AddRange(new ToolStripItem[] { exportFileMenuItem, exportContentOnlyMenuItem, renameFileToolStripMenuItem, increaseFileSizeToolStripMenuItem });
             contextMenuStripRawFiles.Name = "contextMenuStrip1";
-            contextMenuStripRawFiles.Size = new Size(162, 70);
+            contextMenuStripRawFiles.Size = new Size(200, 92);
             // 
             // exportFileMenuItem
             // 
             exportFileMenuItem.Name = "exportFileMenuItem";
-            exportFileMenuItem.Size = new Size(161, 22);
-            exportFileMenuItem.Text = "Export File";
-            exportFileMenuItem.ToolTipText = "Export the selected raw file";
+            exportFileMenuItem.Size = new Size(199, 22);
+            exportFileMenuItem.Text = "Export (With Header)";
+            exportFileMenuItem.ToolTipText = "Export the selected raw file with zone header for re-injection";
             exportFileMenuItem.Click += exportFileMenuItem_Click;
-            // 
+            //
+            // exportContentOnlyMenuItem
+            //
+            exportContentOnlyMenuItem.Name = "exportContentOnlyMenuItem";
+            exportContentOnlyMenuItem.Size = new Size(199, 22);
+            exportContentOnlyMenuItem.Text = "Export (Content Only)";
+            exportContentOnlyMenuItem.ToolTipText = "Export only the script content without zone header";
+            exportContentOnlyMenuItem.Click += exportContentOnlyMenuItem_Click;
+            //
             // renameFileToolStripMenuItem
             // 
             renameFileToolStripMenuItem.Name = "renameFileToolStripMenuItem";
@@ -672,6 +681,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem injectFileToolStripMenuItem;
         private ContextMenuStrip contextMenuStripRawFiles;
         private ToolStripMenuItem exportFileMenuItem;
+        private ToolStripMenuItem exportContentOnlyMenuItem;
         private ToolStripMenuItem toolStripMenuItem1;
         private ToolTip filesTreeToolTip;
         private ToolStripMenuItem renameFileToolStripMenuItem;

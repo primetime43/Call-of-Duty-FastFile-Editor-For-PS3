@@ -45,6 +45,81 @@ namespace Call_of_Duty_FastFile_Editor.Services
         }
 
         /// <inheritdoc/>
+        public void InjectPlainFile(string zoneFilePath, string filePath, string gamePath)
+        {
+            // Read the plain file content
+            byte[] fileContent = File.ReadAllBytes(filePath);
+            int contentSize = fileContent.Length;
+
+            // Build the raw file entry with header:
+            // - 4 bytes: first marker (0xFFFFFFFF)
+            // - 4 bytes: data size (big-endian)
+            // - 4 bytes: second marker (0xFFFFFFFF)
+            // - N bytes: filename + null terminator
+            // - M bytes: file content
+            byte[] fileNameBytes = Encoding.ASCII.GetBytes(gamePath);
+            int headerSize = 12 + fileNameBytes.Length + 1; // 12 bytes markers/size + filename + null
+            int totalSize = headerSize + contentSize;
+
+            byte[] newEntry = new byte[totalSize];
+
+            // Write first marker (0xFFFFFFFF)
+            newEntry[0] = 0xFF;
+            newEntry[1] = 0xFF;
+            newEntry[2] = 0xFF;
+            newEntry[3] = 0xFF;
+
+            // Write data size (big-endian)
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(
+                newEntry.AsSpan(4, 4),
+                (uint)contentSize
+            );
+
+            // Write second marker (0xFFFFFFFF)
+            newEntry[8] = 0xFF;
+            newEntry[9] = 0xFF;
+            newEntry[10] = 0xFF;
+            newEntry[11] = 0xFF;
+
+            // Write filename
+            Array.Copy(fileNameBytes, 0, newEntry, 12, fileNameBytes.Length);
+            // Null terminator is already 0x00 from array initialization
+
+            // Write content
+            Array.Copy(fileContent, 0, newEntry, headerSize, contentSize);
+
+            // Now inject the entry into the zone file
+            ZoneFile currentZone = RawFileNode.CurrentZone;
+            int insertPosition = currentZone.AssetPoolEndOffset;
+
+            currentZone.ModifyZoneFile(fs =>
+            {
+                long originalLength = fs.Length;
+                // Read tail data from the insertion point.
+                fs.Seek(insertPosition, SeekOrigin.Begin);
+                byte[] tailBuffer = new byte[originalLength - insertPosition];
+                fs.Read(tailBuffer, 0, tailBuffer.Length);
+                // Extend the file length.
+                fs.SetLength(originalLength + newEntry.Length);
+                // Shift tail data forward.
+                fs.Seek(insertPosition + newEntry.Length, SeekOrigin.Begin);
+                fs.Write(tailBuffer, 0, tailBuffer.Length);
+                // Write the new entry.
+                fs.Seek(insertPosition, SeekOrigin.Begin);
+                fs.Write(newEntry, 0, newEntry.Length);
+            });
+
+            // Update the zone file size header.
+            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
+            uint newZoneSize = currentZoneSize + (uint)newEntry.Length;
+            ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
+
+            // Refresh zone data and header.
+            currentZone.LoadData();
+            currentZone.ReadHeaderFields();
+        }
+
+        /// <inheritdoc/>
         public void AdjustRawFileNodeSize(string zoneFilePath, RawFileNode rawFileNode, int newSize)
         {
             int oldSize = rawFileNode.MaxSize;
@@ -105,10 +180,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
             uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
             uint updatedZoneSize = currentZoneSize + (uint)sizeIncrease;
             ZoneFileIO.WriteZoneFileSize(zoneFilePath, updatedZoneSize);
+
+            // Refresh zone header fields after modification.
+            currentZone.LoadData();
+            currentZone.ReadHeaderFields();
         }
 
         /// <summary>
-        /// Adjusts a raw file entry read from disk so that its header’s size field (at offset 4)
+        /// Adjusts a raw file entry read from disk so that its header's size field (at offset 4)
         /// matches the expected data size. It uses the known header structure:
         ///   Bytes 0-3: first marker (0xFFFFFFFF)
         ///   Bytes 4-7: data size (to be updated)
@@ -179,7 +258,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
         {
             using var save = new SaveFileDialog
             {
-                Title = "Export File",
+                Title = "Export File (With Header for Re-injection)",
                 FileName = SanitizeFileName(exportedRawFile.FileName),
                 Filter = $"{fileExtension.TrimStart('.').ToUpper()} Files (*{fileExtension})|*{fileExtension}|All Files (*.*)|*.*"
             };
@@ -197,7 +276,47 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 File.WriteAllBytes(save.FileName, slice);
 
                 MessageBox.Show(
-                    $"File successfully exported to:\n\n{save.FileName}",
+                    $"File successfully exported to:\n\n{save.FileName}\n\n" +
+                    "Note: This file includes the zone header and can be re-injected.",
+                    "Export Complete",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to export file: {ex.Message}",
+                    "Export Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
+
+        /// <inheritdoc/>
+        public void ExportRawFileContentOnly(RawFileNode exportedRawFile, string fileExtension)
+        {
+            using var save = new SaveFileDialog
+            {
+                Title = "Export Content Only",
+                FileName = SanitizeFileName(exportedRawFile.FileName),
+                Filter = $"{fileExtension.TrimStart('.').ToUpper()} Files (*{fileExtension})|*{fileExtension}|All Files (*.*)|*.*"
+            };
+
+            if (save.ShowDialog() != DialogResult.OK)
+                return;
+
+            try
+            {
+                // Export only the actual content (RawFileBytes), not the header
+                byte[] contentOnly = exportedRawFile.RawFileBytes;
+
+                File.WriteAllBytes(save.FileName, contentOnly);
+
+                MessageBox.Show(
+                    $"File content successfully exported to:\n\n{save.FileName}\n\n" +
+                    "Note: This file contains only the script content without zone header.",
                     "Export Complete",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
@@ -242,6 +361,12 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 }
                 fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
                 fs.Write(newContent, 0, newSize);
+
+                // Update the size field in the raw file header (4 bytes at StartOfFileHeader + 4)
+                Span<byte> sizeBuf = stackalloc byte[4];
+                System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(sizeBuf, (uint)newSize);
+                fs.Seek(rawFileNode.StartOfFileHeader + 4, SeekOrigin.Begin);
+                fs.Write(sizeBuf);
             });
 
             rawFileNode.MaxSize = newSize;
@@ -251,6 +376,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
             uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
             uint newZoneSize = currentZoneSize + (uint)sizeIncrease;
             ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
+
+            // Refresh zone header fields after modification
+            currentZone.LoadData();
+            currentZone.ReadHeaderFields();
         }
 
         /// <inheritdoc/>
@@ -330,6 +459,18 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
                         // Write the modified zone file back to disk.
                         File.WriteAllBytes(zoneFilePath, zoneFileData);
+
+                        // Update the zone file size header if the filename length changed.
+                        if (byteDifference != 0)
+                        {
+                            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
+                            uint newZoneSize = (uint)((int)currentZoneSize + byteDifference);
+                            ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
+
+                            // Refresh zone data and header fields.
+                            RawFileNode.CurrentZone.LoadData();
+                            RawFileNode.CurrentZone.ReadHeaderFields();
+                        }
 
                         // Save the old file name for notification.
                         string oldFileName = rawFileNode.FileName;

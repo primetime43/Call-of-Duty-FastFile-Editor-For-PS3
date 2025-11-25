@@ -60,8 +60,8 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int CodeStartPosition => StartOfFileHeader + 12 + (FileName?.Length ?? 0) + 1;
 
         /// <summary>
-        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize - 1 to not include the null byte.
-        /// Doesn't includes null byte. This is the offset before the null terminator
+        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize
+        /// Minus 1 because the last byte is a null terminator.
         /// </summary>
         public int CodeEndPosition => CodeStartPosition + MaxSize - 1;
 
@@ -77,10 +77,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string FileName { get; set; }
 
         /// <summary>
-        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize + 1 for the null byte.
-        /// Includes null byte. This is the offset after the null terminator
+        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize
+        /// This is where the null terminator is at the end of the asset
         /// </summary>
-        public int RawFileEndPosition => CodeStartPosition + MaxSize + 1;
+        public int RawFileEndPosition => CodeStartPosition + MaxSize;
 
         /// <summary>
         /// The content of the file as a string.
