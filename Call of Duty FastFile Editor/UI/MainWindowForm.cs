@@ -512,11 +512,42 @@ namespace Call_of_Duty_FastFile_Editor
                     string selectedFilePath = ofd.FileName;
                     string rawFileName = Path.GetFileName(selectedFilePath);
 
-                    // Parse the file to obtain expected header details.
-                    RawFileNode newRawFileNode = RawFileParser.ExtractAllRawFilesSizeAndName(selectedFilePath)[0];
-                    string rawFileNameFromHeader = newRawFileNode.FileName;
-                    byte[] rawFileContent = newRawFileNode.RawFileBytes;
-                    int newFileMaxSize = newRawFileNode.MaxSize;
+                    // Detect if file has zone header or is a plain file
+                    bool hasZoneHeader = DetectZoneHeader(selectedFilePath);
+
+                    string rawFileNameFromHeader;
+                    byte[] rawFileContent;
+                    int newFileMaxSize;
+
+                    if (hasZoneHeader)
+                    {
+                        // Parse the file to obtain expected header details.
+                        var parsedNodes = RawFileParser.ExtractAllRawFilesSizeAndName(selectedFilePath);
+                        if (parsedNodes == null || parsedNodes.Count == 0)
+                        {
+                            MessageBox.Show("Failed to parse the file header. The file may be corrupted.",
+                                "Parse Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                        RawFileNode newRawFileNode = parsedNodes[0];
+                        rawFileNameFromHeader = newRawFileNode.FileName;
+                        rawFileContent = newRawFileNode.RawFileBytes;
+                        newFileMaxSize = newRawFileNode.MaxSize;
+                    }
+                    else
+                    {
+                        // Plain file - prompt user for game path
+                        string gamePath = PromptForGamePath(rawFileName);
+                        if (string.IsNullOrWhiteSpace(gamePath))
+                        {
+                            MessageBox.Show("Injection canceled. A game path is required for plain files.",
+                                "Injection Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            return;
+                        }
+                        rawFileNameFromHeader = gamePath;
+                        rawFileContent = File.ReadAllBytes(selectedFilePath);
+                        newFileMaxSize = rawFileContent.Length;
+                    }
 
                     // Check if a file with the same header name already exists.
                     RawFileNode existingNode = _rawFileNodes
@@ -555,8 +586,17 @@ namespace Call_of_Duty_FastFile_Editor
                         {
                             // Add a new asset record entry.
                             AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
-                            // Inject new file using the new AppendNewRawFile overload.
-                            _rawFileService.AppendNewRawFile(_openedFastFile.ZoneFilePath, selectedFilePath, newFileMaxSize);
+
+                            if (hasZoneHeader)
+                            {
+                                // Inject file with existing header
+                                _rawFileService.AppendNewRawFile(_openedFastFile.ZoneFilePath, selectedFilePath, newFileMaxSize);
+                            }
+                            else
+                            {
+                                // Inject plain file - build header internally
+                                _rawFileService.InjectPlainFile(_openedFastFile.ZoneFilePath, selectedFilePath, rawFileNameFromHeader);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -575,7 +615,55 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
+        /// Detects if a file has a zone header (FF FF FF FF markers).
+        /// </summary>
+        private bool DetectZoneHeader(string filePath)
+        {
+            try
+            {
+                byte[] header = new byte[12];
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    if (fs.Length < 12)
+                        return false;
+                    fs.Read(header, 0, 12);
+                }
+
+                // Check for first marker (FF FF FF FF) at offset 0
+                bool hasFirstMarker = header[0] == 0xFF && header[1] == 0xFF &&
+                                       header[2] == 0xFF && header[3] == 0xFF;
+
+                // Check for second marker (FF FF FF FF) at offset 8
+                bool hasSecondMarker = header[8] == 0xFF && header[9] == 0xFF &&
+                                        header[10] == 0xFF && header[11] == 0xFF;
+
+                return hasFirstMarker && hasSecondMarker;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Prompts the user to enter a game path for a plain file.
+        /// </summary>
+        private string PromptForGamePath(string defaultFileName)
+        {
+            using (var dialog = new RenameDialog($"maps/mp/gametypes/{defaultFileName}"))
+            {
+                dialog.Text = "Enter Game Path";
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    return dialog.NewFileName;
+                }
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Exports the selected file, including its header information, to a chosen location.
+        /// This format can be re-injected back into a FastFile.
         /// </summary>
         private void exportFileMenuItem_Click(object sender, EventArgs e)
         {
@@ -584,9 +672,21 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
 
             string fileExtension = Path.GetExtension(selectedNode.FileName);
-            string validExtensions = string.Join(",", RawFileConstants.FileNamePatternStrings);
-
             _rawFileService.ExportRawFile(selectedNode, fileExtension);
+        }
+
+        /// <summary>
+        /// Exports only the content of the selected file without zone header.
+        /// This is a clean script file for external editing.
+        /// </summary>
+        private void exportContentOnlyMenuItem_Click(object sender, EventArgs e)
+        {
+            RawFileNode selectedNode = GetSelectedRawFileNode();
+            if (selectedNode == null)
+                return;
+
+            string fileExtension = Path.GetExtension(selectedNode.FileName);
+            _rawFileService.ExportRawFileContentOnly(selectedNode, fileExtension);
         }
 
         /// <summary>
