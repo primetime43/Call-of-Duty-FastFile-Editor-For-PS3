@@ -105,10 +105,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
             uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
             uint updatedZoneSize = currentZoneSize + (uint)sizeIncrease;
             ZoneFileIO.WriteZoneFileSize(zoneFilePath, updatedZoneSize);
+
+            // Refresh zone header fields after modification.
+            currentZone.LoadData();
+            currentZone.ReadHeaderFields();
         }
 
         /// <summary>
-        /// Adjusts a raw file entry read from disk so that its header’s size field (at offset 4)
+        /// Adjusts a raw file entry read from disk so that its header's size field (at offset 4)
         /// matches the expected data size. It uses the known header structure:
         ///   Bytes 0-3: first marker (0xFFFFFFFF)
         ///   Bytes 4-7: data size (to be updated)
@@ -242,6 +246,12 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 }
                 fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
                 fs.Write(newContent, 0, newSize);
+
+                // Update the size field in the raw file header (4 bytes at StartOfFileHeader + 4)
+                Span<byte> sizeBuf = stackalloc byte[4];
+                System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(sizeBuf, (uint)newSize);
+                fs.Seek(rawFileNode.StartOfFileHeader + 4, SeekOrigin.Begin);
+                fs.Write(sizeBuf);
             });
 
             rawFileNode.MaxSize = newSize;
@@ -251,6 +261,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
             uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
             uint newZoneSize = currentZoneSize + (uint)sizeIncrease;
             ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
+
+            // Refresh zone header fields after modification
+            currentZone.LoadData();
+            currentZone.ReadHeaderFields();
         }
 
         /// <inheritdoc/>
@@ -337,6 +351,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
                             uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
                             uint newZoneSize = (uint)((int)currentZoneSize + byteDifference);
                             ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
+
+                            // Refresh zone data and header fields.
+                            RawFileNode.CurrentZone.LoadData();
+                            RawFileNode.CurrentZone.ReadHeaderFields();
                         }
 
                         // Save the old file name for notification.
