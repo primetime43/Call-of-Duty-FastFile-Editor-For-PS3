@@ -331,6 +331,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         // Write the modified zone file back to disk.
                         File.WriteAllBytes(zoneFilePath, zoneFileData);
 
+                        // Update the zone file size header if the filename length changed.
+                        if (byteDifference != 0)
+                        {
+                            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
+                            uint newZoneSize = (uint)((int)currentZoneSize + byteDifference);
+                            ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
+                        }
+
                         // Save the old file name for notification.
                         string oldFileName = rawFileNode.FileName;
                         // Update the renamed file's FileName property.

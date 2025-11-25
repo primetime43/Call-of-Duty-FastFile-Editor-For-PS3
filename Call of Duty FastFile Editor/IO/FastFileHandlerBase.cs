@@ -116,7 +116,8 @@ namespace Call_of_Duty_FastFile_Editor.IO
 
                     binaryWriter.Write(compressedChunk);
                 }
-                binaryWriter.Write(new byte[2] { 0, 1 });
+                // Note: No terminator is written. Original FastFiles end after the last
+                // compressed chunk. The game detects EOF by reading past end of file.
             }
         }
 
