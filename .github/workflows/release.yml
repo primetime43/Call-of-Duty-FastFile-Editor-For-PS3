@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write  # Required for creating releases
+
 jobs:
   build:
     runs-on: windows-latest
