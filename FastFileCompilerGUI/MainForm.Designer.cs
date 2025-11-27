@@ -36,7 +36,6 @@ partial class MainForm
         this.btnClear = new Button();
         this.btnMoveUp = new Button();
         this.btnMoveDown = new Button();
-        this.btnFixPaths = new Button();
 
         // Options
         this.groupBoxOptions = new GroupBox();
@@ -200,7 +199,6 @@ partial class MainForm
         this.buttonPanel.Controls.Add(this.btnAddFolder);
         this.buttonPanel.Controls.Add(this.btnRemove);
         this.buttonPanel.Controls.Add(this.btnClear);
-        this.buttonPanel.Controls.Add(this.btnFixPaths);
         this.buttonPanel.Controls.Add(this.btnMoveUp);
         this.buttonPanel.Controls.Add(this.btnMoveDown);
         this.buttonPanel.Controls.Add(this.btnCompile);
@@ -260,15 +258,6 @@ partial class MainForm
         this.btnMoveDown.Text = "Move Down";
         this.btnMoveDown.UseVisualStyleBackColor = true;
         this.btnMoveDown.Click += new EventHandler(this.btnMoveDown_Click);
-
-        //
-        // btnFixPaths
-        //
-        this.btnFixPaths.Name = "btnFixPaths";
-        this.btnFixPaths.Size = new Size(100, 30);
-        this.btnFixPaths.Text = "Fix Paths";
-        this.btnFixPaths.UseVisualStyleBackColor = true;
-        this.btnFixPaths.Click += new EventHandler(this.btnFixPaths_Click);
 
         //
         // bottomPanel
@@ -358,13 +347,10 @@ partial class MainForm
         //
         // btnCompile
         //
-        this.btnCompile.BackColor = System.Drawing.Color.FromArgb(0, 120, 215);
-        this.btnCompile.ForeColor = System.Drawing.Color.White;
-        this.btnCompile.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         this.btnCompile.Name = "btnCompile";
-        this.btnCompile.Size = new Size(140, 30);
-        this.btnCompile.Text = "Compile FastFile...";
-        this.btnCompile.UseVisualStyleBackColor = false;
+        this.btnCompile.Size = new Size(120, 30);
+        this.btnCompile.Text = "Compile FF...";
+        this.btnCompile.UseVisualStyleBackColor = true;
         this.btnCompile.Click += new EventHandler(this.btnCompile_Click);
 
         //
@@ -451,7 +437,6 @@ partial class MainForm
     private Button btnClear;
     private Button btnMoveUp;
     private Button btnMoveDown;
-    private Button btnFixPaths;
     private GroupBox groupBoxOptions;
     private Label labelGame;
     private ComboBox comboBoxGame;

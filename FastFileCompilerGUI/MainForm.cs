@@ -59,6 +59,9 @@ public partial class MainForm : Form
 
     private void AddFile(string sourcePath, string assetName)
     {
+        // Automatically fix the asset path (convert flattened names to proper paths)
+        assetName = FixAssetPath(assetName);
+
         // Check for duplicates
         if (_rawFiles.Any(f => f.AssetName.Equals(assetName, StringComparison.OrdinalIgnoreCase)))
         {
@@ -183,60 +186,6 @@ public partial class MainForm : Form
             item.Selected = true;
             item.Focused = true;
         }
-    }
-
-    private void btnFixPaths_Click(object sender, EventArgs e)
-    {
-        if (_rawFiles.Count == 0)
-        {
-            MessageBox.Show("No files to fix.", "Fix Paths", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
-        }
-
-        // Build list of changes
-        var changes = new List<(RawFileEntry entry, string oldName, string newName)>();
-
-        foreach (var entry in _rawFiles)
-        {
-            string newName = FixAssetPath(entry.AssetName);
-            if (newName != entry.AssetName)
-            {
-                changes.Add((entry, entry.AssetName, newName));
-            }
-        }
-
-        if (changes.Count == 0)
-        {
-            MessageBox.Show("No paths need fixing. All asset names appear to be correct.", "Fix Paths", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
-        }
-
-        // Show preview
-        var preview = string.Join("\n", changes.Take(20).Select(c => $"{c.oldName}\n  -> {c.newName}\n"));
-        if (changes.Count > 20)
-        {
-            preview += $"\n... and {changes.Count - 20} more";
-        }
-
-        var result = MessageBox.Show(
-            $"The following {changes.Count} path(s) will be fixed:\n\n{preview}\n\nApply changes?",
-            "Fix Paths - Preview",
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Question);
-
-        if (result != DialogResult.Yes) return;
-
-        // Apply changes
-        foreach (var (entry, _, newName) in changes)
-        {
-            entry.AssetName = newName;
-        }
-
-        // Refresh list view
-        RefreshFileListView();
-
-        UpdateStatus($"Fixed {changes.Count} asset path(s)");
-        MessageBox.Show($"Successfully fixed {changes.Count} asset path(s).", "Fix Paths", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     /// <summary>

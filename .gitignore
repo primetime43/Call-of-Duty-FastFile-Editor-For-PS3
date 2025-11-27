@@ -12,3 +12,5 @@ FastFileCompilerGUI/obj/Debug/net8.0-windows/
 FastFileCompilerGUI/obj/
 
 FastFileCompiler/obj/
+/FastFileCompiler/bin
+/FastFileCompilerGUI/bin/Release/net8.0-windows
