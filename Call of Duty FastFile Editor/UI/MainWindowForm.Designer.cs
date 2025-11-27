@@ -67,9 +67,6 @@ namespace Call_of_Duty_FastFile_Editor
             universalContextMenu = new ContextMenuStrip(components);
             copyToolStripMenuItem = new ToolStripMenuItem();
             rawFilesPage = new TabPage();
-            stringTablesTabPage = new TabPage();
-            stringTableListView = new ListView();
-            stringTableTreeView = new TreeView();
             collision_Map_AssetTabPage = new TabPage();
             treeViewMapEnt = new TreeView();
             localizeTabPage = new TabPage();
@@ -92,7 +89,6 @@ namespace Call_of_Duty_FastFile_Editor
             mainTabControl.SuspendLayout();
             universalContextMenu.SuspendLayout();
             rawFilesPage.SuspendLayout();
-            stringTablesTabPage.SuspendLayout();
             collision_Map_AssetTabPage.SuspendLayout();
             localizeTabPage.SuspendLayout();
             tagsTabPage.SuspendLayout();
@@ -435,7 +431,6 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             mainTabControl.ContextMenuStrip = universalContextMenu;
             mainTabControl.Controls.Add(rawFilesPage);
-            mainTabControl.Controls.Add(stringTablesTabPage);
             mainTabControl.Controls.Add(collision_Map_AssetTabPage);
             mainTabControl.Controls.Add(localizeTabPage);
             mainTabControl.Controls.Add(tagsTabPage);
@@ -471,38 +466,7 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.TabIndex = 0;
             rawFilesPage.Text = "Raw Files";
             rawFilesPage.UseVisualStyleBackColor = true;
-            // 
-            // stringTablesTabPage
-            // 
-            stringTablesTabPage.Controls.Add(stringTableListView);
-            stringTablesTabPage.Controls.Add(stringTableTreeView);
-            stringTablesTabPage.Location = new Point(4, 24);
-            stringTablesTabPage.Name = "stringTablesTabPage";
-            stringTablesTabPage.Padding = new Padding(3);
-            stringTablesTabPage.Size = new Size(1442, 749);
-            stringTablesTabPage.TabIndex = 3;
-            stringTablesTabPage.Text = "String Tables";
-            stringTablesTabPage.UseVisualStyleBackColor = true;
-            // 
-            // stringTableListView
-            // 
-            stringTableListView.Location = new Point(247, 0);
-            stringTableListView.Name = "stringTableListView";
-            stringTableListView.Size = new Size(384, 749);
-            stringTableListView.TabIndex = 1;
-            stringTableListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // stringTableTreeView
-            // 
-            stringTableTreeView.ContextMenuStrip = universalContextMenu;
-            stringTableTreeView.Location = new Point(0, 0);
-            stringTableTreeView.Name = "stringTableTreeView";
-            stringTableTreeView.Size = new Size(250, 749);
-            stringTableTreeView.TabIndex = 0;
-            stringTableTreeView.BeforeSelect += stringTableTreeView_BeforeSelect;
-            stringTableTreeView.AfterSelect += stringTableTreeView_AfterSelect;
-            stringTableTreeView.MouseDown += treeView_MouseDownCopy;
-            // 
+            //
             // collision_Map_AssetTabPage
             // 
             collision_Map_AssetTabPage.Controls.Add(treeViewMapEnt);
@@ -639,7 +603,6 @@ namespace Call_of_Duty_FastFile_Editor
             mainTabControl.ResumeLayout(false);
             universalContextMenu.ResumeLayout(false);
             rawFilesPage.ResumeLayout(false);
-            stringTablesTabPage.ResumeLayout(false);
             collision_Map_AssetTabPage.ResumeLayout(false);
             localizeTabPage.ResumeLayout(false);
             tagsTabPage.ResumeLayout(false);
@@ -691,8 +654,6 @@ namespace Call_of_Duty_FastFile_Editor
         private DataGridView zoneInfoDataGridView;
         private BindingSource bindingSource1;
         private TabPage tagsTabPage;
-        private TabPage stringTablesTabPage;
-        private TreeView stringTableTreeView;
         private ListView tagsListView;
         private ContextMenuStrip universalContextMenu;
         private ToolStripMenuItem copyToolStripMenuItem;
@@ -702,7 +663,6 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem increaseRawFileSizeToolStripMenuItem;
         private TabPage assetPoolTabPage;
         private ListView assetPoolListView;
-        private ListView stringTableListView;
         private TabPage localizeTabPage;
         private ListView localizeListView;
         private ToolStripMenuItem extractAllRawFilesToolStripMenuItem;

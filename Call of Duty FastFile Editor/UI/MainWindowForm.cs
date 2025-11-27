@@ -23,11 +23,6 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private List<RawFileNode> _rawFileNodes;
 
-        /// <summary>
-        /// List of string tables extracted from the zone file.
-        /// </summary>
-        private List<StringTable> _stringTables;
-
         private List<LocalizedEntry> _localizedEntries;
 
         /// <summary>
@@ -91,28 +86,27 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Parses and processes the asset records from the opened Fast File's zone.
         /// </summary>
-        private void LoadAssetRecordsData(bool forcePatternMatching = false)
+        private void LoadAssetRecordsData(bool forcePatternMatching = false, bool loadRawFiles = true, bool loadLocalizedEntries = true)
         {
+            var zone = _openedFastFile.OpenedFastFileZone;
+
             // Set the zone asset records to this form's field
-            _zoneAssetRecords = _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords;
+            _zoneAssetRecords = zone.ZoneFileAssets.ZoneAssetRecords;
 
             // Set these so it's shorter/easier to use them later
-            _assetPoolStartOffset = _openedFastFile.OpenedFastFileZone.AssetPoolStartOffset;
-            _assetPoolEndOffset = _openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
+            _assetPoolStartOffset = zone.AssetPoolStartOffset;
+            _assetPoolEndOffset = zone.AssetPoolEndOffset;
 
-            // Anything that needs to be displayed for the asset pool view tab should be loaded here
-
+            // Process asset records - uses structure-based parsing first, then pattern matching fallback
             _processResult = AssetRecordProcessor.ProcessAssetRecords(_openedFastFile, _zoneAssetRecords, forcePatternMatching);
 
-            // store the typed lists
-            _rawFileNodes = _processResult.RawFileNodes;
-            RawFileNode.CurrentZone = _openedFastFile.OpenedFastFileZone;
-            _stringTables = _processResult.StringTables;
-            _localizedEntries = _processResult.LocalizedEntries;
+            // store the typed lists based on user selection
+            _rawFileNodes = loadRawFiles ? _processResult.RawFileNodes : new List<RawFileNode>();
+            RawFileNode.CurrentZone = zone;
+            _localizedEntries = loadLocalizedEntries ? _processResult.LocalizedEntries : new List<LocalizedEntry>();
 
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
-
 
             // REWRITE EVENTUALLY. At this point we should know the location of the asset pool start
             // So we can go back one from the start and there be a null byte, then the tags end starts there
@@ -134,7 +128,6 @@ namespace Call_of_Duty_FastFile_Editor
             // Load the values parsed from the zone header (tag count, asset record count)
             LoadZoneHeaderValues(_openedFastFile.OpenedFastFileZone);
 
-            PopulateStringTable();
             PopulateLocalizeAssets();
             PopulateCollision_Map_Asset_StringData();
         }
@@ -290,13 +283,28 @@ namespace Call_of_Duty_FastFile_Editor
 
             try
             {
+                // Rebuild the zone file from parsed assets (only includes supported types)
+                string zoneName = Path.GetFileNameWithoutExtension(_openedFastFile.FfFilePath);
+                byte[]? newZoneData = ZoneFileBuilder.BuildFreshZone(_rawFileNodes, _localizedEntries, _openedFastFile, zoneName);
+
+                if (newZoneData == null)
+                {
+                    MessageBox.Show("Failed to rebuild zone file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Write the new zone data
+                File.WriteAllBytes(_openedFastFile.ZoneFilePath, newZoneData);
+
+                // Recompress to FF
                 _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
-                MessageBox.Show("Fast File saved to:\n\n" + _openedFastFile.FfFilePath,
+                MessageBox.Show($"Fast File saved to:\n\n{_openedFastFile.FfFilePath}\n\n" +
+                                $"Zone rebuilt with {_rawFileNodes.Count} rawfiles and {_localizedEntries?.Count ?? 0} localized entries.",
                                 "Saved",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Asterisk);
 
-                // Reset every node’s dirty flag now that the zone is saved
+                // Reset every node's dirty flag now that the zone is saved
                 foreach (var node in _rawFileNodes)
                     node.HasUnsavedChanges = false;
             }
@@ -330,8 +338,30 @@ namespace Call_of_Duty_FastFile_Editor
                     try
                     {
                         string newFilePath = saveFileDialog.FileName;
-                        _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, newFilePath, _openedFastFile);
-                        MessageBox.Show("Fast File saved to:\n\n" + newFilePath,
+
+                        // Rebuild the zone file from parsed assets (only includes supported types)
+                        string zoneName = Path.GetFileNameWithoutExtension(newFilePath);
+                        byte[]? newZoneData = ZoneFileBuilder.BuildFreshZone(_rawFileNodes, _localizedEntries, _openedFastFile, zoneName);
+
+                        if (newZoneData == null)
+                        {
+                            MessageBox.Show("Failed to rebuild zone file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        // Write the new zone data to a temp file for compression
+                        string tempZonePath = Path.Combine(Path.GetTempPath(), zoneName + ".zone");
+                        File.WriteAllBytes(tempZonePath, newZoneData);
+
+                        // Recompress to new FF path
+                        _fastFileHandler?.Recompress(newFilePath, tempZonePath, _openedFastFile);
+
+                        // Clean up temp file
+                        if (File.Exists(tempZonePath))
+                            File.Delete(tempZonePath);
+
+                        MessageBox.Show($"Fast File saved to:\n\n{newFilePath}\n\n" +
+                                        $"Zone rebuilt with {_rawFileNodes.Count} rawfiles and {_localizedEntries?.Count ?? 0} localized entries.",
                                         "Saved",
                                         MessageBoxButtons.OK,
                                         MessageBoxIcon.Asterisk);
@@ -821,51 +851,6 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
-        /// <summary>
-        /// Populates the String Table page view with the tables extracted from the zone file.
-        /// </summary>
-        private void PopulateStringTable()
-        {
-            if (_stringTables.Count <= 0)
-            {
-                mainTabControl.TabPages.Remove(stringTablesTabPage); // hide the tab page if there's no data to show
-                return;
-            }
-
-            // Clear existing nodes
-            stringTableTreeView.Nodes.Clear();
-
-            // For each table, create a node
-            foreach (var table in _stringTables)
-            {
-                TreeNode tableNode = new TreeNode(table.TableName)
-                {
-                    Tag = table // store the StringTable object for later use
-                };
-
-                // Add child nodes for Rows and Columns
-                tableNode.Nodes.Add($"Rows: {table.RowCount}");
-                tableNode.Nodes.Add($"Columns: {table.ColumnCount}");
-
-                // Add an extra node showing where the CSV text was found.
-                // For example, you can display the file header start offset.
-                tableNode.Nodes.Add($"Found at offset: 0x{table.StartOfFileHeader:X}");
-
-                stringTableTreeView.Nodes.Add(tableNode);
-            }
-        }
-
-        private void stringTableTreeView_BeforeSelect(object sender, TreeViewCancelEventArgs e)
-        {
-            // Cancel selection for child nodes with specific text
-            if (e.Node.Text.StartsWith("Rows:") ||
-                e.Node.Text.StartsWith("Columns:") ||
-                e.Node.Text.StartsWith("Found at offset:"))
-            {
-                e.Cancel = true;
-            }
-        }
-
         private void PopulateCollision_Map_Asset_StringData()
         {
             int offset = Collision_Map_Operations.FindCollision_Map_DataOffsetViaFF(_openedFastFile.OpenedFastFileZone);
@@ -1061,10 +1046,9 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void LoadAssetPoolIntoListView()
         {
-            // Make sure we have a valid zone and a populated asset pool
+            // Make sure we have valid data
             if (_openedFastFile == null ||
-                _openedFastFile.OpenedFastFileZone == null ||
-                _zoneAssetRecords == null)
+                _openedFastFile.OpenedFastFileZone == null)
             {
                 return;
             }
@@ -1078,121 +1062,75 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.FullRowSelect = true;
             assetPoolListView.GridLines = true;
 
-            // Columns that are going to be on the list view
-            assetPoolListView.Columns.Add($"Index ({_zoneAssetRecords.Count})", 100);
+            // Count total parsed assets
+            int totalParsed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0);
+
+            // Columns for the list view
+            assetPoolListView.Columns.Add($"Index ({totalParsed} parsed)", 100);
             assetPoolListView.Columns.Add("Asset Type", 100);
-            assetPoolListView.Columns.Add("AssetPoolRecordOffset", 80);
             assetPoolListView.Columns.Add("Header Start", 100);
-            assetPoolListView.Columns.Add("Header End", 100);
             assetPoolListView.Columns.Add("Data Start", 100);
             assetPoolListView.Columns.Add("Data End", 100);
-            assetPoolListView.Columns.Add("Size", 60);
-            assetPoolListView.Columns.Add("Asset Record End", 100);
-            assetPoolListView.Columns.Add("Name", 120);
-            assetPoolListView.Columns.Add("Parsing Method", 200);
+            assetPoolListView.Columns.Add("Size", 80);
+            assetPoolListView.Columns.Add("Asset End", 100);
+            assetPoolListView.Columns.Add("Name", 250);
+            assetPoolListView.Columns.Add("Parsing Method", 350);
 
-            // Place the asset pool itself at the top
+            // Place the asset pool header info at the top
             var pool = new ListViewItem("");
             pool.SubItems.Add("Asset Pool");
-            pool.SubItems.Add(string.Empty);
-            pool.SubItems.Add(string.Empty);
-            pool.SubItems.Add(string.Empty);
             pool.SubItems.Add($"0x{_assetPoolStartOffset:X}");
             pool.SubItems.Add($"0x{_assetPoolEndOffset:X}");
+            pool.SubItems.Add("");
             pool.SubItems.Add($"0x{(_assetPoolEndOffset - _assetPoolStartOffset):X}");
-
+            pool.SubItems.Add("");
+            pool.SubItems.Add($"Total zone assets: {_zoneAssetRecords?.Count ?? 0}");
+            pool.SubItems.Add("");
             assetPoolListView.Items.Add(pool);
 
-
-            // Populate a row (ListViewItem) for each record
             int index = 1;
-            foreach (var record in _zoneAssetRecords)
+
+            // Add rawfiles from parsed data
+            if (_rawFileNodes != null)
             {
-                var lvi = new ListViewItem(index.ToString());
-
-                // First column: AssetType
-                if (_openedFastFile.IsCod4File)
-                    lvi.SubItems.Add(record.AssetType_COD4.ToString());
-                else
-                    lvi.SubItems.Add(record.AssetType_COD5.ToString());
-
-                // Second column: AssetPoolRecordOffset in hex
-                lvi.SubItems.Add($"0x{record.AssetPoolRecordOffset:X}");
-
-                // Third & Fourth columns
-                lvi.SubItems.Add($"0x{record.HeaderStartOffset:X}");
-                lvi.SubItems.Add($"0x{record.HeaderEndOffset:X}");
-
-                // Fifth & Sixth columns
-                lvi.SubItems.Add($"0x{record.AssetDataStartPosition:X}");
-                lvi.SubItems.Add($"0x{record.AssetDataEndOffset:X}");
-
-                // Seventh column
-                lvi.SubItems.Add($"0x{record.Size:X}");
-
-                // Eighth column
-                lvi.SubItems.Add($"0x{record.AssetRecordEndOffset:X}");
-
-                // Ninth column
-                lvi.SubItems.Add(record.Name ?? string.Empty);
-
-                // Tenth column: Entire content, no truncation
-                if (!string.IsNullOrEmpty(record.AdditionalData))
+                foreach (var node in _rawFileNodes)
                 {
-                    lvi.SubItems.Add(record.AdditionalData);
+                    var lvi = new ListViewItem(index.ToString());
+                    lvi.SubItems.Add("rawfile");
+                    lvi.SubItems.Add($"0x{node.StartOfFileHeader:X}");
+                    lvi.SubItems.Add($"0x{node.CodeStartPosition:X}");
+                    lvi.SubItems.Add($"0x{node.CodeEndPosition:X}");
+                    lvi.SubItems.Add($"0x{node.MaxSize:X}");
+                    lvi.SubItems.Add($"0x{node.RawFileEndPosition:X}");
+                    lvi.SubItems.Add(node.FileName ?? string.Empty);
+                    lvi.SubItems.Add(node.AdditionalData ?? "Parsed");
+                    assetPoolListView.Items.Add(lvi);
+                    index++;
                 }
-                else
-                {
-                    //lvi.SubItems.Add(string.Empty);
-                    lvi.SubItems.Add("Unable to read.");
-                }
+            }
 
-                // Finally, add the row to the list
-                assetPoolListView.Items.Add(lvi);
-                index++;
+            // Add localize entries from parsed data
+            if (_localizedEntries != null)
+            {
+                foreach (var entry in _localizedEntries)
+                {
+                    var lvi = new ListViewItem(index.ToString());
+                    lvi.SubItems.Add("localize");
+                    lvi.SubItems.Add($"0x{entry.StartOfFileHeader:X}");
+                    lvi.SubItems.Add($"0x{entry.StartOfFileData:X}");
+                    lvi.SubItems.Add($"0x{entry.EndOfFileData:X}");
+                    int size = entry.EndOfFileData - entry.StartOfFileData;
+                    lvi.SubItems.Add($"0x{size:X}");
+                    lvi.SubItems.Add($"0x{entry.EndOfFileHeader:X}");
+                    lvi.SubItems.Add(entry.Key ?? string.Empty);
+                    lvi.SubItems.Add("Localized asset parsed using structure-based offset.");
+                    assetPoolListView.Items.Add(lvi);
+                    index++;
+                }
             }
 
             // Auto-resize columns to fit header size or content
             assetPoolListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-        }
-
-        private void stringTableTreeView_AfterSelect(object sender, TreeViewEventArgs e)
-        {
-            // 1) Clear existing items & columns in the ListView
-            stringTableListView.Items.Clear();
-            stringTableListView.Columns.Clear();
-
-            // 2) Use "Details" view with full-row select
-            stringTableListView.View = View.Details;
-            stringTableListView.FullRowSelect = true;
-            stringTableListView.GridLines = true;
-
-            // 3) Define columns for Index, Offset, and Text
-            //    Feel free to rename or adjust widths as desired
-            stringTableListView.Columns.Add("Index", 60);       // Which cell # in the table
-            stringTableListView.Columns.Add("Offset (Hex)", 100); // The file offset (if you want it)
-            stringTableListView.Columns.Add("Text", 300);
-
-            // Make sure the selected node actually corresponds to a StringTable
-            if (e.Node?.Tag is StringTable selectedTable)
-            {
-                // 4) Populate one row per cell in "Cells"
-                for (int i = 0; i < selectedTable?.Cells?.Count; i++)
-                {
-                    // Each entry in "Cells" is (Offset, Text)
-                    var (offset, text) = selectedTable.Cells[i];
-
-                    // Create a new ListViewItem for this cell
-                    ListViewItem lvi = new ListViewItem(i.ToString());        // 1st column: Index
-                    lvi.SubItems.Add($"0x{offset:X}");                        // 2nd column: Offset in hex
-                    lvi.SubItems.Add(text);                                   // 3rd column: the cell text
-
-                    stringTableListView.Items.Add(lvi);
-                }
-            }
-
-            // 5) Auto-resize columns to fit headers or content
-            stringTableListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
         /// <summary>
@@ -1276,9 +1214,6 @@ namespace Call_of_Duty_FastFile_Editor
             filesTreeView.Nodes.Clear();
             assetPoolListView.Items.Clear();
             assetPoolListView.Columns.Clear();
-            stringTableListView.Items.Clear();
-            stringTableListView.Columns.Clear();
-            stringTableTreeView.Nodes.Clear();
             tagsListView.Items.Clear();
             tagsListView.Columns.Clear();
             localizeListView.Items.Clear();
@@ -1478,8 +1413,25 @@ namespace Call_of_Duty_FastFile_Editor
                     // Load & parse that zone in one go
                     _openedFastFile.LoadZone();
 
+                    // Show asset selection dialog
+                    bool loadRawFiles = true;
+                    bool loadLocalizedEntries = true;
+
+                    using (var assetDialog = new AssetSelectionDialog(
+                        _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords,
+                        _openedFastFile.IsCod4File))
+                    {
+                        if (assetDialog.ShowDialog(this) == DialogResult.Cancel)
+                        {
+                            SaveCloseFastFileAndCleanUp();
+                            return;
+                        }
+                        loadRawFiles = assetDialog.LoadRawFiles;
+                        loadLocalizedEntries = assetDialog.LoadLocalizedEntries;
+                    }
+
                     // Here is where the asset records actual data is parsed throughout the zone
-                    LoadAssetRecordsData();
+                    LoadAssetRecordsData(loadRawFiles: loadRawFiles, loadLocalizedEntries: loadLocalizedEntries);
                 }
                 catch (Exception ex)
                 {
@@ -1551,8 +1503,25 @@ namespace Call_of_Duty_FastFile_Editor
                     // Load & parse that zone in one go
                     _openedFastFile.LoadZone();
 
+                    // Show asset selection dialog
+                    bool loadRawFiles = true;
+                    bool loadLocalizedEntries = true;
+
+                    using (var assetDialog = new AssetSelectionDialog(
+                        _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords,
+                        _openedFastFile.IsCod4File))
+                    {
+                        if (assetDialog.ShowDialog(this) == DialogResult.Cancel)
+                        {
+                            SaveCloseFastFileAndCleanUp();
+                            return;
+                        }
+                        loadRawFiles = assetDialog.LoadRawFiles;
+                        loadLocalizedEntries = assetDialog.LoadLocalizedEntries;
+                    }
+
                     // Here is where the asset records actual data is parsed throughout the zone
-                    LoadAssetRecordsData();
+                    LoadAssetRecordsData(loadRawFiles: loadRawFiles, loadLocalizedEntries: loadLocalizedEntries);
                 }
                 catch (Exception ex)
                 {
