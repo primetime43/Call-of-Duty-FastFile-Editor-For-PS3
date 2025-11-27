@@ -14,3 +14,9 @@ FastFileCompilerGUI/obj/
 FastFileCompiler/obj/
 /FastFileCompiler/bin
 /FastFileCompilerGUI/bin/Release/net8.0-windows
+/.claude/settings.local.json
+/FastFileTool/bin/Release/net8.0/win-x64
+/FastFileTool/obj
+/publish
+/FastFileToolGUI/bin
+/FastFileToolGUI/obj
