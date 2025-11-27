@@ -438,7 +438,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// </summary>
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SaveCloseFastFileAndCleanUp(true);
+            SaveCloseFastFileAndCleanUp(!keepZoneFileToolStripMenuItem.Checked);
             Close();
         }
 
@@ -746,7 +746,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <param name="e"></param>
         private void closeFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SaveCloseFastFileAndCleanUp(true);
+            SaveCloseFastFileAndCleanUp(!keepZoneFileToolStripMenuItem.Checked);
         }
 
         private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1300,8 +1300,9 @@ namespace Call_of_Duty_FastFile_Editor
                     // if No, proceed and discard unsaved changes
                 }
 
-                // Clean up the temp zone file
-                if (_openedFastFile != null && File.Exists(_openedFastFile.ZoneFilePath))
+                // Clean up the temp zone file (unless user wants to keep it)
+                if (!keepZoneFileToolStripMenuItem.Checked &&
+                    _openedFastFile != null && File.Exists(_openedFastFile.ZoneFilePath))
                 {
                     try
                     {
@@ -1387,6 +1388,31 @@ namespace Call_of_Duty_FastFile_Editor
             hexForm.Show();
         }
 
+        /// <summary>
+        /// Creates a backup of the FastFile if one doesn't already exist.
+        /// </summary>
+        private void CreateBackupIfNeeded(string filePath)
+        {
+            try
+            {
+                string backupPath = filePath + ".bak";
+                if (!File.Exists(backupPath))
+                {
+                    File.Copy(filePath, backupPath);
+                    Debug.WriteLine($"[Backup] Created backup: {backupPath}");
+                }
+                else
+                {
+                    Debug.WriteLine($"[Backup] Backup already exists: {backupPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Backup] Failed to create backup: {ex.Message}");
+                // Don't block opening the file if backup fails
+            }
+        }
+
         private void COD5ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (_openedFastFile != null)
@@ -1404,6 +1430,9 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 return;
             }
+
+            // Create a backup of the original FastFile before any modifications
+            CreateBackupIfNeeded(openFileDialog.FileName);
 
             try
             {
@@ -1500,6 +1529,9 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 return;
             }
+
+            // Create a backup of the original FastFile before any modifications
+            CreateBackupIfNeeded(openFileDialog.FileName);
 
             try
             {

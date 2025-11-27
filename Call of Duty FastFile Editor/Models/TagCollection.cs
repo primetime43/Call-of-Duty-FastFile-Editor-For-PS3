@@ -30,7 +30,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
         /// <summary>
         /// Finds tags using known zone structure offsets.
-        /// Tags are located between the zone header (0x34) and the asset pool start.
+        /// Uses pre-parsed offsets from StructureBasedZoneParser if available.
         /// </summary>
         public static TagCollection? FindTags(ZoneFile zone)
         {
@@ -39,13 +39,17 @@ namespace Call_of_Duty_FastFile_Editor.Models
 
             byte[] zoneBytes = zone.Data;
 
-            // Tags start right after the header (0x34)
-            int tagSectionStart = ZoneHeaderSize;
+            // Use pre-parsed tag section offsets if available (set by StructureBasedZoneParser)
+            int tagSectionStart = zone.TagSectionStartOffset > 0
+                ? zone.TagSectionStartOffset
+                : ZoneHeaderSize;
 
-            // Tags end at the asset pool start (we already parsed this)
-            int tagSectionEnd = zone.AssetPoolStartOffset > 0
-                ? zone.AssetPoolStartOffset
-                : FindAssetPoolStart(zoneBytes, tagSectionStart);
+            // Tags end at the tag section end or asset pool start
+            int tagSectionEnd = zone.TagSectionEndOffset > 0
+                ? zone.TagSectionEndOffset
+                : (zone.AssetPoolStartOffset > 0
+                    ? zone.AssetPoolStartOffset
+                    : FindAssetPoolStart(zoneBytes, tagSectionStart));
 
             if (tagSectionEnd <= tagSectionStart)
                 return null;
@@ -86,8 +90,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 offset += tag.Length + 1; // +1 for null terminator
             }
 
-            zone.TagSectionStartOffset = tagSectionStart;
-            zone.TagSectionEndOffset = tagSectionEnd;
+            // Only update zone offsets if they weren't already set
+            if (zone.TagSectionStartOffset == 0)
+                zone.TagSectionStartOffset = tagSectionStart;
+            if (zone.TagSectionEndOffset == 0)
+                zone.TagSectionEndOffset = tagSectionEnd;
 
             return new TagCollection
             {
@@ -116,16 +123,27 @@ namespace Call_of_Duty_FastFile_Editor.Models
         }
 
         /// <summary>
-        /// Fallback: finds the asset pool start by looking for the pattern 00 00 00 XX FF FF FF FF
+        /// Fallback: finds the asset pool start by looking for either format:
+        /// Format A: 00 00 00 XX FF FF FF FF (type first)
+        /// Format B: FF FF FF FF 00 00 00 XX (pointer first)
         /// </summary>
         private static int FindAssetPoolStart(byte[] zoneBytes, int startOffset)
         {
             for (int i = startOffset; i <= zoneBytes.Length - 8; i++)
             {
-                // Asset pool entry pattern: 00 00 00 [type] FF FF FF FF
+                // Format A: 00 00 00 [type] FF FF FF FF (type first)
                 if (zoneBytes[i] == 0x00 && zoneBytes[i + 1] == 0x00 && zoneBytes[i + 2] == 0x00 &&
                     zoneBytes[i + 4] == 0xFF && zoneBytes[i + 5] == 0xFF &&
                     zoneBytes[i + 6] == 0xFF && zoneBytes[i + 7] == 0xFF)
+                {
+                    return i;
+                }
+
+                // Format B: FF FF FF FF 00 00 00 [type] (pointer first)
+                if (zoneBytes[i] == 0xFF && zoneBytes[i + 1] == 0xFF &&
+                    zoneBytes[i + 2] == 0xFF && zoneBytes[i + 3] == 0xFF &&
+                    zoneBytes[i + 4] == 0x00 && zoneBytes[i + 5] == 0x00 &&
+                    zoneBytes[i + 6] == 0x00)
                 {
                     return i;
                 }

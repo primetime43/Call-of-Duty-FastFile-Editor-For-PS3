@@ -50,6 +50,8 @@ namespace Call_of_Duty_FastFile_Editor
             injectFileToolStripMenuItem = new ToolStripMenuItem();
             extractAllRawFilesToolStripMenuItem = new ToolStripMenuItem();
             toolStripMenuItem2 = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            keepZoneFileToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             CheckForUpdatesToolStripMenuItem = new ToolStripMenuItem();
@@ -264,7 +266,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { rawFileToolsMenuItem, injectFileToolStripMenuItem, extractAllRawFilesToolStripMenuItem, toolStripMenuItem2 });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { rawFileToolsMenuItem, injectFileToolStripMenuItem, extractAllRawFilesToolStripMenuItem, toolStripMenuItem2, toolStripSeparator2, keepZoneFileToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
@@ -317,7 +319,20 @@ namespace Call_of_Duty_FastFile_Editor
             toolStripMenuItem2.Size = new Size(210, 24);
             toolStripMenuItem2.Text = "Zone Hex View";
             toolStripMenuItem2.Click += toolStripMenuItem2_Click;
-            // 
+            //
+            // toolStripSeparator2
+            //
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(207, 6);
+            //
+            // keepZoneFileToolStripMenuItem
+            //
+            keepZoneFileToolStripMenuItem.CheckOnClick = true;
+            keepZoneFileToolStripMenuItem.Name = "keepZoneFileToolStripMenuItem";
+            keepZoneFileToolStripMenuItem.Size = new Size(210, 24);
+            keepZoneFileToolStripMenuItem.Text = "Keep Uncompressed Zone File";
+            keepZoneFileToolStripMenuItem.ToolTipText = "When checked, keeps a copy of the uncompressed .zone file when closing";
+            //
             // helpToolStripMenuItem
             // 
             helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { aboutToolStripMenuItem, CheckForUpdatesToolStripMenuItem, reportIssuesToolStripMenuItem });
@@ -666,5 +681,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem cOD4ToolStripMenuItem;
         private ToolStripMenuItem reloadRawFilesPatternMatchingToolStripMenuItem;
         private ToolStripMenuItem reportIssuesToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator2;
+        private ToolStripMenuItem keepZoneFileToolStripMenuItem;
     }
 }

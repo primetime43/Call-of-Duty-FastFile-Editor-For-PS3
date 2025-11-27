@@ -82,16 +82,30 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 // Step 3: Asset pool starts right after tags
                 int assetPoolStart = tagSectionEnd;
 
-                // Skip any padding zeros between tags and asset pool
-                while (assetPoolStart < _data.Length && _data[assetPoolStart] == 0x00)
+                // Skip any padding between tags and asset pool, looking for either format
+                while (assetPoolStart + 8 <= _data.Length)
                 {
-                    // Check if this is actually the start of an asset record (00 00 00 XX FF FF FF FF)
-                    if (assetPoolStart + 8 <= _data.Length &&
+                    // Format A: 00 00 00 XX FF FF FF FF (type first)
+                    if (_data[assetPoolStart] == 0x00 && _data[assetPoolStart + 1] == 0x00 &&
+                        _data[assetPoolStart + 2] == 0x00 &&
                         _data[assetPoolStart + 4] == 0xFF && _data[assetPoolStart + 5] == 0xFF &&
                         _data[assetPoolStart + 6] == 0xFF && _data[assetPoolStart + 7] == 0xFF)
                     {
+                        Debug.WriteLine($"[StructureParser] Found Format A asset pool at 0x{assetPoolStart:X}");
                         break;
                     }
+
+                    // Format B: FF FF FF FF 00 00 00 XX (pointer first)
+                    if (_data[assetPoolStart] == 0xFF && _data[assetPoolStart + 1] == 0xFF &&
+                        _data[assetPoolStart + 2] == 0xFF && _data[assetPoolStart + 3] == 0xFF &&
+                        _data[assetPoolStart + 4] == 0x00 && _data[assetPoolStart + 5] == 0x00 &&
+                        _data[assetPoolStart + 6] == 0x00)
+                    {
+                        Debug.WriteLine($"[StructureParser] Found Format B asset pool at 0x{assetPoolStart:X}");
+                        break;
+                    }
+
+                    // Skip padding bytes (0x00 or other non-pattern bytes)
                     assetPoolStart++;
                 }
 
