@@ -359,6 +359,8 @@ public partial class MainForm : Form
                         Name = entry.AssetName,
                         Data = File.ReadAllBytes(entry.SourcePath)
                     };
+                    // Strip zone header if file was exported with header included
+                    rawFile.StripHeaderIfPresent();
                     builder.AddRawFile(rawFile);
                 }
 
