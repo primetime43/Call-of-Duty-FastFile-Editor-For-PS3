@@ -237,6 +237,7 @@ namespace Call_of_Duty_FastFile_Editor
             renameRawFileToolStripMenuItem.Name = "renameRawFileToolStripMenuItem";
             renameRawFileToolStripMenuItem.Size = new Size(214, 24);
             renameRawFileToolStripMenuItem.Text = "Rename Raw File";
+            renameRawFileToolStripMenuItem.Click += renameRawFileToolStripMenuItem_Click;
             // 
             // toolStripSeparator1
             // 

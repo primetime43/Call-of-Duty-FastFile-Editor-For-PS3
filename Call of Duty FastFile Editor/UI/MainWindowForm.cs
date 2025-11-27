@@ -751,6 +751,23 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            PerformRawFileRename();
+        }
+
+        /// <summary>
+        /// Handles the Edit menu Rename Raw File click.
+        /// </summary>
+        private void renameRawFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            PerformRawFileRename();
+        }
+
+        /// <summary>
+        /// Performs the raw file rename operation.
+        /// Used by both the Edit menu and context menu rename options.
+        /// </summary>
+        private void PerformRawFileRename()
+        {
             RawFileNode selectedNode = GetSelectedRawFileNode();
             if (selectedNode == null)
                 return;
