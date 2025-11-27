@@ -15,6 +15,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
     {
         private readonly List<AssetTypeInfo> _assetTypes;
         private readonly bool _isCod4;
+        private readonly int _tagCount;
 
         /// <summary>
         /// Gets whether to load rawfiles.
@@ -27,14 +28,21 @@ namespace Call_of_Duty_FastFile_Editor.UI
         public bool LoadLocalizedEntries { get; private set; } = true;
 
         /// <summary>
+        /// Gets whether to load tags (script strings).
+        /// </summary>
+        public bool LoadTags { get; private set; } = true;
+
+        /// <summary>
         /// Creates a new AssetSelectionDialog.
         /// </summary>
         /// <param name="zoneAssetRecords">The asset records from the zone.</param>
         /// <param name="isCod4">True if COD4, false if COD5.</param>
-        public AssetSelectionDialog(List<ZoneAssetRecord> zoneAssetRecords, bool isCod4)
+        /// <param name="tagCount">Number of tags in the zone.</param>
+        public AssetSelectionDialog(List<ZoneAssetRecord> zoneAssetRecords, bool isCod4, int tagCount = 0)
         {
             InitializeComponent();
             _isCod4 = isCod4;
+            _tagCount = tagCount;
             _assetTypes = AnalyzeAssets(zoneAssetRecords);
             PopulateAssetList();
         }
@@ -78,6 +86,25 @@ namespace Call_of_Duty_FastFile_Editor.UI
             int supportedCount = 0;
             int unsupportedCount = 0;
 
+            // Add tags at the top (special item, not an asset type)
+            if (_tagCount > 0)
+            {
+                var tagItem = new ListViewItem("tags (script strings)");
+                tagItem.SubItems.Add(_tagCount.ToString());
+                tagItem.SubItems.Add("Yes");
+                tagItem.Tag = new AssetTypeInfo
+                {
+                    TypeName = "tags",
+                    Count = _tagCount,
+                    IsSupported = true,
+                    IsSelected = true
+                };
+                tagItem.Checked = true;
+                tagItem.ForeColor = Color.DarkGreen;
+                assetListView.Items.Add(tagItem);
+                supportedCount += _tagCount;
+            }
+
             foreach (var asset in _assetTypes)
             {
                 var item = new ListViewItem(asset.TypeName);
@@ -101,7 +128,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
             }
 
             // Update summary label
-            summaryLabel.Text = $"Total: {supportedCount + unsupportedCount} assets | " +
+            summaryLabel.Text = $"Total: {supportedCount + unsupportedCount} items | " +
                                $"Supported: {supportedCount} | Unsupported: {unsupportedCount}";
         }
 
@@ -119,6 +146,8 @@ namespace Call_of_Duty_FastFile_Editor.UI
                         LoadRawFiles = item.Checked;
                     else if (asset.TypeName == "localize")
                         LoadLocalizedEntries = item.Checked;
+                    else if (asset.TypeName == "tags")
+                        LoadTags = item.Checked;
                 }
             }
 

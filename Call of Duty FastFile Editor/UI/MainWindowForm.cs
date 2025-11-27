@@ -86,7 +86,7 @@ namespace Call_of_Duty_FastFile_Editor
         /// <summary>
         /// Parses and processes the asset records from the opened Fast File's zone.
         /// </summary>
-        private void LoadAssetRecordsData(bool forcePatternMatching = false, bool loadRawFiles = true, bool loadLocalizedEntries = true)
+        private void LoadAssetRecordsData(bool forcePatternMatching = false, bool loadRawFiles = true, bool loadLocalizedEntries = true, bool loadTags = true)
         {
             var zone = _openedFastFile.OpenedFastFileZone;
 
@@ -108,9 +108,25 @@ namespace Call_of_Duty_FastFile_Editor
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
 
-            // REWRITE EVENTUALLY. At this point we should know the location of the asset pool start
-            // So we can go back one from the start and there be a null byte, then the tags end starts there
-            PopulateTags();
+            // Parse and populate tags if selected
+            if (loadTags)
+            {
+                PopulateTags();
+                // Ensure tags tab is visible
+                if (!mainTabControl.TabPages.Contains(tagsTabPage))
+                {
+                    mainTabControl.TabPages.Insert(2, tagsTabPage); // Insert after Asset Pool and Raw Files
+                }
+            }
+            else
+            {
+                _tags = null;
+                // Hide tags tab
+                if (mainTabControl.TabPages.Contains(tagsTabPage))
+                {
+                    mainTabControl.TabPages.Remove(tagsTabPage);
+                }
+            }
         }
 
         /// <summary>
@@ -1413,13 +1429,18 @@ namespace Call_of_Duty_FastFile_Editor
                     // Load & parse that zone in one go
                     _openedFastFile.LoadZone();
 
+                    // Get tag count for the dialog
+                    int tagCount = TagOperations.GetTagCount(_openedFastFile.OpenedFastFileZone);
+
                     // Show asset selection dialog
                     bool loadRawFiles = true;
                     bool loadLocalizedEntries = true;
+                    bool loadTags = true;
 
                     using (var assetDialog = new AssetSelectionDialog(
                         _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords,
-                        _openedFastFile.IsCod4File))
+                        _openedFastFile.IsCod4File,
+                        tagCount))
                     {
                         if (assetDialog.ShowDialog(this) == DialogResult.Cancel)
                         {
@@ -1428,10 +1449,11 @@ namespace Call_of_Duty_FastFile_Editor
                         }
                         loadRawFiles = assetDialog.LoadRawFiles;
                         loadLocalizedEntries = assetDialog.LoadLocalizedEntries;
+                        loadTags = assetDialog.LoadTags;
                     }
 
                     // Here is where the asset records actual data is parsed throughout the zone
-                    LoadAssetRecordsData(loadRawFiles: loadRawFiles, loadLocalizedEntries: loadLocalizedEntries);
+                    LoadAssetRecordsData(loadRawFiles: loadRawFiles, loadLocalizedEntries: loadLocalizedEntries, loadTags: loadTags);
                 }
                 catch (Exception ex)
                 {
@@ -1503,13 +1525,18 @@ namespace Call_of_Duty_FastFile_Editor
                     // Load & parse that zone in one go
                     _openedFastFile.LoadZone();
 
+                    // Get tag count for the dialog
+                    int tagCount = TagOperations.GetTagCount(_openedFastFile.OpenedFastFileZone);
+
                     // Show asset selection dialog
                     bool loadRawFiles = true;
                     bool loadLocalizedEntries = true;
+                    bool loadTags = true;
 
                     using (var assetDialog = new AssetSelectionDialog(
                         _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords,
-                        _openedFastFile.IsCod4File))
+                        _openedFastFile.IsCod4File,
+                        tagCount))
                     {
                         if (assetDialog.ShowDialog(this) == DialogResult.Cancel)
                         {
@@ -1518,10 +1545,11 @@ namespace Call_of_Duty_FastFile_Editor
                         }
                         loadRawFiles = assetDialog.LoadRawFiles;
                         loadLocalizedEntries = assetDialog.LoadLocalizedEntries;
+                        loadTags = assetDialog.LoadTags;
                     }
 
                     // Here is where the asset records actual data is parsed throughout the zone
-                    LoadAssetRecordsData(loadRawFiles: loadRawFiles, loadLocalizedEntries: loadLocalizedEntries);
+                    LoadAssetRecordsData(loadRawFiles: loadRawFiles, loadLocalizedEntries: loadLocalizedEntries, loadTags: loadTags);
                 }
                 catch (Exception ex)
                 {
