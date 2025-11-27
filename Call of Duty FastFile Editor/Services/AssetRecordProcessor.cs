@@ -35,6 +35,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
             int previousRecordEndOffset = 0;
             string assetRecordMethod = string.Empty;
 
+            // Flag to track if we have a known good starting offset
+            // For i=0, we use AssetPoolEndOffset which IS a known good offset
+            bool hasKnownStartingOffset = false;
+
             // Load file data ONCE for pattern matching
             byte[] zoneFileData = System.IO.File.ReadAllBytes(openedFastFile.ZoneFilePath);
 
@@ -53,11 +57,22 @@ namespace Call_of_Duty_FastFile_Editor.Services
                     // - For the first record, use the AssetPoolEndOffset.
                     // - For subsequent records, if previousRecordEndOffset is available, use it;
                     //   otherwise, fall back to the last parsed record's end offset.
-                    int startingOffset = (i == 0)
-                        ? openedFastFile.OpenedFastFileZone.AssetPoolEndOffset
-                        : (previousRecordEndOffset > 0
-                            ? previousRecordEndOffset
-                            : zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset);
+                    int startingOffset;
+                    if (i == 0)
+                    {
+                        startingOffset = openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
+                        hasKnownStartingOffset = true; // We know AssetPoolEndOffset from structure parsing
+                    }
+                    else if (previousRecordEndOffset > 0)
+                    {
+                        startingOffset = previousRecordEndOffset;
+                        hasKnownStartingOffset = true;
+                    }
+                    else
+                    {
+                        startingOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset;
+                        hasKnownStartingOffset = startingOffset > 0;
+                    }
 
                     if (openedFastFile.IsCod4File)
                     {
@@ -74,9 +89,9 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                     if (node != null)
                                     {
                                         // Set the extraction method description based on the offset used.
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "Raw file parsed using previous record's offset."
-                                            : "Raw file parsed from asset pool end using pattern matching.";
+                                        assetRecordMethod = hasKnownStartingOffset
+                                            ? "Raw file parsed using structure-based offset."
+                                            : "Raw file parsed using pattern matching.";
                                         result.RawFileNodes.Add(node);
                                         UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
@@ -87,16 +102,16 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 {
                                     StringTable table = forcePatternMatching
                                     ? StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset)
-                                    : (previousRecordEndOffset > 0
+                                    : (hasKnownStartingOffset
                                         ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
                                         : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset));
 
 
                                     if (table != null)
                                     {
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "String table parsed using previous record's offset."
-                                            : "String table parsed using pattern matching because previous record end was unknown.";
+                                        assetRecordMethod = hasKnownStartingOffset
+                                            ? "String table parsed using structure-based offset."
+                                            : "String table parsed using pattern matching.";
                                         result.StringTables.Add(table);
                                         UpdateAssetRecord(zoneAssetRecords, i, table, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
@@ -107,14 +122,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 {
                                     var tuple = forcePatternMatching
                                     ? LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset)
-                                    : (previousRecordEndOffset > 0
+                                    : (hasKnownStartingOffset
                                         ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
                                         : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset));
 
                                     LocalizedEntry localizedEntry = tuple.entry;
-                                    assetRecordMethod = (previousRecordEndOffset > 0)
-                                        ? "Localized asset parsed using previous record's offset."
-                                        : "Localized asset parsed using pattern matching because previous record end was unknown.";
+                                    assetRecordMethod = hasKnownStartingOffset
+                                        ? "Localized asset parsed using structure-based offset."
+                                        : "Localized asset parsed using pattern matching.";
 
                                     if (localizedEntry != null)
                                     {
@@ -144,9 +159,9 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                     if (node != null)
                                     {
                                         // Set the extraction method description based on the offset used.
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "Raw file parsed using previous record's offset."
-                                            : "Raw file parsed from asset pool end using pattern matching.";
+                                        assetRecordMethod = hasKnownStartingOffset
+                                            ? "Raw file parsed using structure-based offset."
+                                            : "Raw file parsed using pattern matching.";
                                         result.RawFileNodes.Add(node);
                                         UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
@@ -157,15 +172,15 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 {
                                     StringTable table = forcePatternMatching
                                     ? StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset)
-                                    : (previousRecordEndOffset > 0
+                                    : (hasKnownStartingOffset
                                         ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
                                         : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset));
 
                                     if (table != null)
                                     {
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "String table parsed using previous record's offset."
-                                            : "String table parsed using pattern matching because previous record end was unknown.";
+                                        assetRecordMethod = hasKnownStartingOffset
+                                            ? "String table parsed using structure-based offset."
+                                            : "String table parsed using pattern matching.";
                                         result.StringTables.Add(table);
                                         UpdateAssetRecord(zoneAssetRecords, i, table, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
@@ -176,15 +191,15 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                 {
                                     var tuple = forcePatternMatching
                                     ? LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset)
-                                    : (previousRecordEndOffset > 0
+                                    : (hasKnownStartingOffset
                                         ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
                                         : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset));
 
 
                                     LocalizedEntry localizedEntry = tuple.entry;
-                                    assetRecordMethod = (previousRecordEndOffset > 0)
-                                        ? "Localized asset parsed using previous record's offset."
-                                        : "Localized asset parsed using pattern matching because previous record end was unknown.";
+                                    assetRecordMethod = hasKnownStartingOffset
+                                        ? "Localized asset parsed using structure-based offset."
+                                        : "Localized asset parsed using pattern matching.";
 
                                     if (localizedEntry != null)
                                     {

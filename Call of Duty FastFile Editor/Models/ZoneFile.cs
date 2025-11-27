@@ -101,21 +101,28 @@ namespace Call_of_Duty_FastFile_Editor.Models
         /// <summary>Reloads Data from disk.</summary>
         public void LoadData() => Data = File.ReadAllBytes(FilePath);
 
-        /// <summary>Parses the zone’s asset pool into ZoneFileAssets & offsets.</summary>
+        /// <summary>Parses the zone's asset pool into ZoneFileAssets & offsets.</summary>
         public void ParseAssetPool()
         {
-            var parser = new AssetPoolParser(this);
-            bool success = parser.MapZoneAssetsPoolAndGetEndOffset();
+            // Use structure-based parsing first (uses header counts)
+            var structureParser = new StructureBasedZoneParser(this);
+            bool success = structureParser.Parse();
+
             if (!success)
             {
-                Debug.WriteLine("Asset pool parse failed: AssetCount was -1.");
-                MessageBox.Show(
-                "Failed to parse asset pool!\n\nZone file's AssetCount was -1, cannot determine expected number of assets.",
-                "Parse Failed",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error
-            );
-
+                Debug.WriteLine("Structure-based parsing failed, trying pattern-based fallback.");
+                // Fallback is handled internally by StructureBasedZoneParser
+                // If we still fail, show error
+                if (ZoneFileAssets.ZoneAssetRecords == null || ZoneFileAssets.ZoneAssetRecords.Count == 0)
+                {
+                    Debug.WriteLine("Asset pool parse failed: No assets found.");
+                    MessageBox.Show(
+                        "Failed to parse asset pool!\n\nNo assets could be found in the zone file.",
+                        "Parse Failed",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
             }
         }
 
