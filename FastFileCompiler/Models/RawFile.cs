@@ -61,91 +61,194 @@ public class RawFile
 
     /// <summary>
     /// Detects and strips the zone raw file header if present.
-    /// Raw files exported with headers have: [4-byte ptr] [4-byte len] [name\0] [data]
+    /// Zone raw file format: [4-byte ptr] [4-byte len (BE)] [4-byte ptr] [name\0] [data]
     /// </summary>
     public void StripHeaderIfPresent()
     {
         if (Data.Length < 16)
             return;
 
-        // Check if first bytes look like a header (non-printable bytes followed by path)
-        // Header format: 4 bytes (ptr) + 4 bytes (len) + null-terminated name + data
+        // Method 1: Try to validate using the embedded length field
+        // Zone format: FF FF FF FF [4-byte size BE] FF FF FF FF [name\0] [data]
+        if (TryStripUsingLengthField())
+            return;
 
-        // First 4 bytes should be non-ASCII (pointer placeholder like 0x01010101 or 0xFFFFFFFF)
+        // Method 2: Check for non-ASCII start followed by null-terminated path string
+        if (TryStripUsingNullTerminator())
+            return;
+    }
+
+    /// <summary>
+    /// Attempts to strip header by validating the embedded length field.
+    /// </summary>
+    private bool TryStripUsingLengthField()
+    {
+        // Check for FF FF FF FF marker at start (or similar non-ASCII bytes)
+        bool hasMarkerStart = (Data[0] == 0xFF && Data[1] == 0xFF && Data[2] == 0xFF && Data[3] == 0xFF) ||
+                              (Data[0] < 0x20 && Data[1] < 0x20 && Data[2] < 0x20 && Data[3] < 0x20);
+
+        if (!hasMarkerStart)
+            return false;
+
+        // Read embedded length at bytes 4-7 (big-endian)
+        int embeddedLength = (Data[4] << 24) | (Data[5] << 16) | (Data[6] << 8) | Data[7];
+
+        // Sanity check: length should be reasonable (less than total file size minus header)
+        if (embeddedLength <= 0 || embeddedLength > Data.Length - 12)
+            return false;
+
+        // Find null terminator starting at byte 12 (after the two 4-byte markers and length)
+        int nameStart = 12;
+        int nullPos = FindNullTerminator(nameStart, Math.Min(512, Data.Length));
+
+        if (nullPos < 0)
+            return false;
+
+        // Validate: the name should look like a valid path (contains / or \)
+        string embeddedName = Encoding.ASCII.GetString(Data, nameStart, nullPos - nameStart);
+        if (!embeddedName.Contains('/') && !embeddedName.Contains('\\'))
+            return false;
+
+        // Content starts after the null terminator
+        int contentStart = nullPos + 1;
+
+        // Validate: embedded length should match remaining data (with some tolerance for trailing null)
+        int actualRemainingLength = Data.Length - contentStart;
+        if (Math.Abs(embeddedLength - actualRemainingLength) > 1)
+            return false;
+
+        // Strip the header
+        ExtractContent(contentStart);
+        return true;
+    }
+
+    /// <summary>
+    /// Attempts to strip header by finding a null-terminated path string.
+    /// </summary>
+    private bool TryStripUsingNullTerminator()
+    {
+        // First bytes should be non-printable ASCII
         bool hasNonAsciiStart = Data[0] < 0x20 || Data[0] > 0x7E ||
                                 Data[1] < 0x20 || Data[1] > 0x7E ||
                                 Data[2] < 0x20 || Data[2] > 0x7E ||
                                 Data[3] < 0x20 || Data[3] > 0x7E;
 
         if (!hasNonAsciiStart)
-            return;
+            return false;
 
-        // Look for a path pattern (e.g., "maps/", "common_scripts/", etc.) within first 512 bytes
+        // Search for a null terminator that ends what looks like a file path
         int searchLimit = Math.Min(512, Data.Length);
-        int pathStart = -1;
 
-        // Common path prefixes in CoD raw files
-        string[] pathPrefixes = { "maps/", "common_scripts/", "animscripts/", "clientscripts/", "zzzz/" };
-
-        for (int i = 8; i < searchLimit - 5; i++)
+        for (int nullPos = 8; nullPos < searchLimit; nullPos++)
         {
-            foreach (var prefix in pathPrefixes)
-            {
-                if (MatchesAt(Data, i, prefix))
-                {
-                    pathStart = i;
-                    break;
-                }
-            }
-            if (pathStart >= 0)
-                break;
+            if (Data[nullPos] != 0x00)
+                continue;
+
+            // Check if bytes before null look like a path (printable ASCII with / or extension)
+            int pathStart = FindPathStart(nullPos);
+            if (pathStart < 0)
+                continue;
+
+            string potentialPath = Encoding.ASCII.GetString(Data, pathStart, nullPos - pathStart);
+
+            // Validate it looks like a file path (has extension or path separator)
+            if (!LooksLikeFilePath(potentialPath))
+                continue;
+
+            // Content starts after the null terminator
+            int contentStart = nullPos + 1;
+            if (contentStart >= Data.Length)
+                continue;
+
+            // Verify content starts with something reasonable (printable or common bytes)
+            if (!IsValidContentStart(contentStart))
+                continue;
+
+            // Strip the header
+            ExtractContent(contentStart);
+            return true;
         }
 
-        if (pathStart < 0)
-            return;
+        return false;
+    }
 
-        // Find the null terminator after the path/name
-        int nullPos = -1;
-        for (int i = pathStart; i < searchLimit; i++)
+    /// <summary>
+    /// Finds where the path string likely starts by scanning backwards from null terminator.
+    /// </summary>
+    private int FindPathStart(int nullPos)
+    {
+        // Scan backwards to find where printable ASCII starts
+        for (int i = nullPos - 1; i >= 8; i--)
+        {
+            byte b = Data[i];
+            // If we hit a non-printable byte, the path starts after it
+            if (b < 0x20 || b > 0x7E)
+                return i + 1;
+        }
+        return 8; // Default to byte 8 (after potential header)
+    }
+
+    /// <summary>
+    /// Checks if a string looks like a valid file path.
+    /// </summary>
+    private static bool LooksLikeFilePath(string str)
+    {
+        if (string.IsNullOrEmpty(str) || str.Length < 3)
+            return false;
+
+        // Should have an extension or path separator
+        return str.Contains('/') || str.Contains('\\') ||
+               str.EndsWith(".gsc") || str.EndsWith(".csc") ||
+               str.EndsWith(".cfg") || str.EndsWith(".str") ||
+               str.EndsWith(".csv") || str.EndsWith(".txt") ||
+               str.EndsWith(".menu") || str.EndsWith(".vision");
+    }
+
+    /// <summary>
+    /// Checks if the content at the given position looks valid.
+    /// </summary>
+    private bool IsValidContentStart(int position)
+    {
+        if (position >= Data.Length)
+            return false;
+
+        byte first = Data[position];
+
+        // Common script/text file starts
+        return first == '/' ||  // Comment
+               first == '#' ||  // Preprocessor
+               first == '\r' || // Newline
+               first == '\n' ||
+               first == ' ' ||  // Whitespace
+               first == '\t' ||
+               (first >= 'a' && first <= 'z') ||  // Lowercase letter
+               (first >= 'A' && first <= 'Z') ||  // Uppercase letter
+               first == '{' ||  // Block start
+               first == '[';    // Array/section
+    }
+
+    /// <summary>
+    /// Finds the first null byte starting from the given position.
+    /// </summary>
+    private int FindNullTerminator(int start, int limit)
+    {
+        for (int i = start; i < limit && i < Data.Length; i++)
         {
             if (Data[i] == 0x00)
-            {
-                nullPos = i;
-                break;
-            }
+                return i;
         }
+        return -1;
+    }
 
-        if (nullPos < 0)
-            return;
-
-        // The actual content starts after the null terminator
-        int contentStart = nullPos + 1;
-
-        // Verify the content looks like script/text (starts with printable chars or common patterns)
-        if (contentStart >= Data.Length)
-            return;
-
-        // Extract just the content
+    /// <summary>
+    /// Extracts content starting from the given position.
+    /// </summary>
+    private void ExtractContent(int contentStart)
+    {
         int contentLength = Data.Length - contentStart;
         byte[] newData = new byte[contentLength];
         Array.Copy(Data, contentStart, newData, 0, contentLength);
         Data = newData;
-    }
-
-    /// <summary>
-    /// Checks if the byte array matches the given string at the specified position.
-    /// </summary>
-    private static bool MatchesAt(byte[] data, int position, string pattern)
-    {
-        if (position + pattern.Length > data.Length)
-            return false;
-
-        for (int i = 0; i < pattern.Length; i++)
-        {
-            if (data[position + i] != (byte)pattern[i])
-                return false;
-        }
-        return true;
     }
 
     public override string ToString() => $"{Name} ({Data.Length} bytes)";
