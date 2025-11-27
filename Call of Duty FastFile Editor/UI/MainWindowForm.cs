@@ -154,7 +154,6 @@ namespace Call_of_Duty_FastFile_Editor
         private void EnableUI_Elements()
         {
             // Enable relevant menu items
-            saveRawFileToolStripMenuItem.Enabled = true;
             renameRawFileToolStripMenuItem.Enabled = true;
             saveFastFileToolStripMenuItem.Enabled = true;
             saveFastFileAsToolStripMenuItem.Enabled = true;
@@ -288,6 +287,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         /// <summary>
         /// Saves the current Fast File, recompressing it.
+        /// Automatically applies any pending editor changes first.
         /// </summary>
         private void saveFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -299,6 +299,22 @@ namespace Call_of_Duty_FastFile_Editor
 
             try
             {
+                // Sync current editor text to the selected node
+                var selectedNode = GetSelectedRawFileNode();
+                if (selectedNode != null)
+                {
+                    selectedNode.RawFileContent = textEditorControlEx1.Text;
+                }
+
+                // Sync RawFileContent to RawFileBytes for ALL nodes with changes
+                foreach (var node in _rawFileNodes)
+                {
+                    if (node.HasUnsavedChanges && !string.IsNullOrEmpty(node.RawFileContent))
+                    {
+                        node.RawFileBytes = Encoding.ASCII.GetBytes(node.RawFileContent);
+                    }
+                }
+
                 // Rebuild the zone file from parsed assets (only includes supported types)
                 string zoneName = Path.GetFileNameWithoutExtension(_openedFastFile.FfFilePath);
                 byte[]? newZoneData = ZoneFileBuilder.BuildFreshZone(_rawFileNodes, _localizedEntries, _openedFastFile, zoneName);
@@ -335,6 +351,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         /// <summary>
         /// Saves the Fast File as a new file.
+        /// Automatically applies any pending editor changes first.
         /// </summary>
         private void saveFastFileAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -353,6 +370,22 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     try
                     {
+                        // Sync current editor text to the selected node
+                        var selectedNode = GetSelectedRawFileNode();
+                        if (selectedNode != null)
+                        {
+                            selectedNode.RawFileContent = textEditorControlEx1.Text;
+                        }
+
+                        // Sync RawFileContent to RawFileBytes for ALL nodes with changes
+                        foreach (var node in _rawFileNodes)
+                        {
+                            if (node.HasUnsavedChanges && !string.IsNullOrEmpty(node.RawFileContent))
+                            {
+                                node.RawFileBytes = Encoding.ASCII.GetBytes(node.RawFileContent);
+                            }
+                        }
+
                         string newFilePath = saveFileDialog.FileName;
 
                         // Rebuild the zone file from parsed assets (only includes supported types)
@@ -407,36 +440,6 @@ namespace Call_of_Duty_FastFile_Editor
         {
             SaveCloseFastFileAndCleanUp(true);
             Close();
-        }
-
-        /// <summary>
-        /// Saves the raw file using SaveRawFile utility.
-        /// </summary>
-        private void saveRawFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            var selectedNode = GetSelectedRawFileNode();
-            if (selectedNode == null) return;
-
-            _rawFileService.SaveZoneRawFileChanges(
-                filesTreeView,
-                _openedFastFile.FfFilePath,
-                _openedFastFile.ZoneFilePath,
-                _rawFileNodes,
-                textEditorControlEx1.Text,
-                _openedFastFile
-            );
-
-            selectedNode.HasUnsavedChanges = false;
-
-            // >>> Immediately update the status strip after saving <<<
-            UIManager.UpdateStatusStrip(
-                selectedFileMaxSizeStatusLabel,
-                selectedFileCurrentSizeStatusLabel,
-                selectedNode.MaxSize,
-                textEditorControlEx1.Text.Length
-            );
-
-            RefreshZoneData();
         }
 
         /// <summary>
