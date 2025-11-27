@@ -42,22 +42,38 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         {
             try
             {
-                // Step 1: Find where script strings (tags) start
-                int tagSectionStart = FindTagSectionStart();
-                if (tagSectionStart < 0)
-                {
-                    Debug.WriteLine("[StructureParser] Could not find tag section start");
-                    return false;
-                }
-
-                // Step 2: Read exactly ScriptStringCount tags
                 int expectedTagCount = (int)_zone.ScriptStringCount;
-                var (tags, tagSectionEnd) = ReadTags(tagSectionStart, expectedTagCount);
+                int tagSectionStart;
+                int tagSectionEnd;
+                List<ZoneAsset_TagEntry> tags;
 
-                if (tags.Count != expectedTagCount)
+                // Step 1: Handle tags
+                if (expectedTagCount == 0)
                 {
-                    Debug.WriteLine($"[StructureParser] Tag count mismatch: expected {expectedTagCount}, got {tags.Count}");
-                    // Continue anyway - some zones may have padding
+                    // No tags - asset pool starts right after header
+                    tagSectionStart = HEADER_SIZE;
+                    tagSectionEnd = HEADER_SIZE;
+                    tags = new List<ZoneAsset_TagEntry>();
+                    Debug.WriteLine("[StructureParser] No tags expected, starting asset pool at header end");
+                }
+                else
+                {
+                    // Find where script strings (tags) start
+                    tagSectionStart = FindTagSectionStart();
+                    if (tagSectionStart < 0)
+                    {
+                        Debug.WriteLine("[StructureParser] Could not find tag section start");
+                        return false;
+                    }
+
+                    // Step 2: Read exactly ScriptStringCount tags
+                    (tags, tagSectionEnd) = ReadTags(tagSectionStart, expectedTagCount);
+
+                    if (tags.Count != expectedTagCount)
+                    {
+                        Debug.WriteLine($"[StructureParser] Tag count mismatch: expected {expectedTagCount}, got {tags.Count}");
+                        // Continue anyway - some zones may have padding
+                    }
                 }
 
                 _zone.TagSectionStartOffset = tagSectionStart;
@@ -194,43 +210,81 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         /// <summary>
         /// Reads the specified number of 8-byte asset records starting from the given offset.
+        /// Supports two formats:
+        /// - Format A: [4-byte type] [FF FF FF FF] (type first)
+        /// - Format B: [FF FF FF FF] [4-byte type] (pointer first, used in PS3 WAW zones)
         /// </summary>
         private (List<ZoneAssetRecord> records, int endOffset) ReadAssetRecords(int startOffset, int count)
         {
             var records = new List<ZoneAssetRecord>();
             int offset = startOffset;
 
+            // Detect format by checking first record
+            // Format A: FF FF FF FF at bytes 4-7
+            // Format B: FF FF FF FF at bytes 0-3
+            bool isFormatB = offset + 8 <= _data.Length &&
+                             _data[offset] == 0xFF && _data[offset + 1] == 0xFF &&
+                             _data[offset + 2] == 0xFF && _data[offset + 3] == 0xFF &&
+                             !(_data[offset + 4] == 0xFF && _data[offset + 5] == 0xFF); // Not end marker
+
+            if (isFormatB)
+            {
+                Debug.WriteLine($"[ReadAssetRecords] Detected Format B (pointer-first) at 0x{offset:X}");
+            }
+
             for (int i = 0; i < count && offset + 8 <= _data.Length; i++)
             {
-                // Validate this looks like an asset record
-                // Format: [4-byte type BE] [FF FF FF FF]
-                if (_data[offset + 4] != 0xFF || _data[offset + 5] != 0xFF ||
-                    _data[offset + 6] != 0xFF || _data[offset + 7] != 0xFF)
+                int assetTypeInt;
+                bool validRecord;
+
+                if (isFormatB)
                 {
+                    // Format B: [FF FF FF FF] [4-byte type]
+                    validRecord = _data[offset] == 0xFF && _data[offset + 1] == 0xFF &&
+                                  _data[offset + 2] == 0xFF && _data[offset + 3] == 0xFF;
+
+                    // Check for end marker (all FF)
+                    if (validRecord && _data[offset + 4] == 0xFF && _data[offset + 5] == 0xFF &&
+                        _data[offset + 6] == 0xFF && _data[offset + 7] == 0xFF)
+                    {
+                        Debug.WriteLine($"[ReadAssetRecords] Hit end marker at 0x{offset:X} after {records.Count} records");
+                        offset += 8; // Skip end marker
+                        break;
+                    }
+
+                    assetTypeInt = (int)Utilities.ReadUInt32AtOffset(offset + 4, _zone, isBigEndian: true);
+                }
+                else
+                {
+                    // Format A: [4-byte type] [FF FF FF FF]
+                    validRecord = _data[offset + 4] == 0xFF && _data[offset + 5] == 0xFF &&
+                                  _data[offset + 6] == 0xFF && _data[offset + 7] == 0xFF;
+
                     // Check for end marker (FF FF FF FF at start)
-                    if (_data[offset] == 0xFF && _data[offset + 1] == 0xFF &&
+                    if (!validRecord && _data[offset] == 0xFF && _data[offset + 1] == 0xFF &&
                         _data[offset + 2] == 0xFF && _data[offset + 3] == 0xFF)
                     {
                         Debug.WriteLine($"[ReadAssetRecords] Hit end marker at 0x{offset:X} after {records.Count} records");
                         break;
                     }
 
+                    assetTypeInt = (int)Utilities.ReadUInt32AtOffset(offset, _zone, isBigEndian: true);
+                }
+
+                if (!validRecord)
+                {
                     Debug.WriteLine($"[ReadAssetRecords] Invalid record format at 0x{offset:X}, record #{i}");
                     break;
                 }
-
-                int assetTypeInt = (int)Utilities.ReadUInt32AtOffset(offset, _zone, isBigEndian: true);
 
                 var record = new ZoneAssetRecord { AssetPoolRecordOffset = offset };
 
                 if (_isCod4)
                 {
-                    // Cast directly - undefined values will show as numeric in UI
                     record.AssetType_COD4 = (ZoneFileAssetType_COD4)assetTypeInt;
                 }
                 else if (_isCod5)
                 {
-                    // Cast directly - undefined values will show as numeric in UI
                     record.AssetType_COD5 = (ZoneFileAssetType_COD5)assetTypeInt;
                 }
 
