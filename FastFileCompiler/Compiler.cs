@@ -1,5 +1,5 @@
+using System.IO.Compression;
 using System.Text;
-using Ionic.Zlib;
 
 namespace FastFileCompiler;
 
@@ -72,8 +72,8 @@ public class Compiler
             byte[] block = new byte[bytesToRead];
             reader.Read(block, 0, bytesToRead);
 
-            // Compress the block
-            byte[] compressedBlock = ZlibStream.CompressBuffer(block);
+            // Compress the block using built-in ZLibStream
+            byte[] compressedBlock = CompressBlock(block);
 
             // The compressed data includes a 2-byte ZLIB header (usually 78 DA for best compression)
             // We need to write: [length without header] + [compressed data without first 2 bytes]
@@ -88,6 +88,19 @@ public class Compiler
         }
 
         return compressed.ToArray();
+    }
+
+    /// <summary>
+    /// Compresses a block using ZLIB compression.
+    /// </summary>
+    private static byte[] CompressBlock(byte[] data)
+    {
+        using var outputStream = new MemoryStream();
+        using (var zlibStream = new ZLibStream(outputStream, CompressionLevel.Optimal))
+        {
+            zlibStream.Write(data, 0, data.Length);
+        }
+        return outputStream.ToArray();
     }
 
     /// <summary>
