@@ -1335,6 +1335,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         /// <summary>
         /// Adjust the size of the selected raw file node.
+        /// Rebuilds the entire zone file to avoid data corruption from byte shifting.
         /// </summary>
         private void increaseFileSizeToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -1349,11 +1350,50 @@ namespace Call_of_Duty_FastFile_Editor
                 if (sizeAdjustDialog.ShowDialog(this) == DialogResult.OK)
                 {
                     int newSize = sizeAdjustDialog.NewFileSize;
+                    if (newSize <= selectedNode.MaxSize)
+                    {
+                        MessageBox.Show("The new size must be greater than the current size.",
+                            "Invalid Size", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
                     try
                     {
-                        _rawFileService.AdjustRawFileNodeSize(_openedFastFile.ZoneFilePath, selectedNode, newSize);
-                        MessageBox.Show($"File '{selectedNode.FileName}' size increased to {newSize} bytes successfully.",
+                        // Update the selected node's max size and pad its content
+                        int oldSize = selectedNode.MaxSize;
+                        byte[] currentContent = selectedNode.RawFileBytes ?? Array.Empty<byte>();
+                        byte[] newContent = new byte[newSize];
+                        Array.Copy(currentContent, newContent, Math.Min(currentContent.Length, newSize));
+
+                        selectedNode.MaxSize = newSize;
+                        selectedNode.RawFileBytes = newContent;
+                        selectedNode.RawFileContent = System.Text.Encoding.Default.GetString(newContent);
+
+                        // Rebuild the zone file from all raw file nodes
+                        byte[]? newZoneData = ZoneFileBuilder.BuildFreshZone(
+                            _rawFileNodes,
+                            _localizedEntries,
+                            _openedFastFile,
+                            Path.GetFileNameWithoutExtension(_openedFastFile.FastFileName));
+
+                        if (newZoneData == null)
+                        {
+                            // Revert the changes
+                            selectedNode.MaxSize = oldSize;
+                            selectedNode.RawFileBytes = currentContent;
+                            selectedNode.RawFileContent = System.Text.Encoding.Default.GetString(currentContent);
+
+                            MessageBox.Show("Failed to rebuild zone file.",
+                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        // Write the new zone data
+                        File.WriteAllBytes(_openedFastFile.ZoneFilePath, newZoneData);
+
+                        MessageBox.Show($"File '{selectedNode.FileName}' size increased to {newSize} bytes successfully.\nZone file rebuilt.",
                             "Size Increase Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                         RefreshZoneData();
                         ReloadAllRawFileNodesAndUI();
                     }
