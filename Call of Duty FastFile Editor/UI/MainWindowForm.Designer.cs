@@ -301,10 +301,11 @@ namespace Call_of_Duty_FastFile_Editor
             searchRawFileTxtMenuItem.Click += searchRawFileTxtMenuItem_Click;
             // 
             // injectFileToolStripMenuItem
-            // 
+            //
             injectFileToolStripMenuItem.Name = "injectFileToolStripMenuItem";
             injectFileToolStripMenuItem.Size = new Size(210, 24);
-            injectFileToolStripMenuItem.Text = "Inject Raw File";
+            injectFileToolStripMenuItem.Text = "Inject/Update Raw File";
+            injectFileToolStripMenuItem.ToolTipText = "Update existing raw files only. Use the FF Compiler to add custom raw files.";
             injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
             // 
             // extractAllRawFilesToolStripMenuItem

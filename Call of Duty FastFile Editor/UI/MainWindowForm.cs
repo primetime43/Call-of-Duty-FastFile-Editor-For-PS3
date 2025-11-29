@@ -620,34 +620,21 @@ namespace Call_of_Duty_FastFile_Editor
                     }
                     else
                     {
-                        try
-                        {
-                            // Add a new asset record entry.
-                            AssetRecordPoolOps.AddRawFileAssetRecordToPool(_openedFastFile.OpenedFastFileZone, _openedFastFile.ZoneFilePath);
-
-                            if (hasZoneHeader)
-                            {
-                                // Inject file with existing header
-                                _rawFileService.AppendNewRawFile(_openedFastFile.ZoneFilePath, selectedFilePath, newFileMaxSize);
-                            }
-                            else
-                            {
-                                // Inject plain file - build header internally
-                                _rawFileService.InjectPlainFile(_openedFastFile.ZoneFilePath, selectedFilePath, rawFileNameFromHeader);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show($"Failed to inject file: {ex.Message}",
-                                "Injection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
+                        // File doesn't exist in the FastFile - cannot add new raw files here
+                        MessageBox.Show(
+                            $"The raw file '{rawFileNameFromHeader}' does not exist in this FastFile.\n\n" +
+                            "This tool can only update existing raw files.\n\n" +
+                            "To add custom raw files, use the FF Compiler to build a custom FastFile.",
+                            "File Not Found",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                        return;
                     }
 
                     RefreshZoneData();
                     ReloadAllRawFileNodesAndUI();
-                    MessageBox.Show($"File '{rawFileName}' was successfully injected & saved in the zone file.",
-                        "Injection Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"File '{rawFileName}' was successfully updated in the zone file.",
+                        "Update Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
