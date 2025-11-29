@@ -11,37 +11,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
     public static class AssetRecordProcessor
     {
         /// <summary>
-        /// Checks if a COD4 asset type is supported for structure-based parsing.
-        /// </summary>
-        private static bool IsSupportedAssetType_COD4(CoD4AssetType assetType)
-        {
-            return assetType == CoD4AssetType.rawfile ||
-                   assetType == CoD4AssetType.localize;
-        }
-
-        /// <summary>
-        /// Checks if a COD5 asset type is supported for structure-based parsing.
-        /// </summary>
-        private static bool IsSupportedAssetType_COD5(CoD5AssetType assetType)
-        {
-            return assetType == CoD5AssetType.rawfile ||
-                   assetType == CoD5AssetType.localize;
-        }
-
-        /// <summary>
-        /// Checks if a MW2 asset type is supported for structure-based parsing.
-        /// </summary>
-        private static bool IsSupportedAssetType_MW2(MW2AssetType assetType)
-        {
-            return assetType == MW2AssetType.rawfile ||
-                   assetType == MW2AssetType.localize;
-        }
-
-        /// <summary>
         /// Processes the given zone asset records, extracting various asset types
         /// and returns them in a ZoneAssetRecords object.
-        /// Uses structure-based parsing first, then falls back to pattern matching
-        /// for rawfiles that appear after unsupported asset types.
+        /// Uses the game-specific parser from IGameDefinition for structure-based parsing,
+        /// then falls back to pattern matching for rawfiles that appear after unsupported asset types.
         /// </summary>
         /// <param name="openedFastFile">The FastFile object containing the zone data.</param>
         /// <param name="zoneAssetRecords">The list of asset records extracted from the zone.</param>
@@ -53,6 +26,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
             bool forcePatternMatching = false
         )
         {
+            // Get the appropriate game definition for this FastFile
+            IGameDefinition gameDefinition = GameDefinitionFactory.GetDefinition(openedFastFile);
+            Debug.WriteLine($"[AssetRecordProcessor] Using game definition: {gameDefinition.ShortName}");
+
             // Create the result container.
             AssetRecordCollection result = new AssetRecordCollection();
 
@@ -63,7 +40,8 @@ namespace Call_of_Duty_FastFile_Editor.Services
             int structureParsingStoppedAtIndex = -1;
             int lastStructureParsedEndOffset = 0;
 
-            // Zone file data is accessed via openedFastFile.OpenedFastFileZone.Data
+            // Zone file data
+            byte[] zoneData = openedFastFile.OpenedFastFileZone.Data;
 
             // If forcePatternMatching is true, skip structure-based parsing entirely
             if (forcePatternMatching)
@@ -77,30 +55,16 @@ namespace Call_of_Duty_FastFile_Editor.Services
             {
                 try
                 {
-                    // Check if this asset type is supported before processing
-                    bool isSupported = false;
-                    string assetTypeName = "unknown";
+                    // Get the asset type value based on game
+                    int assetTypeValue = GetAssetTypeValue(openedFastFile, zoneAssetRecords[i]);
+                    string assetTypeName = gameDefinition.GetAssetTypeName(assetTypeValue);
 
-                    if (openedFastFile.IsCod4File)
-                    {
-                        isSupported = IsSupportedAssetType_COD4(zoneAssetRecords[i].AssetType_COD4);
-                        assetTypeName = zoneAssetRecords[i].AssetType_COD4.ToString();
-                    }
-                    else if (openedFastFile.IsCod5File)
-                    {
-                        isSupported = IsSupportedAssetType_COD5(zoneAssetRecords[i].AssetType_COD5);
-                        assetTypeName = zoneAssetRecords[i].AssetType_COD5.ToString();
-                    }
-                    else if (openedFastFile.IsMW2File)
-                    {
-                        isSupported = IsSupportedAssetType_MW2(zoneAssetRecords[i].AssetType_MW2);
-                        assetTypeName = zoneAssetRecords[i].AssetType_MW2.ToString();
-                    }
+                    // Check if this asset type is supported
+                    bool isSupported = gameDefinition.IsSupportedAssetType(assetTypeValue);
 
                     if (!isSupported)
                     {
                         // Stop structure-based processing - we can't determine the size of unsupported assets
-                        // Record where we stopped so we can use pattern matching to find remaining rawfiles
                         Debug.WriteLine($"[AssetRecordProcessor] Stopping structure-based parsing at index {i}: unsupported asset type '{assetTypeName}'. Will use pattern matching for remaining rawfiles.");
                         structureParsingStoppedAtIndex = i;
                         if (i > 0 && zoneAssetRecords[i - 1].AssetRecordEndOffset > 0)
@@ -116,167 +80,61 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
                     Debug.WriteLine($"Processing record index {i} ({assetTypeName}), previousRecordEndOffset: {previousRecordEndOffset}");
 
-                    // Determine the starting offset for the current record:
-                    // - For the first record, use the AssetPoolEndOffset.
-                    // - For subsequent records, use the previous record's end offset.
-                    int startingOffset;
-                    if (i == 0)
-                    {
-                        startingOffset = openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
-                    }
-                    else if (previousRecordEndOffset > 0)
-                    {
-                        startingOffset = previousRecordEndOffset;
-                    }
-                    else
-                    {
-                        startingOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset;
-                    }
+                    // Determine the starting offset for the current record
+                    int startingOffset = DetermineStartingOffset(openedFastFile, zoneAssetRecords, i, previousRecordEndOffset, indexOfLastAssetRecordParsed);
 
-                    if (openedFastFile.IsCod4File)
+                    // Use game-specific parser based on asset type
+                    if (gameDefinition.IsRawFileType(assetTypeValue))
                     {
-                        // Process the record based on its type.
-                        switch (zoneAssetRecords[i].AssetType_COD4)
+                        // Parse rawfile using game-specific parser
+                        RawFileNode? node = gameDefinition.ParseRawFile(zoneData, startingOffset);
+
+                        if (node != null)
                         {
-                            case CoD4AssetType.rawfile:
-                                {
-                                    // Structure-based parsing only
-                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
-
-                                    if (node != null)
-                                    {
-                                        assetRecordMethod = "Raw file parsed using structure-based offset.";
-                                        result.RawFileNodes.Add(node);
-                                        UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
-                                    }
-                                    else
-                                    {
-                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse rawfile at index {i}, offset 0x{startingOffset:X}. Stopping.");
-                                        goto EndProcessing; // Stop on parse failure
-                                    }
-                                    break;
-                                }
-                            case CoD4AssetType.localize:
-                                {
-                                    // Always use structure-based parsing
-                                    var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
-                                    LocalizedEntry localizedEntry = tuple.entry;
-
-                                    if (localizedEntry != null)
-                                    {
-                                        assetRecordMethod = "Localized asset parsed using structure-based offset.";
-                                        result.LocalizedEntries.Add(localizedEntry);
-                                        UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
-                                    }
-                                    else
-                                    {
-                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
-                                        goto EndProcessing; // Stop on parse failure
-                                    }
-                                    break;
-                                }
+                            assetRecordMethod = $"Raw file parsed using {gameDefinition.ShortName} structure-based parser.";
+                            result.RawFileNodes.Add(node);
+                            UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
+                            indexOfLastAssetRecordParsed = i;
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"[AssetRecordProcessor] Failed to parse rawfile at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                            structureParsingStoppedAtIndex = i;
+                            lastStructureParsedEndOffset = startingOffset;
+                            goto PatternMatchingFallback;
                         }
                     }
-                    else if (openedFastFile.IsCod5File)
+                    else if (gameDefinition.IsLocalizeType(assetTypeValue))
                     {
-                        // Process the record based on its type.
-                        switch (zoneAssetRecords[i].AssetType_COD5)
+                        // Parse localize using game-specific parser
+                        var (entry, nextOffset) = gameDefinition.ParseLocalizedEntry(zoneData, startingOffset);
+
+                        if (entry != null)
                         {
-                            case CoD5AssetType.rawfile:
-                                {
-                                    // Structure-based parsing only
-                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
+                            assetRecordMethod = $"Localized asset parsed using {gameDefinition.ShortName} structure-based parser.";
+                            result.LocalizedEntries.Add(entry);
 
-                                    if (node != null)
-                                    {
-                                        assetRecordMethod = "Raw file parsed using structure-based offset.";
-                                        result.RawFileNodes.Add(node);
-                                        UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
-                                    }
-                                    else
-                                    {
-                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse rawfile at index {i}, offset 0x{startingOffset:X}. Stopping.");
-                                        goto EndProcessing; // Stop on parse failure
-                                    }
-                                    break;
-                                }
-                            case CoD5AssetType.localize:
-                                {
-                                    // Always use structure-based parsing
-                                    var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
-                                    LocalizedEntry localizedEntry = tuple.entry;
+                            // Update the asset record with localize info
+                            var assetRecord = zoneAssetRecords[i];
+                            assetRecord.AssetRecordEndOffset = nextOffset;
+                            assetRecord.Name = entry.Key;
+                            assetRecord.Content = entry.LocalizedText;
+                            assetRecord.AdditionalData = assetRecordMethod;
+                            zoneAssetRecords[i] = assetRecord;
 
-                                    if (localizedEntry != null)
-                                    {
-                                        assetRecordMethod = "Localized asset parsed using structure-based offset.";
-                                        result.LocalizedEntries.Add(localizedEntry);
-                                        UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
-                                    }
-                                    else
-                                    {
-                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
-                                        goto EndProcessing; // Stop on parse failure
-                                    }
-                                    break;
-                                }
+                            indexOfLastAssetRecordParsed = i;
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                            goto EndProcessing;
                         }
                     }
-                    else if (openedFastFile.IsMW2File)
-                    {
-                        // Process the record based on its type.
-                        switch (zoneAssetRecords[i].AssetType_MW2)
-                        {
-                            case MW2AssetType.rawfile:
-                                {
-                                    // Structure-based parsing only
-                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
-
-                                    if (node != null)
-                                    {
-                                        assetRecordMethod = "Raw file parsed using structure-based offset.";
-                                        result.RawFileNodes.Add(node);
-                                        UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
-                                    }
-                                    else
-                                    {
-                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse rawfile at index {i}, offset 0x{startingOffset:X}. Stopping.");
-                                        goto EndProcessing; // Stop on parse failure
-                                    }
-                                    break;
-                                }
-                            case MW2AssetType.localize:
-                                {
-                                    // Always use structure-based parsing
-                                    var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
-                                    LocalizedEntry localizedEntry = tuple.entry;
-
-                                    if (localizedEntry != null)
-                                    {
-                                        assetRecordMethod = "Localized asset parsed using structure-based offset.";
-                                        result.LocalizedEntries.Add(localizedEntry);
-                                        UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
-                                    }
-                                    else
-                                    {
-                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
-                                        goto EndProcessing; // Stop on parse failure
-                                    }
-                                    break;
-                                }
-                        }
-                    }
-
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Failed to process asset record at index {i}: {ex.Message}. Stopping.");
-                    break; // Stop on exception
+                    break;
                 }
             }
 
@@ -287,7 +145,6 @@ namespace Call_of_Duty_FastFile_Editor.Services
             {
                 Debug.WriteLine($"[AssetRecordProcessor] Starting pattern matching fallback from offset 0x{lastStructureParsedEndOffset:X}");
 
-                byte[] zoneData = openedFastFile.OpenedFastFileZone.Data;
                 int searchStartOffset = lastStructureParsedEndOffset > 0
                     ? lastStructureParsedEndOffset
                     : openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
@@ -354,6 +211,44 @@ namespace Call_of_Duty_FastFile_Editor.Services
             // Write the updated asset record back into the list.
             zoneAssetRecords[index] = assetRecord;
             Debug.WriteLine($"Updated asset record at index {index}: {assetRecord.Name}");
+        }
+
+        /// <summary>
+        /// Gets the asset type value from the record based on the game type.
+        /// </summary>
+        private static int GetAssetTypeValue(FastFile fastFile, ZoneAssetRecord record)
+        {
+            if (fastFile.IsCod4File)
+                return (int)record.AssetType_COD4;
+            if (fastFile.IsCod5File)
+                return (int)record.AssetType_COD5;
+            if (fastFile.IsMW2File)
+                return (int)record.AssetType_MW2;
+            return 0;
+        }
+
+        /// <summary>
+        /// Determines the starting offset for parsing an asset record.
+        /// </summary>
+        private static int DetermineStartingOffset(
+            FastFile fastFile,
+            List<ZoneAssetRecord> records,
+            int currentIndex,
+            int previousRecordEndOffset,
+            int indexOfLastParsed)
+        {
+            if (currentIndex == 0)
+            {
+                return fastFile.OpenedFastFileZone.AssetPoolEndOffset;
+            }
+            else if (previousRecordEndOffset > 0)
+            {
+                return previousRecordEndOffset;
+            }
+            else
+            {
+                return records[indexOfLastParsed].AssetRecordEndOffset;
+            }
         }
     }
 }

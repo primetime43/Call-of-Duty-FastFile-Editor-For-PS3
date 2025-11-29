@@ -77,11 +77,21 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string FileName { get; set; }
 
         /// <summary>
-        /// Gets the position where the next asset starts, calculated as CodeStartPosition + MaxSize + 1.
+        /// Backing field for RawFileEndPosition when set explicitly by game-specific parsers.
+        /// </summary>
+        private int? _rawFileEndPosition;
+
+        /// <summary>
+        /// Gets or sets the position where the next asset starts.
+        /// When set explicitly, uses that value. Otherwise, calculated as CodeStartPosition + MaxSize + 1.
         /// The +1 accounts for the null terminator at the end of the buffer data.
         /// Per wiki: "Buffer's length is len plus one for the null byte at the end."
         /// </summary>
-        public int RawFileEndPosition => CodeStartPosition + MaxSize + 1;
+        public int RawFileEndPosition
+        {
+            get => _rawFileEndPosition ?? (CodeStartPosition + MaxSize + 1);
+            set => _rawFileEndPosition = value;
+        }
 
         /// <summary>
         /// The content of the file as a string.
