@@ -23,41 +23,42 @@ namespace Call_of_Duty_FastFile_Editor.Services.IO
 
         /// <summary>
         /// Writes the updated zone file size (big-endian) to the header at the defined offset.
-        /// Also updates the EndOfFileDataPointer to stay in sync.
+        /// Also updates the BlockSizeLarge to stay in sync (raw file data goes into the LARGE block).
         /// </summary>
         public static void WriteZoneFileSize(string path, uint newSize)
         {
-            // Read the current EndOfFileDataPointer to calculate the offset from FileSize
-            uint currentFileSize = ReadZoneFileSize(path);
-            uint currentEndPointer = ReadEndOfFileDataPointer(path);
+            // Read the current BlockSizeLarge to calculate the offset from ZoneSize
+            uint currentZoneSize = ReadZoneFileSize(path);
+            uint currentBlockSizeLarge = ReadBlockSizeLarge(path);
 
-            // Calculate the difference between EndOfFileDataPointer and FileSize
+            // Calculate the difference between BlockSizeLarge and ZoneSize
             // This offset should remain constant when we update the size
-            uint pointerOffset = currentEndPointer - currentFileSize;
-            uint newEndPointer = newSize + pointerOffset;
+            uint blockOffset = currentBlockSizeLarge - currentZoneSize;
+            uint newBlockSizeLarge = newSize + blockOffset;
 
             Span<byte> b = stackalloc byte[4];
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Write);
 
-            // Write the new FileSize
+            // Write the new ZoneSize
             System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(b, newSize);
             fs.Seek(ZoneFileHeaderConstants.ZoneSizeOffset, SeekOrigin.Begin);
             fs.Write(b);
 
-            // Write the new EndOfFileDataPointer
-            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(b, newEndPointer);
-            fs.Seek(ZoneFileHeaderConstants.EndOfFileDataPointer, SeekOrigin.Begin);
+            // Write the new BlockSizeLarge
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(b, newBlockSizeLarge);
+            fs.Seek(ZoneFileHeaderConstants.BlockSizeLargeOffset, SeekOrigin.Begin);
             fs.Write(b);
         }
 
         /// <summary>
-        /// Reads the EndOfFileDataPointer from the zone header (big-endian).
+        /// Reads the BlockSizeLarge from the zone header (big-endian).
+        /// This represents the XFILE_BLOCK_LARGE allocation size.
         /// </summary>
-        public static uint ReadEndOfFileDataPointer(string path)
+        public static uint ReadBlockSizeLarge(string path)
         {
             var b = new byte[4];
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-            fs.Seek(ZoneFileHeaderConstants.EndOfFileDataPointer, SeekOrigin.Begin);
+            fs.Seek(ZoneFileHeaderConstants.BlockSizeLargeOffset, SeekOrigin.Begin);
             fs.Read(b, 0, 4);
             return System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(b);
         }

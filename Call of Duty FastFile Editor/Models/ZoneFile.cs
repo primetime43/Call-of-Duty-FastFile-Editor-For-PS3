@@ -49,19 +49,22 @@ namespace Call_of_Duty_FastFile_Editor.Models
             LoadData();
         }
 
-        // Various zone header properties.
-        public uint FileSize { get; private set; }
-        public uint Unknown1 { get; private set; }
-        public uint Unknown2 { get; private set; }
-        public uint Unknown3 { get; private set; }
-        public uint Unknown4 { get; private set; }
-        public uint Unknown5 { get; private set; }
-        public uint EndOfFileDataPointer { get; private set; }
-        public uint Unknown7 { get; private set; }
-        public uint Unknown8 { get; private set; }
-        public uint TagCount { get; private set; }
-        public uint Unknown10 { get; private set; }
-        public uint AssetRecordCount { get; private set; }
+        // XFile structure properties
+        public uint ZoneSize { get; private set; }
+        public uint ExternalSize { get; private set; }
+        public uint BlockSizeTemp { get; private set; }
+        public uint BlockSizePhysical { get; private set; }
+        public uint BlockSizeRuntime { get; private set; }
+        public uint BlockSizeVirtual { get; private set; }
+        public uint BlockSizeLarge { get; private set; }
+        public uint BlockSizeCallback { get; private set; }
+        public uint BlockSizeVertex { get; private set; }
+
+        // XAssetList structure properties
+        public uint ScriptStringCount { get; private set; }
+        public uint ScriptStringsPtr { get; private set; }
+        public uint AssetCount { get; private set; }
+        public uint AssetsPtr { get; private set; }
 
         // For display or debugging purposes.
         public Dictionary<string, uint>? HeaderFieldValues { get; private set; }
@@ -78,38 +81,48 @@ namespace Call_of_Duty_FastFile_Editor.Models
         // Mapping of property names to their offsets (pulled from the Constants).
         private readonly Dictionary<string, int> _headerFieldOffsets = new Dictionary<string, int>
         {
-            { "FileSize", ZoneFileHeaderConstants.ZoneSizeOffset },
-            { "Unknown1", ZoneFileHeaderConstants.Unknown1Offset },
-            { "Unknown2", ZoneFileHeaderConstants.Unknown2Offset },
-            { "Unknown3", ZoneFileHeaderConstants.Unknown3Offset },
-            { "Unknown4", ZoneFileHeaderConstants.Unknown4Offset },
-            { "Unknown5", ZoneFileHeaderConstants.Unknown5Offset },
-            { "EndOfFileDataPointer", ZoneFileHeaderConstants.EndOfFileDataPointer }, // end of data is FileSize + 36 bytes?
-            { "Unknown7", ZoneFileHeaderConstants.Unknown7Offset },
-            { "Unknown8", ZoneFileHeaderConstants.Unknown8Offset },
-            { "TagCount", ZoneFileHeaderConstants.TagCountOffset },
-            { "Unknown10", ZoneFileHeaderConstants.Unknown10Offset },
-            { "AssetRecordCount", ZoneFileHeaderConstants.AssetRecordCountOffset }
+            // XFile structure
+            { "ZoneSize", ZoneFileHeaderConstants.ZoneSizeOffset },
+            { "ExternalSize", ZoneFileHeaderConstants.ExternalSizeOffset },
+            { "BlockSizeTemp", ZoneFileHeaderConstants.BlockSizeTempOffset },
+            { "BlockSizePhysical", ZoneFileHeaderConstants.BlockSizePhysicalOffset },
+            { "BlockSizeRuntime", ZoneFileHeaderConstants.BlockSizeRuntimeOffset },
+            { "BlockSizeVirtual", ZoneFileHeaderConstants.BlockSizeVirtualOffset },
+            { "BlockSizeLarge", ZoneFileHeaderConstants.BlockSizeLargeOffset },
+            { "BlockSizeCallback", ZoneFileHeaderConstants.BlockSizeCallbackOffset },
+            { "BlockSizeVertex", ZoneFileHeaderConstants.BlockSizeVertexOffset },
+            // XAssetList structure
+            { "ScriptStringCount", ZoneFileHeaderConstants.ScriptStringCountOffset },
+            { "ScriptStringsPtr", ZoneFileHeaderConstants.ScriptStringsPtrOffset },
+            { "AssetCount", ZoneFileHeaderConstants.AssetCountOffset },
+            { "AssetsPtr", ZoneFileHeaderConstants.AssetsPtrOffset }
         };
 
         /// <summary>Reloads Data from disk.</summary>
         public void LoadData() => Data = File.ReadAllBytes(FilePath);
 
-        /// <summary>Parses the zone’s asset pool into ZoneFileAssets & offsets.</summary>
+        /// <summary>Parses the zone's asset pool into ZoneFileAssets & offsets.</summary>
         public void ParseAssetPool()
         {
-            var parser = new AssetPoolParser(this);
-            bool success = parser.MapZoneAssetsPoolAndGetEndOffset();
+            // Use structure-based parsing first (uses header counts)
+            var structureParser = new StructureBasedZoneParser(this);
+            bool success = structureParser.Parse();
+
             if (!success)
             {
-                Debug.WriteLine("Asset pool parse failed: AssetRecordCount was -1.");
-                MessageBox.Show(
-                "Failed to parse asset pool!\n\nZone file's AssetRecordCount was -1, cannot determine expected number of assets.",
-                "Parse Failed",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error
-            );
-
+                Debug.WriteLine("Structure-based parsing failed, trying pattern-based fallback.");
+                // Fallback is handled internally by StructureBasedZoneParser
+                // If we still fail, show error
+                if (ZoneFileAssets.ZoneAssetRecords == null || ZoneFileAssets.ZoneAssetRecords.Count == 0)
+                {
+                    Debug.WriteLine("Asset pool parse failed: No assets found.");
+                    MessageBox.Show(
+                        "Failed to parse asset pool!\n\nNo assets could be found in the zone file.",
+                        "Parse Failed",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
             }
         }
 
@@ -140,19 +153,22 @@ namespace Call_of_Duty_FastFile_Editor.Models
                     kvp => ReadField(kvp.Key)
                 );
 
-            // Populate each strongly‑typed property from that Dictionary
-            FileSize = HeaderFieldValues[nameof(FileSize)];
-            Unknown1 = HeaderFieldValues[nameof(Unknown1)];
-            Unknown2 = HeaderFieldValues[nameof(Unknown2)];
-            Unknown3 = HeaderFieldValues[nameof(Unknown3)];
-            Unknown4 = HeaderFieldValues[nameof(Unknown4)];
-            Unknown5 = HeaderFieldValues[nameof(Unknown5)];
-            EndOfFileDataPointer = HeaderFieldValues[nameof(EndOfFileDataPointer)];
-            Unknown7 = HeaderFieldValues[nameof(Unknown7)];
-            Unknown8 = HeaderFieldValues[nameof(Unknown8)];
-            TagCount = HeaderFieldValues[nameof(TagCount)];
-            Unknown10 = HeaderFieldValues[nameof(Unknown10)];
-            AssetRecordCount = HeaderFieldValues[nameof(AssetRecordCount)];
+            // Populate XFile structure properties
+            ZoneSize = HeaderFieldValues[nameof(ZoneSize)];
+            ExternalSize = HeaderFieldValues[nameof(ExternalSize)];
+            BlockSizeTemp = HeaderFieldValues[nameof(BlockSizeTemp)];
+            BlockSizePhysical = HeaderFieldValues[nameof(BlockSizePhysical)];
+            BlockSizeRuntime = HeaderFieldValues[nameof(BlockSizeRuntime)];
+            BlockSizeVirtual = HeaderFieldValues[nameof(BlockSizeVirtual)];
+            BlockSizeLarge = HeaderFieldValues[nameof(BlockSizeLarge)];
+            BlockSizeCallback = HeaderFieldValues[nameof(BlockSizeCallback)];
+            BlockSizeVertex = HeaderFieldValues[nameof(BlockSizeVertex)];
+
+            // Populate XAssetList structure properties
+            ScriptStringCount = HeaderFieldValues[nameof(ScriptStringCount)];
+            ScriptStringsPtr = HeaderFieldValues[nameof(ScriptStringsPtr)];
+            AssetCount = HeaderFieldValues[nameof(AssetCount)];
+            AssetsPtr = HeaderFieldValues[nameof(AssetsPtr)];
         }
 
         /// <summary>
