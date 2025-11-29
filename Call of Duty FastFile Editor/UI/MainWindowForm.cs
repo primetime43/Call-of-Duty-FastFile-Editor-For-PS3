@@ -610,17 +610,6 @@ namespace Call_of_Duty_FastFile_Editor
                                 _rawFileService.IncreaseSize(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
                             else
                                 _rawFileService.UpdateFileContent(_openedFastFile.ZoneFilePath, existingNode, rawFileContent);
-
-                            var selectedNode = GetSelectedRawFileNode();
-                            if (selectedNode == null) return;
-
-                            // >>> Immediately update the status strip after saving <<<
-                            UIManager.UpdateStatusStrip(
-                                selectedFileMaxSizeStatusLabel,
-                                selectedFileCurrentSizeStatusLabel,
-                                selectedNode.MaxSize,
-                                textEditorControlEx1.Text.Length
-                            );
                         }
                         catch (Exception ex)
                         {
@@ -1072,6 +1061,9 @@ namespace Call_of_Duty_FastFile_Editor
             {
                 if (_openedFastFile != null && File.Exists(_openedFastFile.FfFilePath))
                 {
+                    // Store the path before we null it out
+                    string savedPath = _openedFastFile.FfFilePath;
+
                     // Always save before closing
                     _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
 
@@ -1085,7 +1077,7 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     _openedFastFile = null;
-                    MessageBox.Show("Fast File Saved & Closed.", "Close Complete",
+                    MessageBox.Show($"Fast File Saved & Closed.\n\nSaved to:\n{savedPath}", "Close Complete",
                                     MessageBoxButtons.OK,
                                     MessageBoxIcon.Information);
                 }
