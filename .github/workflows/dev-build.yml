@@ -1,18 +1,10 @@
-name: Build and Release
+name: Dev Build
 
 on:
   push:
-    tags:
-      - 'v*'  # Triggers on version tags like v1.0.0, v2.0.0, etc.
+    branches:
+      - dev
   workflow_dispatch:  # Allows manual trigger from GitHub UI
-    inputs:
-      version:
-        description: 'Version tag (e.g., v2.1.0)'
-        required: true
-        type: string
-
-permissions:
-  contents: write  # Required for creating releases
 
 jobs:
   build:
@@ -60,36 +52,33 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true `
           -o ./publish-tool
 
-    - name: List published files
-      run: |
-        Write-Host "Main Editor:"
-        Get-ChildItem -Path ./publish -Recurse
-        Write-Host "Compiler GUI:"
-        Get-ChildItem -Path ./publish-compiler -Recurse
-        Write-Host "Tool GUI:"
-        Get-ChildItem -Path ./publish-tool -Recurse
-
-    - name: Get version from tag
-      id: get_version
-      shell: bash
-      run: |
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-        else
-          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
+    - name: Upload Main Editor
+      uses: actions/upload-artifact@v4
       with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}
-        name: Release ${{ steps.get_version.outputs.VERSION }}
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-        files: |
+        name: Call-of-Duty-FastFile-Editor-Dev
+        path: ./publish/Call of Duty FastFile Editor.exe
+        retention-days: 14
+
+    - name: Upload FastFile Compiler GUI
+      uses: actions/upload-artifact@v4
+      with:
+        name: FastFileCompilerGUI-Dev
+        path: ./publish-compiler/FastFileCompilerGUI.exe
+        retention-days: 14
+
+    - name: Upload FastFile Tool GUI
+      uses: actions/upload-artifact@v4
+      with:
+        name: FastFileToolGUI-Dev
+        path: ./publish-tool/FastFileToolGUI.exe
+        retention-days: 14
+
+    - name: Upload All Tools Bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: All-Tools-Dev-Bundle
+        path: |
           ./publish/Call of Duty FastFile Editor.exe
           ./publish-compiler/FastFileCompilerGUI.exe
           ./publish-tool/FastFileToolGUI.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        retention-days: 14

@@ -4,22 +4,38 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Xml.Linq;
 
 namespace Call_of_Duty_FastFile_Editor.Services
 {
     public static class AssetRecordProcessor
     {
         /// <summary>
+        /// Checks if a COD4 asset type is supported for structure-based parsing.
+        /// </summary>
+        private static bool IsSupportedAssetType_COD4(ZoneFileAssetType_COD4 assetType)
+        {
+            return assetType == ZoneFileAssetType_COD4.rawfile ||
+                   assetType == ZoneFileAssetType_COD4.localize;
+        }
+
+        /// <summary>
+        /// Checks if a COD5 asset type is supported for structure-based parsing.
+        /// </summary>
+        private static bool IsSupportedAssetType_COD5(ZoneFileAssetType_COD5 assetType)
+        {
+            return assetType == ZoneFileAssetType_COD5.rawfile ||
+                   assetType == ZoneFileAssetType_COD5.localize;
+        }
+
+        /// <summary>
         /// Processes the given zone asset records, extracting various asset types
         /// and returns them in a ZoneAssetRecords object.
+        /// Uses structure-based parsing first, then falls back to pattern matching
+        /// for rawfiles that appear after unsupported asset types.
         /// </summary>
         /// <param name="openedFastFile">The FastFile object containing the zone data.</param>
         /// <param name="zoneAssetRecords">The list of asset records extracted from the zone.</param>
-        /// <param name="forcePatternMatching">
-        /// If true, raw files will be parsed using pattern matching, which overrides the default structured parsing.
-        /// Use this option when the standard parsing does not correctly detect raw files.
-        /// </param>
+        /// <param name="forcePatternMatching">If true, skip structure-based parsing and use pattern matching only.</param>
         /// <returns>A ZoneAssetRecords object containing updated asset lists and records.</returns>
         public static AssetRecordCollection ProcessAssetRecords(
             FastFile openedFastFile,
@@ -34,30 +50,73 @@ namespace Call_of_Duty_FastFile_Editor.Services
             int indexOfLastAssetRecordParsed = 0;
             int previousRecordEndOffset = 0;
             string assetRecordMethod = string.Empty;
+            int structureParsingStoppedAtIndex = -1;
+            int lastStructureParsedEndOffset = 0;
 
-            // Load file data ONCE for pattern matching
-            byte[] zoneFileData = System.IO.File.ReadAllBytes(openedFastFile.ZoneFilePath);
+            // Zone file data is accessed via openedFastFile.OpenedFastFileZone.Data
+
+            // If forcePatternMatching is true, skip structure-based parsing entirely
+            if (forcePatternMatching)
+            {
+                structureParsingStoppedAtIndex = 0;
+                goto PatternMatchingFallback;
+            }
 
             // Loop through each asset record.
             for (int i = 0; i < zoneAssetRecords.Count; i++)
             {
                 try
                 {
+                    // Check if this asset type is supported before processing
+                    bool isSupported = false;
+                    string assetTypeName = "unknown";
+
+                    if (openedFastFile.IsCod4File)
+                    {
+                        isSupported = IsSupportedAssetType_COD4(zoneAssetRecords[i].AssetType_COD4);
+                        assetTypeName = zoneAssetRecords[i].AssetType_COD4.ToString();
+                    }
+                    else if (openedFastFile.IsCod5File)
+                    {
+                        isSupported = IsSupportedAssetType_COD5(zoneAssetRecords[i].AssetType_COD5);
+                        assetTypeName = zoneAssetRecords[i].AssetType_COD5.ToString();
+                    }
+
+                    if (!isSupported)
+                    {
+                        // Stop structure-based processing - we can't determine the size of unsupported assets
+                        // Record where we stopped so we can use pattern matching to find remaining rawfiles
+                        Debug.WriteLine($"[AssetRecordProcessor] Stopping structure-based parsing at index {i}: unsupported asset type '{assetTypeName}'. Will use pattern matching for remaining rawfiles.");
+                        structureParsingStoppedAtIndex = i;
+                        if (i > 0 && zoneAssetRecords[i - 1].AssetRecordEndOffset > 0)
+                        {
+                            lastStructureParsedEndOffset = zoneAssetRecords[i - 1].AssetRecordEndOffset;
+                        }
+                        goto PatternMatchingFallback;
+                    }
+
                     // For all records except the first, update previousRecordEndOffset.
                     if (i > 0)
                         previousRecordEndOffset = zoneAssetRecords[i - 1].AssetRecordEndOffset;
 
-                    Debug.WriteLine($"Processing record index {i}, previousRecordEndOffset: {previousRecordEndOffset}");
+                    Debug.WriteLine($"Processing record index {i} ({assetTypeName}), previousRecordEndOffset: {previousRecordEndOffset}");
 
                     // Determine the starting offset for the current record:
                     // - For the first record, use the AssetPoolEndOffset.
-                    // - For subsequent records, if previousRecordEndOffset is available, use it;
-                    //   otherwise, fall back to the last parsed record's end offset.
-                    int startingOffset = (i == 0)
-                        ? openedFastFile.OpenedFastFileZone.AssetPoolEndOffset
-                        : (previousRecordEndOffset > 0
-                            ? previousRecordEndOffset
-                            : zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset);
+                    // - For subsequent records, use the previous record's end offset.
+                    int startingOffset;
+                    if (i == 0)
+                    {
+                        startingOffset = openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
+                    }
+                    else if (previousRecordEndOffset > 0)
+                    {
+                        startingOffset = previousRecordEndOffset;
+                    }
+                    else
+                    {
+                        startingOffset = zoneAssetRecords[indexOfLastAssetRecordParsed].AssetRecordEndOffset;
+                    }
 
                     if (openedFastFile.IsCod4File)
                     {
@@ -66,67 +125,43 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         {
                             case ZoneFileAssetType_COD4.rawfile:
                                 {
-                                    RawFileNode node = forcePatternMatching
-                                    ? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset)
-                                    : RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
-                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset);
+                                    // Structure-based parsing only
+                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
 
                                     if (node != null)
                                     {
-                                        // Set the extraction method description based on the offset used.
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "Raw file parsed using previous record's offset."
-                                            : "Raw file parsed from asset pool end using pattern matching.";
+                                        assetRecordMethod = "Raw file parsed using structure-based offset.";
                                         result.RawFileNodes.Add(node);
                                         UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
                                     }
-                                    break;
-                                }
-                            case ZoneFileAssetType_COD4.stringtable:
-                                {
-                                    StringTable table = forcePatternMatching
-                                    ? StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset)
-                                    : (previousRecordEndOffset > 0
-                                        ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
-                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset));
-
-
-                                    if (table != null)
+                                    else
                                     {
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "String table parsed using previous record's offset."
-                                            : "String table parsed using pattern matching because previous record end was unknown.";
-                                        result.StringTables.Add(table);
-                                        UpdateAssetRecord(zoneAssetRecords, i, table, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
+                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse rawfile at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                                        goto EndProcessing; // Stop on parse failure
                                     }
                                     break;
                                 }
                             case ZoneFileAssetType_COD4.localize:
                                 {
-                                    var tuple = forcePatternMatching
-                                    ? LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset)
-                                    : (previousRecordEndOffset > 0
-                                        ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
-                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset));
-
+                                    // Always use structure-based parsing
+                                    var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
                                     LocalizedEntry localizedEntry = tuple.entry;
-                                    assetRecordMethod = (previousRecordEndOffset > 0)
-                                        ? "Localized asset parsed using previous record's offset."
-                                        : "Localized asset parsed using pattern matching because previous record end was unknown.";
 
                                     if (localizedEntry != null)
                                     {
+                                        assetRecordMethod = "Localized asset parsed using structure-based offset.";
                                         result.LocalizedEntries.Add(localizedEntry);
                                         UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
                                     }
+                                    else
+                                    {
+                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                                        goto EndProcessing; // Stop on parse failure
+                                    }
                                     break;
                                 }
-                            default:
-                                // If asset type is not handled, do nothing.
-                                break;
                         }
                     }
                     else if (openedFastFile.IsCod5File)
@@ -136,77 +171,103 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         {
                             case ZoneFileAssetType_COD5.rawfile:
                                 {
-                                    RawFileNode node = forcePatternMatching
-                                    ? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset)
-                                    : RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset)
-                                        ?? RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneFileData, startingOffset);
+                                    // Structure-based parsing only
+                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
 
                                     if (node != null)
                                     {
-                                        // Set the extraction method description based on the offset used.
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "Raw file parsed using previous record's offset."
-                                            : "Raw file parsed from asset pool end using pattern matching.";
+                                        assetRecordMethod = "Raw file parsed using structure-based offset.";
                                         result.RawFileNodes.Add(node);
                                         UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
                                     }
-                                    break;
-                                }
-                            case ZoneFileAssetType_COD5.stringtable:
-                                {
-                                    StringTable table = forcePatternMatching
-                                    ? StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset)
-                                    : (previousRecordEndOffset > 0
-                                        ? StringTableParser.ParseStringTable(openedFastFile, startingOffset)
-                                        : StringTable.FindSingleCsvStringTableWithPattern(openedFastFile.OpenedFastFileZone, startingOffset));
-
-                                    if (table != null)
+                                    else
                                     {
-                                        assetRecordMethod = (previousRecordEndOffset > 0)
-                                            ? "String table parsed using previous record's offset."
-                                            : "String table parsed using pattern matching because previous record end was unknown.";
-                                        result.StringTables.Add(table);
-                                        UpdateAssetRecord(zoneAssetRecords, i, table, assetRecordMethod);
-                                        indexOfLastAssetRecordParsed = i;
+                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse rawfile at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                                        goto EndProcessing; // Stop on parse failure
                                     }
                                     break;
                                 }
                             case ZoneFileAssetType_COD5.localize:
                                 {
-                                    var tuple = forcePatternMatching
-                                    ? LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset)
-                                    : (previousRecordEndOffset > 0
-                                        ? LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset)
-                                        : LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, startingOffset));
-
-
+                                    // Always use structure-based parsing
+                                    var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
                                     LocalizedEntry localizedEntry = tuple.entry;
-                                    assetRecordMethod = (previousRecordEndOffset > 0)
-                                        ? "Localized asset parsed using previous record's offset."
-                                        : "Localized asset parsed using pattern matching because previous record end was unknown.";
 
                                     if (localizedEntry != null)
                                     {
+                                        assetRecordMethod = "Localized asset parsed using structure-based offset.";
                                         result.LocalizedEntries.Add(localizedEntry);
                                         UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
                                         indexOfLastAssetRecordParsed = i;
                                     }
+                                    else
+                                    {
+                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                                        goto EndProcessing; // Stop on parse failure
+                                    }
                                     break;
                                 }
-                            default:
-                                // If asset type is not handled, do nothing.
-                                break;
                         }
                     }
 
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Failed to process asset record at index {i}: {ex.Message}");
+                    Debug.WriteLine($"Failed to process asset record at index {i}: {ex.Message}. Stopping.");
+                    break; // Stop on exception
                 }
             }
 
+        PatternMatchingFallback:
+            // If structure-based parsing stopped early due to unsupported assets,
+            // use pattern matching to find remaining rawfiles
+            if (structureParsingStoppedAtIndex >= 0)
+            {
+                Debug.WriteLine($"[AssetRecordProcessor] Starting pattern matching fallback from offset 0x{lastStructureParsedEndOffset:X}");
+
+                byte[] zoneData = openedFastFile.OpenedFastFileZone.Data;
+                int searchStartOffset = lastStructureParsedEndOffset > 0
+                    ? lastStructureParsedEndOffset
+                    : openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
+
+                // Get already found rawfile names to avoid duplicates
+                var existingFileNames = new HashSet<string>(
+                    result.RawFileNodes.Select(n => n.FileName),
+                    StringComparer.OrdinalIgnoreCase);
+
+                // Use pattern matching to scan for rawfiles
+                int currentOffset = searchStartOffset;
+                int patternMatchedCount = 0;
+
+                while (currentOffset < zoneData.Length)
+                {
+                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneData, currentOffset);
+
+                    if (node == null)
+                    {
+                        // No more rawfiles found
+                        break;
+                    }
+
+                    // Check if we already have this file from structure-based parsing
+                    if (!existingFileNames.Contains(node.FileName))
+                    {
+                        node.AdditionalData = "Raw file parsed using pattern matching (fallback).";
+                        result.RawFileNodes.Add(node);
+                        existingFileNames.Add(node.FileName);
+                        patternMatchedCount++;
+                        Debug.WriteLine($"[AssetRecordProcessor] Pattern matched rawfile: '{node.FileName}' at offset 0x{node.StartOfFileHeader:X}");
+                    }
+
+                    // Move past this file to continue searching
+                    currentOffset = node.RawFileEndPosition;
+                }
+
+                Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {patternMatchedCount} additional rawfiles");
+            }
+
+            EndProcessing:
             // Save the updated asset records into the result container.
             result.UpdatedRecords = zoneAssetRecords;
             return result;

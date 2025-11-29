@@ -31,8 +31,8 @@ namespace Call_of_Duty_FastFile_Editor.CodeOperations
                 fs.Seek(insertPosition, SeekOrigin.Begin);
                 fs.Write(newRecord, 0, newRecord.Length);
 
-                // Update the AssetRecordCount field in the header.
-                int assetRecordCountOffset = ZoneFileHeaderConstants.AssetRecordCountOffset;
+                // Update the AssetCount field in the header.
+                int assetRecordCountOffset = ZoneFileHeaderConstants.AssetCountOffset;
                 fs.Seek(assetRecordCountOffset, SeekOrigin.Begin);
                 byte[] countBytes = new byte[4];
                 fs.Read(countBytes, 0, countBytes.Length);
