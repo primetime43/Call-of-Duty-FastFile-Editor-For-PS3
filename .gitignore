@@ -1,22 +1,21 @@
-.vs/*
+# Visual Studio
+.vs/
 
-Call of Duty FastFile Editor/bin/*
+# Common build artifacts
+bin/
+obj/
 
-Call of Duty FastFile Editor/obj/*
-FastFileCompiler/obj/Debug/net8.0/
+# Any nested bin/ and obj/ folders in subprojects
+**/bin/
+**/obj/
 
-FastFileCompilerGUI/bin/Debug/net8.0-windows/
+# Project-specific publish/build output
+publish/
 
-FastFileCompilerGUI/obj/Debug/net8.0-windows/
+# Specific build targets (optional, if not already covered by **/bin/)
+FastFileCompilerGUI/bin/Release/net8.0-windows/
+FastFileTool/bin/Release/net8.0/win-x64
 
-FastFileCompilerGUI/obj/
+# Test project
+TestProject/
 
-FastFileCompiler/obj/
-/FastFileCompiler/bin
-/FastFileCompilerGUI/bin/Release/net8.0-windows
-/.claude/settings.local.json
-/FastFileTool/bin/Release/net8.0/win-x64
-/FastFileTool/obj
-/publish
-/FastFileToolGUI/bin
-/FastFileToolGUI/obj
