@@ -1,4 +1,7 @@
-﻿using Call_of_Duty_FastFile_Editor.Constants;
+﻿using Call_of_Duty_FastFile_Editor.Models;
+using Ionic.Zlib;
+using System.Text;
+using Call_of_Duty_FastFile_Editor.Constants;
 
 namespace Call_of_Duty_FastFile_Editor.IO
 {
