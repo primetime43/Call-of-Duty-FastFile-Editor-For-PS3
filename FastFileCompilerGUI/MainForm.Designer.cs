@@ -160,7 +160,7 @@ partial class MainForm
         this.mainTableLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         this.mainTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45F));
         this.mainTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 160F));
-        this.mainTableLayout.Size = new Size(800, 526);
+        this.mainTableLayout.Size = new Size(900, 526);
         this.mainTableLayout.TabIndex = 1;
 
         //
@@ -218,12 +218,14 @@ partial class MainForm
         this.buttonPanel.Controls.Add(this.btnCompile);
         this.buttonPanel.Dock = DockStyle.Fill;
         this.buttonPanel.Name = "buttonPanel";
+        this.buttonPanel.WrapContents = true;
+        this.buttonPanel.AutoSize = true;
 
         //
         // btnLoadExistingFF
         //
         this.btnLoadExistingFF.Name = "btnLoadExistingFF";
-        this.btnLoadExistingFF.Size = new Size(100, 30);
+        this.btnLoadExistingFF.Size = new Size(85, 30);
         this.btnLoadExistingFF.Text = "Load FF...";
         this.btnLoadExistingFF.UseVisualStyleBackColor = true;
         this.btnLoadExistingFF.Click += new EventHandler(this.btnLoadExistingFF_Click);
@@ -232,7 +234,7 @@ partial class MainForm
         // btnAddFiles
         //
         this.btnAddFiles.Name = "btnAddFiles";
-        this.btnAddFiles.Size = new Size(100, 30);
+        this.btnAddFiles.Size = new Size(85, 30);
         this.btnAddFiles.Text = "Add Files...";
         this.btnAddFiles.UseVisualStyleBackColor = true;
         this.btnAddFiles.Click += new EventHandler(this.btnAddFiles_Click);
@@ -241,7 +243,7 @@ partial class MainForm
         // btnAddFolder
         //
         this.btnAddFolder.Name = "btnAddFolder";
-        this.btnAddFolder.Size = new Size(100, 30);
+        this.btnAddFolder.Size = new Size(90, 30);
         this.btnAddFolder.Text = "Add Folder...";
         this.btnAddFolder.UseVisualStyleBackColor = true;
         this.btnAddFolder.Click += new EventHandler(this.btnAddFolder_Click);
@@ -250,7 +252,7 @@ partial class MainForm
         // btnRemove
         //
         this.btnRemove.Name = "btnRemove";
-        this.btnRemove.Size = new Size(100, 30);
+        this.btnRemove.Size = new Size(75, 30);
         this.btnRemove.Text = "Remove";
         this.btnRemove.UseVisualStyleBackColor = true;
         this.btnRemove.Click += new EventHandler(this.btnRemove_Click);
@@ -259,7 +261,7 @@ partial class MainForm
         // btnClear
         //
         this.btnClear.Name = "btnClear";
-        this.btnClear.Size = new Size(100, 30);
+        this.btnClear.Size = new Size(75, 30);
         this.btnClear.Text = "Clear All";
         this.btnClear.UseVisualStyleBackColor = true;
         this.btnClear.Click += new EventHandler(this.btnClear_Click);
@@ -268,7 +270,7 @@ partial class MainForm
         // btnMoveUp
         //
         this.btnMoveUp.Name = "btnMoveUp";
-        this.btnMoveUp.Size = new Size(80, 30);
+        this.btnMoveUp.Size = new Size(75, 30);
         this.btnMoveUp.Text = "Move Up";
         this.btnMoveUp.UseVisualStyleBackColor = true;
         this.btnMoveUp.Click += new EventHandler(this.btnMoveUp_Click);
@@ -277,7 +279,7 @@ partial class MainForm
         // btnMoveDown
         //
         this.btnMoveDown.Name = "btnMoveDown";
-        this.btnMoveDown.Size = new Size(80, 30);
+        this.btnMoveDown.Size = new Size(85, 30);
         this.btnMoveDown.Text = "Move Down";
         this.btnMoveDown.UseVisualStyleBackColor = true;
         this.btnMoveDown.Click += new EventHandler(this.btnMoveDown_Click);
@@ -386,7 +388,7 @@ partial class MainForm
         this.groupBoxCompile.Controls.Add(this.labelStatus);
         this.groupBoxCompile.Location = new Point(410, 5);
         this.groupBoxCompile.Name = "groupBoxCompile";
-        this.groupBoxCompile.Size = new Size(350, 145);
+        this.groupBoxCompile.Size = new Size(450, 145);
         this.groupBoxCompile.TabIndex = 1;
         this.groupBoxCompile.TabStop = false;
         this.groupBoxCompile.Text = "Status";
@@ -395,24 +397,26 @@ partial class MainForm
         // btnCompile
         //
         this.btnCompile.Name = "btnCompile";
-        this.btnCompile.Size = new Size(120, 30);
-        this.btnCompile.Text = "Compile FF...";
+        this.btnCompile.Size = new Size(90, 30);
+        this.btnCompile.Text = "Create FF...";
         this.btnCompile.UseVisualStyleBackColor = true;
         this.btnCompile.Click += new EventHandler(this.btnCompile_Click);
 
         //
         // progressBar
         //
+        this.progressBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         this.progressBar.Location = new Point(15, 35);
         this.progressBar.Name = "progressBar";
-        this.progressBar.Size = new Size(320, 23);
+        this.progressBar.Size = new Size(420, 23);
 
         //
         // labelStatus
         //
+        this.labelStatus.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         this.labelStatus.Location = new Point(15, 70);
         this.labelStatus.Name = "labelStatus";
-        this.labelStatus.Size = new Size(320, 60);
+        this.labelStatus.Size = new Size(420, 60);
         this.labelStatus.Text = "Ready";
 
         //
@@ -445,11 +449,11 @@ partial class MainForm
         this.AllowDrop = true;
         this.AutoScaleDimensions = new SizeF(7F, 15F);
         this.AutoScaleMode = AutoScaleMode.Font;
-        this.ClientSize = new Size(800, 550);
+        this.ClientSize = new Size(900, 550);
         this.Controls.Add(this.mainTableLayout);
         this.Controls.Add(this.menuStrip);
         this.MainMenuStrip = this.menuStrip;
-        this.MinimumSize = new Size(700, 500);
+        this.MinimumSize = new Size(850, 500);
         this.Name = "MainForm";
         this.StartPosition = FormStartPosition.CenterScreen;
         this.Text = "FastFile Compiler - PS3 Call of Duty";
