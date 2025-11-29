@@ -6,6 +6,7 @@
     <RootNamespace>FastFileCompiler</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
 
 </Project>
