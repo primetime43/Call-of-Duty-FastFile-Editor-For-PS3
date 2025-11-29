@@ -1,4 +1,5 @@
 ﻿using Call_of_Duty_FastFile_Editor.Models;
+using FastFileLib;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -122,7 +123,8 @@ namespace Call_of_Duty_FastFile_Editor.IO
         }
 
         /// <summary>
-        /// Decompresses the given byte array using the Zlib (Deflate) algorithm.
+        /// Decompresses the given byte array using the shared FastFileLib.
+        /// Automatically detects zlib vs raw deflate format.
         /// </summary>
         /// <param name="compressedData">
         /// A byte array containing data that was previously compressed with Deflate.
@@ -133,20 +135,11 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// </returns>
         protected virtual byte[] DecompressFF(byte[] compressedData)
         {
-            using (MemoryStream input = new MemoryStream(compressedData))
-            using (MemoryStream output = new MemoryStream())
-            {
-                using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
-                {
-                    deflateStream.CopyTo(output);
-                }
-                return output.ToArray();
-            }
+            return FastFileProcessor.DecompressBlock(compressedData);
         }
 
         /// <summary>
-        /// Compresses the given byte array using the Zlib (Deflate) algorithm
-        /// with the highest compression level.
+        /// Compresses the given byte array using the shared FastFileLib.
         /// </summary>
         /// <param name="uncompressedData">
         /// A byte array of raw data to be compressed. Must not be <c>null</c>.
@@ -156,14 +149,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// </returns>
         protected virtual byte[] CompressFF(byte[] uncompressedData)
         {
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                using (DeflateStream deflateStream = new DeflateStream(memoryStream, CompressionLevel.Optimal))
-                {
-                    deflateStream.Write(uncompressedData, 0, uncompressedData.Length);
-                }
-                return memoryStream.ToArray();
-            }
+            return FastFileProcessor.CompressBlock(uncompressedData);
         }
     }
 }

@@ -1,6 +1,6 @@
 using System.IO.Compression;
 
-namespace FastFileCompiler;
+namespace FastFileLib;
 
 /// <summary>
 /// Decompresses FastFile (.ff) archives into raw zone data.
@@ -40,29 +40,41 @@ public class Decompressor
             if (blockSize == 0 || blockSize == 1 || offset + blockSize > ffData.Length)
                 break;
 
-            // Read compressed block
+            // Read compressed block and prepend zlib header for decompression
+            // CoD4/WaW store raw deflate data - adding zlib header allows ZLibStream to decompress
             byte[] compressedBlock = new byte[blockSize + 2];
-            // Add ZLIB header (78 DA for best compression)
-            compressedBlock[0] = 0x78;
-            compressedBlock[1] = 0xDA;
+            compressedBlock[0] = 0x78; // zlib header byte 1
+            compressedBlock[1] = 0xDA; // zlib header byte 2 (best compression)
             Array.Copy(ffData, offset, compressedBlock, 2, blockSize);
             offset += blockSize;
 
-            // Decompress block
-            byte[] decompressedBlock = DecompressBlock(compressedBlock);
+            // Decompress block using ZLibStream
+            byte[] decompressedBlock = DecompressBlockWithZlib(compressedBlock);
             decompressed.AddRange(decompressedBlock);
         }
 
         byte[] result = decompressed.ToArray();
 
         // Fix header sizes if they don't match actual decompressed size
-        // This can happen due to compression block padding
         if (result.Length >= 52)
         {
             FixZoneHeaderSizes(result);
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Decompresses a block using ZLibStream.
+    /// </summary>
+    private static byte[] DecompressBlockWithZlib(byte[] compressedData)
+    {
+        using var inputStream = new MemoryStream(compressedData);
+        using var zlibStream = new ZLibStream(inputStream, CompressionMode.Decompress);
+        using var outputStream = new MemoryStream();
+
+        zlibStream.CopyTo(outputStream);
+        return outputStream.ToArray();
     }
 
     /// <summary>
@@ -95,18 +107,5 @@ public class Decompressor
     {
         byte[] zoneData = Decompress(ffPath);
         File.WriteAllBytes(zonePath, zoneData);
-    }
-
-    /// <summary>
-    /// Decompresses a single ZLIB block.
-    /// </summary>
-    private static byte[] DecompressBlock(byte[] compressedData)
-    {
-        using var inputStream = new MemoryStream(compressedData);
-        using var zlibStream = new ZLibStream(inputStream, CompressionMode.Decompress);
-        using var outputStream = new MemoryStream();
-
-        zlibStream.CopyTo(outputStream);
-        return outputStream.ToArray();
     }
 }

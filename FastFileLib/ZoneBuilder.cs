@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using FastFileCompiler.Models;
+using FastFileLib.Models;
 
-namespace FastFileCompiler;
+namespace FastFileLib;
 
 /// <summary>
 /// Builds a zone file from raw files and localized entries.

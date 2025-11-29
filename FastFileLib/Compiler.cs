@@ -1,10 +1,10 @@
 using System.IO.Compression;
 using System.Text;
 
-namespace FastFileCompiler;
+namespace FastFileLib;
 
 /// <summary>
-/// Compiles zone data into a FastFile (.ff) with proper header and ZLIB block compression.
+/// Compiles zone data into a FastFile (.ff) with proper header and zlib block compression.
 /// </summary>
 public class Compiler
 {
@@ -55,8 +55,8 @@ public class Compiler
     }
 
     /// <summary>
-    /// Compresses the zone data into 64KB ZLIB blocks.
-    /// Each block format: [2-byte length (big-endian)] + [compressed data without ZLIB header]
+    /// Compresses the zone data into 64KB zlib blocks.
+    /// Each block format: [2-byte length (big-endian)] + [compressed data (zlib without header)]
     /// </summary>
     private byte[] CompressZoneBlocks(byte[] zoneData)
     {
@@ -72,8 +72,8 @@ public class Compiler
             byte[] block = new byte[bytesToRead];
             reader.Read(block, 0, bytesToRead);
 
-            // Compress the block using built-in ZLibStream
-            byte[] compressedBlock = CompressBlock(block);
+            // Compress the block using ZLibStream
+            byte[] compressedBlock = CompressBlockWithZlib(block);
 
             // The compressed data includes a 2-byte ZLIB header (usually 78 DA for best compression)
             // We need to write: [length without header] + [compressed data without first 2 bytes]
@@ -84,16 +84,19 @@ public class Compiler
             compressed.Add((byte)(compressedLength & 0xFF));
 
             // Write compressed data (skip first 2 bytes - the ZLIB header)
-            compressed.AddRange(compressedBlock.Skip(2));
+            for (int j = 2; j < compressedBlock.Length; j++)
+            {
+                compressed.Add(compressedBlock[j]);
+            }
         }
 
         return compressed.ToArray();
     }
 
     /// <summary>
-    /// Compresses a block using ZLIB compression.
+    /// Compresses a block using ZLibStream.
     /// </summary>
-    private static byte[] CompressBlock(byte[] data)
+    private static byte[] CompressBlockWithZlib(byte[] data)
     {
         using var outputStream = new MemoryStream();
         using (var zlibStream = new ZLibStream(outputStream, CompressionLevel.Optimal))

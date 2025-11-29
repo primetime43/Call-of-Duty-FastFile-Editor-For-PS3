@@ -1,4 +1,4 @@
-namespace FastFileCompiler.Models;
+namespace FastFileLib.Models;
 
 /// <summary>
 /// Represents a localized string entry.

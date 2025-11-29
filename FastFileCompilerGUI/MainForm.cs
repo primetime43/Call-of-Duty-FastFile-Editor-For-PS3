@@ -1,5 +1,5 @@
-using FastFileCompiler;
-using FastFileCompiler.Models;
+using FastFileLib;
+using FastFileLib.Models;
 
 namespace FastFileCompilerGUI;
 

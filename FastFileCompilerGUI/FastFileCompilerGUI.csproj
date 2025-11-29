@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FastFileCompiler\FastFileCompiler.csproj" />
+    <ProjectReference Include="..\FastFileLib\FastFileLib.csproj" />
   </ItemGroup>
 
 </Project>

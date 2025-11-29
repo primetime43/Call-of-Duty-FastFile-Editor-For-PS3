@@ -1,32 +1,12 @@
-namespace FastFileCompiler;
+namespace FastFileLib;
 
 /// <summary>
-/// Supported Call of Duty game versions for FastFile compilation.
-/// </summary>
-public enum GameVersion
-{
-    /// <summary>
-    /// Call of Duty 4: Modern Warfare (version 0x01)
-    /// </summary>
-    CoD4,
-
-    /// <summary>
-    /// Call of Duty: World at War (version 0x183)
-    /// </summary>
-    WaW,
-
-    /// <summary>
-    /// Call of Duty: Modern Warfare 2 (version 0x10D)
-    /// </summary>
-    MW2
-}
-
-/// <summary>
-/// Constants for FastFile compilation.
+/// Constants for FastFile compilation and processing.
 /// </summary>
 public static class FastFileConstants
 {
     public const string UnsignedHeader = "IWffu100";
+    public const string SignedHeader = "IWff0100";
     public const int HeaderSize = 12; // 8 bytes magic + 4 bytes version
     public const int BlockSize = 65536; // 0x10000 - 64KB blocks
 

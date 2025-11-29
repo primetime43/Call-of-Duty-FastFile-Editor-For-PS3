@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FastFileLib\FastFileLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="C:\Users\primetime43\.nuget\packages\scintilla.net\5.3.2.9\build\x86\Lexilla.dll" />
   </ItemGroup>
 

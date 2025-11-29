@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace FastFileCompiler.Models;
+namespace FastFileLib.Models;
 
 /// <summary>
 /// Represents a raw file asset to be compiled into a FastFile.
@@ -55,7 +55,7 @@ public class RawFile
         return new RawFile
         {
             Name = name,
-            Data = System.Text.Encoding.ASCII.GetBytes(content)
+            Data = Encoding.ASCII.GetBytes(content)
         };
     }
 

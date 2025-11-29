@@ -9,5 +9,8 @@
     <SelfContained>false</SelfContained>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FastFileLib\FastFileLib.csproj" />
+  </ItemGroup>
 
 </Project>
