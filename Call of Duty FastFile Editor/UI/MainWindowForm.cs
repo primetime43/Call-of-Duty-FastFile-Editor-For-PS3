@@ -1182,7 +1182,7 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
-        /// Extracts all raw files, including header information, to a chosen folder.
+        /// Extracts all raw file content (without zone headers) to a chosen folder.
         /// </summary>
         private void extractAllRawFilesToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -1215,8 +1215,7 @@ namespace Call_of_Duty_FastFile_Editor
                         // Construct the destination file path using the sanitized file name
                         string destFilePath = Path.Combine(destinationFolder, safeFileName);
 
-                        // Write the raw bytes to the destination file.
-                        // (Assumes that rawFileNode.RawFileBytes includes header info.)
+                        // Write the raw content bytes to the destination file (no zone headers)
                         File.WriteAllBytes(destFilePath, rawFileNode.RawFileBytes);
                     }
                     catch (Exception ex)

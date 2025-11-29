@@ -309,10 +309,11 @@ namespace Call_of_Duty_FastFile_Editor
             injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
             // 
             // extractAllRawFilesToolStripMenuItem
-            // 
+            //
             extractAllRawFilesToolStripMenuItem.Name = "extractAllRawFilesToolStripMenuItem";
             extractAllRawFilesToolStripMenuItem.Size = new Size(210, 24);
-            extractAllRawFilesToolStripMenuItem.Text = "Extract All Raw Files";
+            extractAllRawFilesToolStripMenuItem.Text = "Extract All Raw Files (Content Only)";
+            extractAllRawFilesToolStripMenuItem.ToolTipText = "Extracts file content without zone headers. Files can be edited and re-injected.";
             extractAllRawFilesToolStripMenuItem.Click += extractAllRawFilesToolStripMenuItem_Click;
             // 
             // toolStripMenuItem2
