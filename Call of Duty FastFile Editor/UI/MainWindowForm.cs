@@ -696,10 +696,17 @@ namespace Call_of_Duty_FastFile_Editor
 
         /// <summary>
         /// Prompts the user to enter a game path for a plain file.
+        /// Automatically converts filename conventions like "maps__load.gsc" to "maps/_load.gsc"
+        /// where "__" represents "/" in the game path.
         /// </summary>
         private string PromptForGamePath(string defaultFileName)
         {
-            using (var dialog = new RenameDialog($"maps/mp/gametypes/{defaultFileName}"))
+            // Convert filename to game path by replacing "__" with "/"
+            // e.g., "maps__load.gsc" -> "maps/_load.gsc"
+            // e.g., "maps_mp_gametypes__dm.gsc" -> "maps/mp/gametypes/_dm.gsc"
+            string suggestedPath = ConvertFileNameToGamePath(defaultFileName);
+
+            using (var dialog = new RenameDialog(suggestedPath))
             {
                 dialog.Text = "Enter Game Path";
                 if (dialog.ShowDialog() == DialogResult.OK)
@@ -708,6 +715,32 @@ namespace Call_of_Duty_FastFile_Editor
                 }
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Converts a filename with underscore conventions to a game path.
+        /// - Single underscore followed by another underscore ("__") becomes "/_" (underscore file/folder name)
+        /// - Single underscore at word boundary becomes "/" (path separator)
+        /// Examples:
+        /// - "maps__load.gsc" -> "maps/_load.gsc"
+        /// - "maps_mp_gametypes_dm.gsc" -> "maps/mp/gametypes/dm.gsc"
+        /// </summary>
+        private string ConvertFileNameToGamePath(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return fileName;
+
+            // Replace "__" with a placeholder first (for underscore-prefixed names like "_load")
+            const string placeholder = "\x00UNDERSCORE\x00";
+            string result = fileName.Replace("__", placeholder);
+
+            // Replace remaining single underscores with forward slashes
+            result = result.Replace("_", "/");
+
+            // Restore the underscore-prefixed names
+            result = result.Replace(placeholder, "/_");
+
+            return result;
         }
 
         /// <summary>
