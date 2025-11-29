@@ -495,7 +495,7 @@ namespace Call_of_Duty_FastFile_Editor
         {
             try
             {
-                var release = await ReleaseChecker.CheckForNewRelease("primetime43", "Call-of-Duty-FastFile-Editor-For-PS3");
+                var release = await ReleaseChecker.CheckForNewRelease("primetime43", "CoD-FF-Tools");
 
                 if (release != null)
                 {
@@ -1700,7 +1700,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void reportIssuesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string url = "https://github.com/primetime43/Call-of-Duty-FastFile-Editor-For-PS3/issues";
+            string url = "https://github.com/primetime43/CoD-FF-Tools/issues";
             try
             {
                 ProcessStartInfo psi = new ProcessStartInfo

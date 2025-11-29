@@ -1,5 +1,5 @@
 using System.Text;
-using Ionic.Zlib;
+using System.IO.Compression;
 
 namespace FastFileToolGUI;
 
@@ -16,33 +16,14 @@ public partial class MainForm : Form
     {
         // COD4
         { "COD4_PS3", new byte[] { 0x00, 0x00, 0x00, 0x01 } },
-        { "COD4_X360", new byte[] { 0x00, 0x00, 0x00, 0x01 } },
         { "COD4_PC", new byte[] { 0x00, 0x00, 0x00, 0x05 } },
         { "COD4_Wii", new byte[] { 0x00, 0x00, 0x01, 0xA2 } },
         // WAW/COD5
         { "WAW_PS3", new byte[] { 0x00, 0x00, 0x01, 0x83 } },
-        { "WAW_X360", new byte[] { 0x00, 0x00, 0x01, 0x83 } },
-        { "WAW_PC", new byte[] { 0x00, 0x00, 0x01, 0x83 } },
         { "WAW_Wii", new byte[] { 0x00, 0x00, 0x01, 0x9B } },
-        // MW2
+        // MW2 (uses zlib with header instead of raw deflate)
         { "MW2_PS3", new byte[] { 0x00, 0x00, 0x01, 0x0D } },
-        { "MW2_X360", new byte[] { 0x00, 0x00, 0x01, 0x0D } },
         { "MW2_PC", new byte[] { 0x00, 0x00, 0x01, 0x14 } },
-        // BO1
-        { "BO1_PS3", new byte[] { 0x00, 0x00, 0x01, 0xD9 } },
-        { "BO1_X360", new byte[] { 0x00, 0x00, 0x01, 0xD9 } },
-        { "BO1_PC", new byte[] { 0x00, 0x00, 0x01, 0xD9 } },
-        { "BO1_Wii", new byte[] { 0x00, 0x00, 0x01, 0xDD } },
-        // MW3
-        { "MW3_PS3", new byte[] { 0x00, 0x00, 0x00, 0x70 } },
-        { "MW3_X360", new byte[] { 0x00, 0x00, 0x00, 0x70 } },
-        { "MW3_PC", new byte[] { 0x00, 0x00, 0x00, 0x01 } },
-        { "MW3_Wii", new byte[] { 0x00, 0x00, 0x00, 0x6B } },
-        // BO2
-        { "BO2_PS3", new byte[] { 0x00, 0x00, 0x00, 0x92 } },
-        { "BO2_X360", new byte[] { 0x00, 0x00, 0x00, 0x92 } },
-        { "BO2_PC", new byte[] { 0x00, 0x00, 0x00, 0x93 } },
-        { "BO2_WiiU", new byte[] { 0x00, 0x00, 0x00, 0x94 } },
     };
 
     // Version detection mapping (version int -> game/platform info)
@@ -91,14 +72,7 @@ public partial class MainForm : Form
             "WAW - PS3/Xbox 360/PC",
             "WAW - Wii",
             "MW2 - PS3/Xbox 360",
-            "MW2 - PC",
-            "BO1 - PS3/Xbox 360/PC",
-            "BO1 - Wii",
-            "MW3 - PS3/Xbox 360",
-            "MW3 - Wii",
-            "BO2 - PS3/Xbox 360",
-            "BO2 - PC",
-            "BO2 - Wii U"
+            "MW2 - PC"
         });
         gameVersionComboBox.SelectedIndex = 0;
     }
@@ -117,22 +91,6 @@ public partial class MainForm : Form
             case 4: version = VersionBytes["WAW_Wii"]; break;
             case 5: version = VersionBytes["MW2_PS3"]; break;
             case 6: version = VersionBytes["MW2_PC"]; break;
-            case 7: version = VersionBytes["BO1_PS3"]; break;
-            case 8: version = VersionBytes["BO1_Wii"]; break;
-            case 9: version = VersionBytes["MW3_PS3"]; break;
-            case 10: version = VersionBytes["MW3_Wii"]; break;
-            case 11:
-                header = TAff0100Header; // BO2 uses Treyarch header
-                version = VersionBytes["BO2_PS3"];
-                break;
-            case 12:
-                header = TAff0100Header;
-                version = VersionBytes["BO2_PC"];
-                break;
-            case 13:
-                header = TAff0100Header;
-                version = VersionBytes["BO2_WiiU"];
-                break;
             default: version = VersionBytes["COD4_PS3"]; break;
         }
 
@@ -365,7 +323,16 @@ public partial class MainForm : Form
         detailsTextBox.AppendText($"Version: 0x{version:X} ({version})\r\n");
         detailsTextBox.AppendText($"\r\n");
 
-        if (isSigned)
+        // Check for unsupported games (detection only, extraction/packing won't work)
+        bool isUnsupportedGame = game == "BO1" || game == "MW3" || game == "BO2" || game == "Quantum of Solace";
+
+        if (isUnsupportedGame)
+        {
+            detailsTextBox.AppendText("⚠ Warning: This game is not fully supported.\r\n");
+            detailsTextBox.AppendText("Detection only - extraction/packing may not work.\r\n");
+            detailsTextBox.AppendText("Supported games: CoD4, WaW, MW2\r\n");
+        }
+        else if (isSigned)
         {
             detailsTextBox.AppendText("⚠ Warning: This is a signed FastFile.\r\n");
             detailsTextBox.AppendText("Modifications will break the signature.\r\n");
@@ -382,7 +349,32 @@ public partial class MainForm : Form
         using var br = new BinaryReader(new FileStream(inputPath, FileMode.Open, FileAccess.Read), Encoding.Default);
         using var bw = new BinaryWriter(new FileStream(outputPath, FileMode.Create, FileAccess.Write), Encoding.Default);
 
-        br.BaseStream.Position = 12; // Skip header (8) + version (4)
+        // Read header to determine game version
+        byte[] magic = br.ReadBytes(8);
+        byte[] versionBytes = br.ReadBytes(4);
+        uint version = (uint)((versionBytes[0] << 24) | (versionBytes[1] << 16) | (versionBytes[2] << 8) | versionBytes[3]);
+
+        // MW2 (0x10D, 0x114) has extended header structure
+        bool isMW2 = version == 0x10D || version == 0x114;
+
+        if (isMW2)
+        {
+            // MW2 header: magic(8) + version(4) + allowOnlineUpdate(1) + fileCreationTime(8) +
+            //             region(4) + entryCount(4) + entries(entryCount * 0x14) + fileSizes(8)
+            byte allowOnlineUpdate = br.ReadByte();           // 1 byte
+            byte[] fileCreationTime = br.ReadBytes(8);        // 8 bytes
+            byte[] region = br.ReadBytes(4);                  // 4 bytes
+            byte[] entryCountBytes = br.ReadBytes(4);         // 4 bytes
+            int entryCount = (entryCountBytes[0] << 24) | (entryCountBytes[1] << 16) |
+                            (entryCountBytes[2] << 8) | entryCountBytes[3];
+
+            // Skip entries (each entry is 0x14 = 20 bytes on PS3)
+            br.ReadBytes(entryCount * 0x14);
+
+            // Skip file sizes (8 bytes)
+            br.ReadBytes(8);
+        }
+        // For CoD4/WaW, we're already at position 12 which is correct
 
         int blockCount = 0;
         try
@@ -435,11 +427,31 @@ public partial class MainForm : Form
 
     private static byte[] DecompressBlock(byte[] compressedData)
     {
+        // Check if data has zlib header (0x78 followed by compression level byte)
+        // MW2 uses zlib-wrapped deflate, CoD4/WaW use raw deflate
+        bool hasZlibHeader = compressedData.Length >= 2 &&
+                             compressedData[0] == 0x78 &&
+                             (compressedData[1] == 0x01 || compressedData[1] == 0x5E ||
+                              compressedData[1] == 0x9C || compressedData[1] == 0xDA);
+
         using var input = new MemoryStream(compressedData);
         using var output = new MemoryStream();
-        using (var deflate = new DeflateStream(input, CompressionMode.Decompress))
+
+        if (hasZlibHeader)
         {
-            deflate.CopyTo(output);
+            // Use ZLibStream for zlib-wrapped data (MW2)
+            using (var zlib = new ZLibStream(input, CompressionMode.Decompress))
+            {
+                zlib.CopyTo(output);
+            }
+        }
+        else
+        {
+            // Use DeflateStream for raw deflate data (CoD4/WaW)
+            using (var deflate = new DeflateStream(input, CompressionMode.Decompress))
+            {
+                deflate.CopyTo(output);
+            }
         }
         return output.ToArray();
     }
@@ -447,7 +459,7 @@ public partial class MainForm : Form
     private static byte[] CompressBlock(byte[] uncompressedData)
     {
         using var output = new MemoryStream();
-        using (var deflate = new DeflateStream(output, CompressionMode.Compress, CompressionLevel.BestCompression))
+        using (var deflate = new DeflateStream(output, CompressionLevel.Optimal))
         {
             deflate.Write(uncompressedData, 0, uncompressedData.Length);
         }
