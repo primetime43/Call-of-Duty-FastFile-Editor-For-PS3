@@ -27,6 +27,7 @@ public enum GameVersion
 public static class FastFileConstants
 {
     public const string UnsignedHeader = "IWffu100";
+    public const int HeaderSize = 12; // 8 bytes magic + 4 bytes version
     public const int BlockSize = 65536; // 0x10000 - 64KB blocks
 
     // Version bytes (big-endian)

@@ -30,6 +30,7 @@ partial class MainForm
         this.bottomPanel = new Panel();
 
         // Buttons
+        this.btnLoadExistingFF = new Button();
         this.btnAddFiles = new Button();
         this.btnAddFolder = new Button();
         this.btnRemove = new Button();
@@ -44,6 +45,8 @@ partial class MainForm
         this.labelZoneName = new Label();
         this.textBoxZoneName = new TextBox();
         this.checkBoxSaveZone = new CheckBox();
+        this.checkBoxIncludeExisting = new CheckBox();
+        this.labelLoadedFF = new Label();
 
         // Compile
         this.groupBoxCompile = new GroupBox();
@@ -60,6 +63,7 @@ partial class MainForm
         this.menuStrip = new MenuStrip();
         this.fileToolStripMenuItem = new ToolStripMenuItem();
         this.newProjectMenuItem = new ToolStripMenuItem();
+        this.loadExistingFFMenuItem = new ToolStripMenuItem();
         this.toolStripSeparator1 = new ToolStripSeparator();
         this.exitMenuItem = new ToolStripMenuItem();
         this.helpToolStripMenuItem = new ToolStripMenuItem();
@@ -92,6 +96,7 @@ partial class MainForm
         //
         this.fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] {
             this.newProjectMenuItem,
+            this.loadExistingFFMenuItem,
             this.toolStripSeparator1,
             this.exitMenuItem
         });
@@ -105,6 +110,14 @@ partial class MainForm
         this.newProjectMenuItem.Text = "&New Project";
         this.newProjectMenuItem.ShortcutKeys = Keys.Control | Keys.N;
         this.newProjectMenuItem.Click += new EventHandler(this.btnClear_Click);
+
+        //
+        // loadExistingFFMenuItem
+        //
+        this.loadExistingFFMenuItem.Name = "loadExistingFFMenuItem";
+        this.loadExistingFFMenuItem.Text = "&Load Existing FastFile...";
+        this.loadExistingFFMenuItem.ShortcutKeys = Keys.Control | Keys.O;
+        this.loadExistingFFMenuItem.Click += new EventHandler(this.btnLoadExistingFF_Click);
 
         //
         // exitMenuItem
@@ -195,6 +208,7 @@ partial class MainForm
         //
         // buttonPanel
         //
+        this.buttonPanel.Controls.Add(this.btnLoadExistingFF);
         this.buttonPanel.Controls.Add(this.btnAddFiles);
         this.buttonPanel.Controls.Add(this.btnAddFolder);
         this.buttonPanel.Controls.Add(this.btnRemove);
@@ -204,6 +218,15 @@ partial class MainForm
         this.buttonPanel.Controls.Add(this.btnCompile);
         this.buttonPanel.Dock = DockStyle.Fill;
         this.buttonPanel.Name = "buttonPanel";
+
+        //
+        // btnLoadExistingFF
+        //
+        this.btnLoadExistingFF.Name = "btnLoadExistingFF";
+        this.btnLoadExistingFF.Size = new Size(100, 30);
+        this.btnLoadExistingFF.Text = "Load FF...";
+        this.btnLoadExistingFF.UseVisualStyleBackColor = true;
+        this.btnLoadExistingFF.Click += new EventHandler(this.btnLoadExistingFF_Click);
 
         //
         // btnAddFiles
@@ -275,6 +298,8 @@ partial class MainForm
         this.groupBoxOptions.Controls.Add(this.labelZoneName);
         this.groupBoxOptions.Controls.Add(this.textBoxZoneName);
         this.groupBoxOptions.Controls.Add(this.checkBoxSaveZone);
+        this.groupBoxOptions.Controls.Add(this.checkBoxIncludeExisting);
+        this.groupBoxOptions.Controls.Add(this.labelLoadedFF);
         this.groupBoxOptions.Location = new Point(0, 5);
         this.groupBoxOptions.Name = "groupBoxOptions";
         this.groupBoxOptions.Size = new Size(400, 145);
@@ -325,11 +350,33 @@ partial class MainForm
         // checkBoxSaveZone
         //
         this.checkBoxSaveZone.AutoSize = true;
-        this.checkBoxSaveZone.Location = new Point(18, 100);
+        this.checkBoxSaveZone.Location = new Point(18, 95);
         this.checkBoxSaveZone.Name = "checkBoxSaveZone";
         this.checkBoxSaveZone.Size = new Size(220, 19);
         this.checkBoxSaveZone.Text = "Also save uncompressed .zone file";
         this.checkBoxSaveZone.UseVisualStyleBackColor = true;
+
+        //
+        // checkBoxIncludeExisting
+        //
+        this.checkBoxIncludeExisting.AutoSize = true;
+        this.checkBoxIncludeExisting.Checked = true;
+        this.checkBoxIncludeExisting.CheckState = CheckState.Checked;
+        this.checkBoxIncludeExisting.Enabled = false;
+        this.checkBoxIncludeExisting.Location = new Point(18, 115);
+        this.checkBoxIncludeExisting.Name = "checkBoxIncludeExisting";
+        this.checkBoxIncludeExisting.Size = new Size(220, 19);
+        this.checkBoxIncludeExisting.Text = "Include existing assets from loaded FF";
+        this.checkBoxIncludeExisting.UseVisualStyleBackColor = true;
+
+        //
+        // labelLoadedFF
+        //
+        this.labelLoadedFF.AutoSize = true;
+        this.labelLoadedFF.ForeColor = System.Drawing.Color.Gray;
+        this.labelLoadedFF.Location = new Point(240, 116);
+        this.labelLoadedFF.Name = "labelLoadedFF";
+        this.labelLoadedFF.Text = "(No FF loaded)";
 
         //
         // groupBoxCompile
@@ -431,6 +478,7 @@ partial class MainForm
     private ColumnHeader columnPath;
     private FlowLayoutPanel buttonPanel;
     private Panel bottomPanel;
+    private Button btnLoadExistingFF;
     private Button btnAddFiles;
     private Button btnAddFolder;
     private Button btnRemove;
@@ -443,6 +491,8 @@ partial class MainForm
     private Label labelZoneName;
     private TextBox textBoxZoneName;
     private CheckBox checkBoxSaveZone;
+    private CheckBox checkBoxIncludeExisting;
+    private Label labelLoadedFF;
     private GroupBox groupBoxCompile;
     private Button btnCompile;
     private ProgressBar progressBar;
@@ -453,6 +503,7 @@ partial class MainForm
     private MenuStrip menuStrip;
     private ToolStripMenuItem fileToolStripMenuItem;
     private ToolStripMenuItem newProjectMenuItem;
+    private ToolStripMenuItem loadExistingFFMenuItem;
     private ToolStripSeparator toolStripSeparator1;
     private ToolStripMenuItem exitMenuItem;
     private ToolStripMenuItem helpToolStripMenuItem;
