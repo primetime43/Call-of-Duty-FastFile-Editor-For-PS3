@@ -12,7 +12,7 @@ obj/
 # Project-specific publish/build output
 publish/
 
-# Specific build targets (optional, if not already covered by **/bin/)
+# Specific build targets
 FastFileCompilerGUI/bin/Release/net8.0-windows/
 FastFileTool/bin/Release/net8.0/win-x64
 
