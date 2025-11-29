@@ -1505,7 +1505,7 @@ namespace Call_of_Duty_FastFile_Editor
             try
             {
                 _openedFastFile = new FastFile(openFileDialog.FileName);
-                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile.FastFileName, _openedFastFile.IsCod4File);
+                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile);
             }
             catch (Exception ex)
             {
@@ -1539,7 +1539,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                     using (var assetDialog = new AssetSelectionDialog(
                         _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords,
-                        _openedFastFile.IsCod4File,
+                        _openedFastFile,
                         tagCount))
                     {
                         if (assetDialog.ShowDialog(this) == DialogResult.Cancel)
@@ -1604,7 +1604,7 @@ namespace Call_of_Duty_FastFile_Editor
             try
             {
                 _openedFastFile = new FastFile(openFileDialog.FileName);
-                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile.FastFileName, _openedFastFile.IsCod4File);
+                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile);
             }
             catch (Exception ex)
             {
@@ -1638,7 +1638,7 @@ namespace Call_of_Duty_FastFile_Editor
 
                     using (var assetDialog = new AssetSelectionDialog(
                         _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords,
-                        _openedFastFile.IsCod4File,
+                        _openedFastFile,
                         tagCount))
                     {
                         if (assetDialog.ShowDialog(this) == DialogResult.Cancel)
@@ -1674,6 +1674,105 @@ namespace Call_of_Duty_FastFile_Editor
             else
             {
                 MessageBox.Show("Invalid FastFile!\n\nThe FastFile you have selected is not a valid PS3 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                return;
+            }
+            EnableUI_Elements();
+        }
+
+        private void mW2ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_openedFastFile != null)
+            {
+                SaveCloseFastFileAndCleanUp();
+            }
+
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Select a MW2 Fast File",
+                Filter = "Fast Files (*.ff)|*.ff"
+            };
+
+            if (openFileDialog.ShowDialog() != DialogResult.OK)
+            {
+                return;
+            }
+
+            // Create a backup of the original FastFile before any modifications
+            CreateBackupIfNeeded(openFileDialog.FileName);
+
+            try
+            {
+                _openedFastFile = new FastFile(openFileDialog.FileName);
+                UIManager.UpdateLoadedFileNameStatusStrip(loadedFileNameStatusLabel, _openedFastFile);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to read FastFile header: {ex.Message}", "Header Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (_openedFastFile.IsValid)
+            {
+                try
+                {
+                    // Assign the correct handler for the opened file
+                    _fastFileHandler = FastFileHandlerFactory.GetHandler(_openedFastFile);
+
+                    // Show the opened FF path in the program's title text
+                    this.SetProgramTitle(_openedFastFile.FfFilePath);
+
+                    // Decompress the Fast File to get the zone file
+                    _fastFileHandler.Decompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath);
+
+                    // Load & parse that zone in one go
+                    _openedFastFile.LoadZone();
+
+                    // Get tag count for the dialog
+                    int tagCount = TagOperations.GetTagCount(_openedFastFile.OpenedFastFileZone);
+
+                    // Show asset selection dialog
+                    bool loadRawFiles = true;
+                    bool loadLocalizedEntries = true;
+                    bool loadTags = true;
+
+                    using (var assetDialog = new AssetSelectionDialog(
+                        _openedFastFile.OpenedFastFileZone.ZoneFileAssets.ZoneAssetRecords,
+                        _openedFastFile,
+                        tagCount))
+                    {
+                        if (assetDialog.ShowDialog(this) == DialogResult.Cancel)
+                        {
+                            SaveCloseFastFileAndCleanUp();
+                            return;
+                        }
+                        loadRawFiles = assetDialog.LoadRawFiles;
+                        loadLocalizedEntries = assetDialog.LoadLocalizedEntries;
+                        loadTags = assetDialog.LoadTags;
+                    }
+
+                    // Here is where the asset records actual data is parsed throughout the zone
+                    LoadAssetRecordsData(loadRawFiles: loadRawFiles, loadLocalizedEntries: loadLocalizedEntries, loadTags: loadTags);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to parse zone: {ex.Message}", "Zone Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                try
+                {
+                    // Load all the parsed data from the zone file to the UI
+                    LoadZoneDataToUI();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Loading data failed: {ex.Message}", "Data Loading Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid FastFile!\n\nThe FastFile you have selected is not a valid PS3 MW2 .ff!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
                 return;
             }
             EnableUI_Elements();

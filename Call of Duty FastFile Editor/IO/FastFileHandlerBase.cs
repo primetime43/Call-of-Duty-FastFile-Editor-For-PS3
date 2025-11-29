@@ -37,7 +37,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// - For each block, it reads a 2-byte length prefix (big-endian), then that many bytes of compressed data,
         ///   decompresses with <see cref="DecompressFF"/>, and appends to the output.
         /// </remarks>
-        public void Decompress(string inputFilePath, string outputFilePath)
+        public virtual void Decompress(string inputFilePath, string outputFilePath)
         {
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(inputFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))
@@ -95,7 +95,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
         /// - Finally writes a terminating 0x0001 marker to signal end-of-file.
         /// - Override in a subclass to alter chunk size, compression level, or header/version logic.
         /// </remarks>
-        public void Recompress(string ffFilePath, string zoneFilePath, FastFile openedFastFile)
+        public virtual void Recompress(string ffFilePath, string zoneFilePath, FastFile openedFastFile)
         {
             using (BinaryReader binaryReader = new BinaryReader(new FileStream(zoneFilePath, FileMode.Open, FileAccess.Read), Encoding.Default))
             using (BinaryWriter binaryWriter = new BinaryWriter(new FileStream(ffFilePath, FileMode.Create, FileAccess.Write), Encoding.Default))

@@ -1,4 +1,5 @@
 using Call_of_Duty_FastFile_Editor.Constants;
+using Call_of_Duty_FastFile_Editor.GameDefinitions;
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.Services;
 using System.Diagnostics;
@@ -295,11 +296,11 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
                 if (_isCod4)
                 {
-                    record.AssetType_COD4 = (ZoneFileAssetType_COD4)assetTypeInt;
+                    record.AssetType_COD4 = (CoD4AssetType)assetTypeInt;
                 }
                 else if (_isCod5)
                 {
-                    record.AssetType_COD5 = (ZoneFileAssetType_COD5)assetTypeInt;
+                    record.AssetType_COD5 = (CoD5AssetType)assetTypeInt;
                 }
 
                 records.Add(record);

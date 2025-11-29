@@ -32,6 +32,7 @@ namespace Call_of_Duty_FastFile_Editor
             openFastFileToolStripMenuItem = new ToolStripMenuItem();
             COD5ToolStripMenuItem = new ToolStripMenuItem();
             cOD4ToolStripMenuItem = new ToolStripMenuItem();
+            mW2ToolStripMenuItem = new ToolStripMenuItem();
             saveFastFileToolStripMenuItem = new ToolStripMenuItem();
             saveFastFileAsToolStripMenuItem = new ToolStripMenuItem();
             toolStripMenuItem1 = new ToolStripMenuItem();
@@ -169,7 +170,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // openFastFileToolStripMenuItem
             // 
-            openFastFileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { COD5ToolStripMenuItem, cOD4ToolStripMenuItem });
+            openFastFileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { COD5ToolStripMenuItem, cOD4ToolStripMenuItem, mW2ToolStripMenuItem });
             openFastFileToolStripMenuItem.Name = "openFastFileToolStripMenuItem";
             openFastFileToolStripMenuItem.Size = new Size(286, 24);
             openFastFileToolStripMenuItem.Text = "Open Fast File";
@@ -182,12 +183,19 @@ namespace Call_of_Duty_FastFile_Editor
             COD5ToolStripMenuItem.Click += COD5ToolStripMenuItem_Click;
             // 
             // cOD4ToolStripMenuItem
-            // 
+            //
             cOD4ToolStripMenuItem.Name = "cOD4ToolStripMenuItem";
             cOD4ToolStripMenuItem.Size = new Size(117, 24);
             cOD4ToolStripMenuItem.Text = "COD4";
             cOD4ToolStripMenuItem.Click += cOD4ToolStripMenuItem_Click;
-            // 
+            //
+            // mW2ToolStripMenuItem
+            //
+            mW2ToolStripMenuItem.Name = "mW2ToolStripMenuItem";
+            mW2ToolStripMenuItem.Size = new Size(117, 24);
+            mW2ToolStripMenuItem.Text = "MW2";
+            mW2ToolStripMenuItem.Click += mW2ToolStripMenuItem_Click;
+            //
             // saveFastFileToolStripMenuItem
             //
             saveFastFileToolStripMenuItem.Enabled = false;
@@ -682,6 +690,7 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem toolStripMenuItem2;
         private ToolStripMenuItem COD5ToolStripMenuItem;
         private ToolStripMenuItem cOD4ToolStripMenuItem;
+        private ToolStripMenuItem mW2ToolStripMenuItem;
         private ToolStripMenuItem reloadRawFilesPatternMatchingToolStripMenuItem;
         private ToolStripMenuItem reportIssuesToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator2;

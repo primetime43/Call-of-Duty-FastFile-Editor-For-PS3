@@ -1,6 +1,7 @@
-﻿using System.Net;
+using System.Net;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.Constants;
+using Call_of_Duty_FastFile_Editor.GameDefinitions;
 
 namespace Call_of_Duty_FastFile_Editor.Models
 {
@@ -18,6 +19,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public bool IsValid => OpenedFastFileHeader.IsValid;
         public bool IsCod4File => OpenedFastFileHeader.IsCod4File;
         public bool IsCod5File => OpenedFastFileHeader.IsCod5File;
+        public bool IsMW2File => OpenedFastFileHeader.IsMW2File;
 
         public FastFile(string filePath)
         {
@@ -50,6 +52,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             public bool IsValid { get; private set; }
             public bool IsCod4File { get; private set; }
             public bool IsCod5File { get; private set; }
+            public bool IsMW2File { get; private set; }
 
             public FastFileHeader(string filePath)
             {
@@ -78,14 +81,22 @@ namespace Call_of_Duty_FastFile_Editor.Models
                 // Check the FastFileMagic and GameVersion to determine validity
                 if (FastFileMagic == FastFileHeaderConstants.UnSignedFF)
                 {
-                    if (GameVersion == FastFileHeaderConstants.VersionValueCoD4)
+                    if (GameVersion == CoD4Definition.VersionValue ||
+                        GameVersion == CoD4Definition.PCVersionValue)
                     {
                         IsCod4File = true;
                         IsValid = true;
                     }
-                    else if (GameVersion == FastFileHeaderConstants.VersionValueCoD5)
+                    else if (GameVersion == CoD5Definition.VersionValue ||
+                             GameVersion == CoD5Definition.PCVersionValue)
                     {
                         IsCod5File = true;
+                        IsValid = true;
+                    }
+                    else if (GameVersion == MW2Definition.VersionValue ||
+                             GameVersion == MW2Definition.PCVersionValue)
+                    {
+                        IsMW2File = true;
                         IsValid = true;
                     }
                 }

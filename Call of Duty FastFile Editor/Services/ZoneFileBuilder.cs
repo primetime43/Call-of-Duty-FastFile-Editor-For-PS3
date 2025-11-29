@@ -1,4 +1,5 @@
 using Call_of_Duty_FastFile_Editor.Constants;
+using Call_of_Duty_FastFile_Editor.GameDefinitions;
 using Call_of_Duty_FastFile_Editor.Models;
 using System.Diagnostics;
 using System.Text;
@@ -15,19 +16,28 @@ namespace Call_of_Duty_FastFile_Editor.Services
         /// <summary>
         /// Supported asset types for COD4.
         /// </summary>
-        private static readonly HashSet<ZoneFileAssetType_COD4> SupportedTypesCOD4 = new HashSet<ZoneFileAssetType_COD4>
+        private static readonly HashSet<CoD4AssetType> SupportedTypesCOD4 = new HashSet<CoD4AssetType>
         {
-            ZoneFileAssetType_COD4.rawfile,
-            ZoneFileAssetType_COD4.localize
+            CoD4AssetType.rawfile,
+            CoD4AssetType.localize
         };
 
         /// <summary>
         /// Supported asset types for COD5.
         /// </summary>
-        private static readonly HashSet<ZoneFileAssetType_COD5> SupportedTypesCOD5 = new HashSet<ZoneFileAssetType_COD5>
+        private static readonly HashSet<CoD5AssetType> SupportedTypesCOD5 = new HashSet<CoD5AssetType>
         {
-            ZoneFileAssetType_COD5.rawfile,
-            ZoneFileAssetType_COD5.localize
+            CoD5AssetType.rawfile,
+            CoD5AssetType.localize
+        };
+
+        /// <summary>
+        /// Supported asset types for MW2.
+        /// </summary>
+        private static readonly HashSet<MW2AssetType> SupportedTypesMW2 = new HashSet<MW2AssetType>
+        {
+            MW2AssetType.rawfile,
+            MW2AssetType.localize
         };
 
         /// <summary>
@@ -43,6 +53,8 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 if (fastFile.IsCod4File && !SupportedTypesCOD4.Contains(record.AssetType_COD4))
                     return false;
                 if (fastFile.IsCod5File && !SupportedTypesCOD5.Contains(record.AssetType_COD5))
+                    return false;
+                if (fastFile.IsMW2File && !SupportedTypesMW2.Contains(record.AssetType_MW2))
                     return false;
             }
             return true;
@@ -66,6 +78,8 @@ namespace Call_of_Duty_FastFile_Editor.Services
                     isSupported = SupportedTypesCOD4.Contains(record.AssetType_COD4);
                 else if (fastFile.IsCod5File)
                     isSupported = SupportedTypesCOD5.Contains(record.AssetType_COD5);
+                else if (fastFile.IsMW2File)
+                    isSupported = SupportedTypesMW2.Contains(record.AssetType_MW2);
 
                 if (isSupported)
                     supportedRecords.Add(record);
@@ -98,6 +112,11 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 {
                     isSupported = SupportedTypesCOD5.Contains(record.AssetType_COD5);
                     typeName = record.AssetType_COD5.ToString();
+                }
+                else if (fastFile.IsMW2File)
+                {
+                    isSupported = SupportedTypesMW2.Contains(record.AssetType_MW2);
+                    typeName = record.AssetType_MW2.ToString();
                 }
 
                 if (!isSupported)
@@ -349,12 +368,12 @@ namespace Call_of_Duty_FastFile_Editor.Services
             var table = new List<byte>();
 
             byte rawFileType = fastFile.IsCod4File
-                ? (byte)ZoneFileAssetType_COD4.rawfile
-                : (byte)ZoneFileAssetType_COD5.rawfile;
+                ? (byte)CoD4AssetType.rawfile
+                : (byte)CoD5AssetType.rawfile;
 
             byte localizeType = fastFile.IsCod4File
-                ? (byte)ZoneFileAssetType_COD4.localize
-                : (byte)ZoneFileAssetType_COD5.localize;
+                ? (byte)CoD4AssetType.localize
+                : (byte)CoD5AssetType.localize;
 
             // Entry for each raw file
             for (int i = 0; i < rawFileCount; i++)

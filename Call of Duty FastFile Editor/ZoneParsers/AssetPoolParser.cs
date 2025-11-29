@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Call_of_Duty_FastFile_Editor.GameDefinitions;
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.Services;
 
@@ -26,6 +27,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             // Detect game
             bool isCod4 = _zone.ParentFastFile?.IsCod4File ?? false;
             bool isCod5 = _zone.ParentFastFile?.IsCod5File ?? false;
+            bool isMW2 = _zone.ParentFastFile?.IsMW2File ?? false;
 
             // Start after tags, or at file start
             var tags = TagOperations.FindTags(_zone);
@@ -52,8 +54,9 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 {
                     int assetTypeInt = (int)Utilities.ReadUInt32AtOffset(i + 4, _zone, isBigEndian: true);
                     bool isDefined =
-                        (isCod4 && Enum.IsDefined(typeof(ZoneFileAssetType_COD4), assetTypeInt)) ||
-                        (isCod5 && Enum.IsDefined(typeof(ZoneFileAssetType_COD5), assetTypeInt));
+                        (isCod4 && Enum.IsDefined(typeof(CoD4AssetType), assetTypeInt)) ||
+                        (isCod5 && Enum.IsDefined(typeof(CoD5AssetType), assetTypeInt)) ||
+                        (isMW2 && Enum.IsDefined(typeof(MW2AssetType), assetTypeInt));
 
                     Debug.WriteLine($"[DEBUG] Found Format B asset at 0x{i:X}: assetType=0x{assetTypeInt:X} defined={isDefined}");
 
@@ -62,8 +65,9 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                         if (!foundAnyAsset) assetPoolStart = i;
 
                         var record = new ZoneAssetRecord { AssetPoolRecordOffset = i };
-                        if (isCod4) record.AssetType_COD4 = (ZoneFileAssetType_COD4)assetTypeInt;
-                        else if (isCod5) record.AssetType_COD5 = (ZoneFileAssetType_COD5)assetTypeInt;
+                        if (isCod4) record.AssetType_COD4 = (CoD4AssetType)assetTypeInt;
+                        else if (isCod5) record.AssetType_COD5 = (CoD5AssetType)assetTypeInt;
+                        else if (isMW2) record.AssetType_MW2 = (MW2AssetType)assetTypeInt;
                         records.Add(record);
 
                         foundAnyAsset = true;
@@ -78,8 +82,9 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 {
                     int assetTypeInt = (int)Utilities.ReadUInt32AtOffset(i, _zone, isBigEndian: true);
                     bool isDefined =
-                        (isCod4 && Enum.IsDefined(typeof(ZoneFileAssetType_COD4), assetTypeInt)) ||
-                        (isCod5 && Enum.IsDefined(typeof(ZoneFileAssetType_COD5), assetTypeInt));
+                        (isCod4 && Enum.IsDefined(typeof(CoD4AssetType), assetTypeInt)) ||
+                        (isCod5 && Enum.IsDefined(typeof(CoD5AssetType), assetTypeInt)) ||
+                        (isMW2 && Enum.IsDefined(typeof(MW2AssetType), assetTypeInt));
 
                     Debug.WriteLine($"[DEBUG] Found Format A asset at 0x{i:X}: assetType=0x{assetTypeInt:X} defined={isDefined}");
 
@@ -88,8 +93,9 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                         if (!foundAnyAsset) assetPoolStart = i;
 
                         var record = new ZoneAssetRecord { AssetPoolRecordOffset = i };
-                        if (isCod4) record.AssetType_COD4 = (ZoneFileAssetType_COD4)assetTypeInt;
-                        else if (isCod5) record.AssetType_COD5 = (ZoneFileAssetType_COD5)assetTypeInt;
+                        if (isCod4) record.AssetType_COD4 = (CoD4AssetType)assetTypeInt;
+                        else if (isCod5) record.AssetType_COD5 = (CoD5AssetType)assetTypeInt;
+                        else if (isMW2) record.AssetType_MW2 = (MW2AssetType)assetTypeInt;
                         records.Add(record);
 
                         foundAnyAsset = true;

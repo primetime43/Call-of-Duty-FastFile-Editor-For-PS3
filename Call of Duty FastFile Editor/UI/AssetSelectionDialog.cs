@@ -14,7 +14,7 @@ namespace Call_of_Duty_FastFile_Editor.UI
     public partial class AssetSelectionDialog : Form
     {
         private readonly List<AssetTypeInfo> _assetTypes;
-        private readonly bool _isCod4;
+        private readonly FastFile _fastFile;
         private readonly int _tagCount;
 
         /// <summary>
@@ -36,12 +36,12 @@ namespace Call_of_Duty_FastFile_Editor.UI
         /// Creates a new AssetSelectionDialog.
         /// </summary>
         /// <param name="zoneAssetRecords">The asset records from the zone.</param>
-        /// <param name="isCod4">True if COD4, false if COD5.</param>
+        /// <param name="fastFile">The FastFile being opened.</param>
         /// <param name="tagCount">Number of tags in the zone.</param>
-        public AssetSelectionDialog(List<ZoneAssetRecord> zoneAssetRecords, bool isCod4, int tagCount = 0)
+        public AssetSelectionDialog(List<ZoneAssetRecord> zoneAssetRecords, FastFile fastFile, int tagCount = 0)
         {
             InitializeComponent();
-            _isCod4 = isCod4;
+            _fastFile = fastFile;
             _tagCount = tagCount;
             _assetTypes = AnalyzeAssets(zoneAssetRecords);
             PopulateAssetList();
@@ -53,9 +53,15 @@ namespace Call_of_Duty_FastFile_Editor.UI
 
             foreach (var record in records)
             {
-                string typeName = _isCod4
-                    ? record.AssetType_COD4.ToString()
-                    : record.AssetType_COD5.ToString();
+                string typeName;
+                if (_fastFile.IsCod4File)
+                    typeName = record.AssetType_COD4.ToString();
+                else if (_fastFile.IsCod5File)
+                    typeName = record.AssetType_COD5.ToString();
+                else if (_fastFile.IsMW2File)
+                    typeName = record.AssetType_MW2.ToString();
+                else
+                    typeName = "unknown";
 
                 if (assetCounts.ContainsKey(typeName))
                     assetCounts[typeName]++;

@@ -1,4 +1,6 @@
 ﻿using Call_of_Duty_FastFile_Editor.Constants;
+using Call_of_Duty_FastFile_Editor.Models;
+
 namespace Call_of_Duty_FastFile_Editor.UI
 {
     public static class UIManager
@@ -23,17 +25,26 @@ namespace Call_of_Duty_FastFile_Editor.UI
             mainForm.Text = $"{programName} - {version}";
         }
 
-        public static void UpdateLoadedFileNameStatusStrip(ToolStripStatusLabel statusLabel, string fileName, bool isCod4File)
+        public static void UpdateLoadedFileNameStatusStrip(ToolStripStatusLabel statusLabel, FastFile fastFile)
         {
-            if (string.IsNullOrEmpty(fileName))
+            if (fastFile == null || string.IsNullOrEmpty(fastFile.FastFileName))
             {
                 statusLabel.Visible = false;
                 return;
             }
 
-            // Decide the prefix based on the flag
-            var gameString = isCod4File ? "COD4" : "COD5";
-            statusLabel.Text = $"{gameString}: {Path.GetFileName(fileName)}";
+            // Decide the prefix based on the game type
+            string gameString;
+            if (fastFile.IsCod4File)
+                gameString = "COD4";
+            else if (fastFile.IsCod5File)
+                gameString = "COD5";
+            else if (fastFile.IsMW2File)
+                gameString = "MW2";
+            else
+                gameString = "Unknown";
+
+            statusLabel.Text = $"{gameString}: {fastFile.FastFileName}";
             statusLabel.Visible = true;
         }
 

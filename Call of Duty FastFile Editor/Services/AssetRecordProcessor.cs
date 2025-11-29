@@ -1,3 +1,4 @@
+using Call_of_Duty_FastFile_Editor.GameDefinitions;
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
 using System;
@@ -12,19 +13,28 @@ namespace Call_of_Duty_FastFile_Editor.Services
         /// <summary>
         /// Checks if a COD4 asset type is supported for structure-based parsing.
         /// </summary>
-        private static bool IsSupportedAssetType_COD4(ZoneFileAssetType_COD4 assetType)
+        private static bool IsSupportedAssetType_COD4(CoD4AssetType assetType)
         {
-            return assetType == ZoneFileAssetType_COD4.rawfile ||
-                   assetType == ZoneFileAssetType_COD4.localize;
+            return assetType == CoD4AssetType.rawfile ||
+                   assetType == CoD4AssetType.localize;
         }
 
         /// <summary>
         /// Checks if a COD5 asset type is supported for structure-based parsing.
         /// </summary>
-        private static bool IsSupportedAssetType_COD5(ZoneFileAssetType_COD5 assetType)
+        private static bool IsSupportedAssetType_COD5(CoD5AssetType assetType)
         {
-            return assetType == ZoneFileAssetType_COD5.rawfile ||
-                   assetType == ZoneFileAssetType_COD5.localize;
+            return assetType == CoD5AssetType.rawfile ||
+                   assetType == CoD5AssetType.localize;
+        }
+
+        /// <summary>
+        /// Checks if a MW2 asset type is supported for structure-based parsing.
+        /// </summary>
+        private static bool IsSupportedAssetType_MW2(MW2AssetType assetType)
+        {
+            return assetType == MW2AssetType.rawfile ||
+                   assetType == MW2AssetType.localize;
         }
 
         /// <summary>
@@ -81,6 +91,11 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         isSupported = IsSupportedAssetType_COD5(zoneAssetRecords[i].AssetType_COD5);
                         assetTypeName = zoneAssetRecords[i].AssetType_COD5.ToString();
                     }
+                    else if (openedFastFile.IsMW2File)
+                    {
+                        isSupported = IsSupportedAssetType_MW2(zoneAssetRecords[i].AssetType_MW2);
+                        assetTypeName = zoneAssetRecords[i].AssetType_MW2.ToString();
+                    }
 
                     if (!isSupported)
                     {
@@ -123,7 +138,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         // Process the record based on its type.
                         switch (zoneAssetRecords[i].AssetType_COD4)
                         {
-                            case ZoneFileAssetType_COD4.rawfile:
+                            case CoD4AssetType.rawfile:
                                 {
                                     // Structure-based parsing only
                                     RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
@@ -142,7 +157,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                     }
                                     break;
                                 }
-                            case ZoneFileAssetType_COD4.localize:
+                            case CoD4AssetType.localize:
                                 {
                                     // Always use structure-based parsing
                                     var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
@@ -169,7 +184,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         // Process the record based on its type.
                         switch (zoneAssetRecords[i].AssetType_COD5)
                         {
-                            case ZoneFileAssetType_COD5.rawfile:
+                            case CoD5AssetType.rawfile:
                                 {
                                     // Structure-based parsing only
                                     RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
@@ -188,7 +203,53 @@ namespace Call_of_Duty_FastFile_Editor.Services
                                     }
                                     break;
                                 }
-                            case ZoneFileAssetType_COD5.localize:
+                            case CoD5AssetType.localize:
+                                {
+                                    // Always use structure-based parsing
+                                    var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
+                                    LocalizedEntry localizedEntry = tuple.entry;
+
+                                    if (localizedEntry != null)
+                                    {
+                                        assetRecordMethod = "Localized asset parsed using structure-based offset.";
+                                        result.LocalizedEntries.Add(localizedEntry);
+                                        UpdateAssetRecord(zoneAssetRecords, i, localizedEntry, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    else
+                                    {
+                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                                        goto EndProcessing; // Stop on parse failure
+                                    }
+                                    break;
+                                }
+                        }
+                    }
+                    else if (openedFastFile.IsMW2File)
+                    {
+                        // Process the record based on its type.
+                        switch (zoneAssetRecords[i].AssetType_MW2)
+                        {
+                            case MW2AssetType.rawfile:
+                                {
+                                    // Structure-based parsing only
+                                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeNoPattern(openedFastFile, startingOffset);
+
+                                    if (node != null)
+                                    {
+                                        assetRecordMethod = "Raw file parsed using structure-based offset.";
+                                        result.RawFileNodes.Add(node);
+                                        UpdateAssetRecord(zoneAssetRecords, i, node, assetRecordMethod);
+                                        indexOfLastAssetRecordParsed = i;
+                                    }
+                                    else
+                                    {
+                                        Debug.WriteLine($"[AssetRecordProcessor] Failed to parse rawfile at index {i}, offset 0x{startingOffset:X}. Stopping.");
+                                        goto EndProcessing; // Stop on parse failure
+                                    }
+                                    break;
+                                }
+                            case MW2AssetType.localize:
                                 {
                                     // Always use structure-based parsing
                                     var tuple = LocalizeAssetParser.ParseSingleLocalizeAssetNoPattern(openedFastFile, startingOffset);
