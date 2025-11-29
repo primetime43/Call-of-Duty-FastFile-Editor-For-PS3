@@ -1,7 +1,7 @@
 ﻿using Call_of_Duty_FastFile_Editor.Models;
 using System.IO;
-using System.IO.Compression;
 using System.Text;
+using Ionic.Zlib;
 
 namespace Call_of_Duty_FastFile_Editor.IO
 {
@@ -158,7 +158,7 @@ namespace Call_of_Duty_FastFile_Editor.IO
         {
             using (MemoryStream memoryStream = new MemoryStream())
             {
-                using (DeflateStream deflateStream = new DeflateStream(memoryStream, CompressionLevel.Optimal))
+                using (DeflateStream deflateStream = new DeflateStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression))
                 {
                     deflateStream.Write(uncompressedData, 0, uncompressedData.Length);
                 }

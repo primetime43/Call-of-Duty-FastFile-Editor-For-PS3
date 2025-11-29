@@ -77,11 +77,10 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string FileName { get; set; }
 
         /// <summary>
-        /// Gets the position where the next asset starts, calculated as CodeStartPosition + MaxSize + 1.
-        /// The +1 accounts for the null terminator at the end of the buffer data.
-        /// Per wiki: "Buffer's length is len plus one for the null byte at the end."
+        /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize
+        /// This is where the null terminator is at the end of the asset
         /// </summary>
-        public int RawFileEndPosition => CodeStartPosition + MaxSize + 1;
+        public int RawFileEndPosition => CodeStartPosition + MaxSize;
 
         /// <summary>
         /// The content of the file as a string.
