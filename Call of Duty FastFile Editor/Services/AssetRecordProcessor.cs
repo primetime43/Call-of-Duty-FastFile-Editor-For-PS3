@@ -126,8 +126,11 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         }
                         else
                         {
-                            Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Stopping.");
-                            goto EndProcessing;
+                            // Localize parsing failed - fall back to pattern matching for remaining rawfiles
+                            Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize at index {i}, offset 0x{startingOffset:X}. Will use pattern matching for remaining rawfiles.");
+                            structureParsingStoppedAtIndex = i;
+                            lastStructureParsedEndOffset = startingOffset;
+                            goto PatternMatchingFallback;
                         }
                     }
                 }
@@ -185,7 +188,6 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {patternMatchedCount} additional rawfiles");
             }
 
-            EndProcessing:
             // Save the updated asset records into the result container.
             result.UpdatedRecords = zoneAssetRecords;
             return result;
