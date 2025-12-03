@@ -41,26 +41,37 @@ Each compressed block:
 
 ## Zone Header (52 bytes)
 
+The zone header consists of two structures: **XFile** (memory block allocation) and **XAssetList** (asset metadata).
+
+### XFile Structure (Bytes 0x00-0x23)
+
 | Offset | Size | Field | Description |
 |--------|------|-------|-------------|
-| 0x00 | 4 | ZoneSize | Total data size (big-endian), excludes padding |
-| 0x04 | 4 | Reserved | Always 0x00000000 |
-| 0x08 | 4 | MemAlloc1 | Memory allocation value 1 (big-endian) |
-| 0x0C | 8 | Reserved | Always 0x0000000000000000 |
-| 0x14 | 4 | Reserved | Always 0x00000000 |
+| 0x00 | 4 | ZoneSize | Total data size (big-endian), excludes 36-byte header |
+| 0x04 | 4 | ExternalSize | External resource allocation (usually 0x00000000) |
+| 0x08 | 4 | BlockSizeTemp | XFILE_BLOCK_TEMP allocation (big-endian) |
+| 0x0C | 4 | BlockSizePhysical | XFILE_BLOCK_PHYSICAL allocation (usually 0x00000000) |
+| 0x10 | 4 | BlockSizeRuntime | XFILE_BLOCK_RUNTIME allocation (usually 0x00000000) |
+| 0x14 | 4 | BlockSizeVirtual | XFILE_BLOCK_VIRTUAL allocation (usually 0x00000000) |
 | 0x18 | 4 | BlockSizeLarge | XFILE_BLOCK_LARGE allocation (big-endian) |
-| 0x1C | 4 | Reserved | Always 0x00000000 |
-| 0x20 | 4 | MemAlloc2 | Memory allocation value 2 (big-endian) |
-| 0x24 | 8 | Reserved | Always 0x0000000000000000 |
-| 0x2C | 4 | AssetCount | Number of asset table entries (big-endian) |
-| 0x30 | 4 | Marker | Always 0xFFFFFFFF |
+| 0x1C | 4 | BlockSizeCallback | XFILE_BLOCK_CALLBACK allocation (usually 0x00000000) |
+| 0x20 | 4 | BlockSizeVertex | XFILE_BLOCK_VERTEX allocation (PS3/PC only) |
 
-### Memory Allocation Values
+### XAssetList Structure (Bytes 0x24-0x33)
+
+| Offset | Size | Field | Description |
+|--------|------|-------|-------------|
+| 0x24 | 4 | ScriptStringCount | Number of script strings/tags (usually 0x00000000 for patch zones) |
+| 0x28 | 4 | ScriptStringsPtr | Memory pointer placeholder: 0xFFFFFFFF |
+| 0x2C | 4 | AssetCount | Number of assets in the pool (big-endian) |
+| 0x30 | 4 | AssetsPtr | Memory pointer placeholder: 0xFFFFFFFF |
+
+### Memory Block Values (Critical)
 
 These values are **critical** - the game engine uses them for memory allocation. Without correct values, the game will crash or hang.
 
-| Game | MemAlloc1 (0x08) | MemAlloc2 (0x20) |
-|------|------------------|------------------|
+| Game | BlockSizeTemp (0x08) | BlockSizeVertex (0x20) |
+|------|----------------------|------------------------|
 | CoD4 | 0x00000F70 | 0x00000000 |
 | WaW | 0x000010B0 | 0x0005F8F0 |
 | MW2 | 0x000003B4 | 0x00001000 |
