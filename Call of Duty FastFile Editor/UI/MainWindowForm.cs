@@ -1177,6 +1177,25 @@ namespace Call_of_Duty_FastFile_Editor
                 }
             }
 
+            // Add the final rawfile terminator entry (required by zone format)
+            // This entry exists in the asset table but has no corresponding file data
+            int totalDisplayed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0);
+            int totalInZone = _zoneAssetRecords?.Count ?? 0;
+            if (totalInZone > totalDisplayed)
+            {
+                var terminator = new ListViewItem(index.ToString());
+                terminator.SubItems.Add("rawfile");
+                terminator.SubItems.Add("-");
+                terminator.SubItems.Add("-");
+                terminator.SubItems.Add("-");
+                terminator.SubItems.Add("-");
+                terminator.SubItems.Add("-");
+                terminator.SubItems.Add("(Final Entry - Terminator)");
+                terminator.SubItems.Add("Asset table terminator entry (no file data)");
+                terminator.ForeColor = System.Drawing.Color.Gray;
+                assetPoolListView.Items.Add(terminator);
+            }
+
             // Auto-resize columns to fit header size or content
             assetPoolListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
