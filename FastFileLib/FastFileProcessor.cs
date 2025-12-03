@@ -161,15 +161,29 @@ public static class FastFileProcessor
     }
 
     /// <summary>
-    /// Compresses a single block of data using raw deflate.
+    /// Compresses a single block of data.
+    /// Uses ZLibStream and strips the 2-byte header, keeping the deflate data + Adler-32 checksum.
+    /// This matches the format expected by the game engine.
     /// </summary>
     public static byte[] CompressBlock(byte[] uncompressedData)
     {
         using var output = new MemoryStream();
-        using (var deflate = new DeflateStream(output, CompressionLevel.Optimal))
+        using (var zlib = new ZLibStream(output, CompressionLevel.Optimal))
         {
-            deflate.Write(uncompressedData, 0, uncompressedData.Length);
+            zlib.Write(uncompressedData, 0, uncompressedData.Length);
         }
-        return output.ToArray();
+
+        byte[] zlibData = output.ToArray();
+
+        // ZLibStream produces: [2-byte header][deflate data][4-byte Adler-32 checksum]
+        // Strip the 2-byte header, keep deflate data + checksum
+        if (zlibData.Length > 2)
+        {
+            byte[] result = new byte[zlibData.Length - 2];
+            Array.Copy(zlibData, 2, result, 0, result.Length);
+            return result;
+        }
+
+        return zlibData;
     }
 }

@@ -133,9 +133,9 @@ public class ZonePatcher
             }
         }
 
-        // Step 3: Update header sizes
+        // Step 3: Update header sizes based on the actual size change
         byte[] result = zone.ToArray();
-        UpdateZoneHeaderSizes(result);
+        UpdateZoneHeaderSizes(result, totalShift);
 
         return result;
     }
@@ -224,14 +224,23 @@ public class ZonePatcher
         return files;
     }
 
-    private void UpdateZoneHeaderSizes(byte[] zoneData)
+    private void UpdateZoneHeaderSizes(byte[] zoneData, int sizeChange)
     {
-        int zoneSize = zoneData.Length - 36;
+        // Read the original ZoneSize from the header (big-endian)
+        int originalZoneSize = (_originalZone[0] << 24) |
+                               (_originalZone[1] << 16) |
+                               (_originalZone[2] << 8) |
+                               _originalZone[3];
 
-        zoneData[0] = (byte)(zoneSize >> 24);
-        zoneData[1] = (byte)(zoneSize >> 16);
-        zoneData[2] = (byte)(zoneSize >> 8);
-        zoneData[3] = (byte)zoneSize;
+        // Calculate the new ZoneSize by adding the size change
+        // This preserves the correct relationship with padding at the end of the zone
+        int newZoneSize = originalZoneSize + sizeChange;
+
+        // Write the new ZoneSize (big-endian)
+        zoneData[0] = (byte)(newZoneSize >> 24);
+        zoneData[1] = (byte)(newZoneSize >> 16);
+        zoneData[2] = (byte)(newZoneSize >> 8);
+        zoneData[3] = (byte)newZoneSize;
     }
 
     private class RawFileLocation

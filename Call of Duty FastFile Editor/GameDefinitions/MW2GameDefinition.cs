@@ -164,11 +164,8 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
                 Array.Copy(zoneData, dataOffset, rawBytes, 0, dataLength);
                 node.RawFileBytes = rawBytes;
                 node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
-                node.RawFileEndPosition = dataOffset + dataLength;
-                if (node.RawFileEndPosition < zoneData.Length && zoneData[node.RawFileEndPosition] == 0x00)
-                {
-                    node.RawFileEndPosition++;
-                }
+                // Always add +1 for null terminator (consistent with old computed property)
+                node.RawFileEndPosition = dataOffset + dataLength + 1;
             }
 
             return node;
@@ -201,11 +198,8 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
                 Array.Copy(zoneData, fileDataOffset, rawBytes, 0, dataLength);
                 node.RawFileBytes = rawBytes;
                 node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
-                node.RawFileEndPosition = fileDataOffset + dataLength;
-                if (node.RawFileEndPosition < zoneData.Length && zoneData[node.RawFileEndPosition] == 0x00)
-                {
-                    node.RawFileEndPosition++;
-                }
+                // Always add +1 for null terminator (consistent with old computed property)
+                node.RawFileEndPosition = fileDataOffset + dataLength + 1;
             }
             else
             {

@@ -296,7 +296,9 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 int localizedSize = localizedSection.Length;
                 int footerSize = footerSection.Length;
 
-                var headerSection = BuildHeaderSection(assetTableSize, rawFilesSize, localizedSize, footerSize, rawFileNodes.Count + (localizedEntries?.Count ?? 0));
+                // Asset count includes: raw files + localized entries + 1 final entry
+                int totalAssetCount = rawFileNodes.Count + (localizedEntries?.Count ?? 0) + 1;
+                var headerSection = BuildHeaderSection(assetTableSize, rawFilesSize, localizedSize, footerSize, totalAssetCount, fastFile);
 
                 // Combine all sections
                 using (var ms = new MemoryStream())
@@ -328,7 +330,7 @@ namespace Call_of_Duty_FastFile_Editor.Services
         /// <summary>
         /// Builds the zone header (52 bytes).
         /// </summary>
-        private static byte[] BuildHeaderSection(int assetTableSize, int rawFilesSize, int localizedSize, int footerSize, int assetCount)
+        private static byte[] BuildHeaderSection(int assetTableSize, int rawFilesSize, int localizedSize, int footerSize, int assetCount, FastFile? fastFile = null)
         {
             var header = new List<byte>();
 
@@ -336,18 +338,42 @@ namespace Call_of_Duty_FastFile_Editor.Services
             int totalDataSize = assetTableSize + rawFilesSize + localizedSize + footerSize + 16;
             int totalZoneSize = 52 + assetTableSize + rawFilesSize + localizedSize + footerSize;
 
+            // Get memory allocation values based on game version
+            // WaW: MemAlloc1 = 0x10B0, MemAlloc2 = 0x05F8F0
+            // CoD4: MemAlloc1 = 0x0F70, MemAlloc2 = 0x000000
+            byte[] memAlloc1;
+            byte[] memAlloc2;
+
+            if (fastFile?.IsCod4File == true)
+            {
+                memAlloc1 = new byte[] { 0x00, 0x00, 0x0F, 0x70 };
+                memAlloc2 = new byte[] { 0x00, 0x00, 0x00, 0x00 };
+            }
+            else if (fastFile?.IsMW2File == true)
+            {
+                memAlloc1 = new byte[] { 0x00, 0x00, 0x03, 0xB4 };
+                memAlloc2 = new byte[] { 0x00, 0x00, 0x10, 0x00 };
+            }
+            else // Default to WaW
+            {
+                memAlloc1 = new byte[] { 0x00, 0x00, 0x10, 0xB0 };
+                memAlloc2 = new byte[] { 0x00, 0x05, 0xF8, 0xF0 };
+            }
+
             // Bytes 0-3: Total data size (big-endian)
             header.AddRange(GetBigEndianBytes(totalDataSize));
 
-            // Bytes 4-23: Memory allocation block 1 (20 bytes, zeros with possible values at offset 8)
+            // Bytes 4-23: Memory allocation block 1 (20 bytes, memAlloc1 at offset 4)
             byte[] allocBlock1 = new byte[20];
+            memAlloc1.CopyTo(allocBlock1, 4); // Copy memAlloc1 to bytes 8-11 of final header
             header.AddRange(allocBlock1);
 
             // Bytes 24-27: Total zone size (big-endian)
             header.AddRange(GetBigEndianBytes(totalZoneSize));
 
-            // Bytes 28-43: Memory allocation block 2 (16 bytes)
+            // Bytes 28-43: Memory allocation block 2 (16 bytes, memAlloc2 at offset 4)
             byte[] allocBlock2 = new byte[16];
+            memAlloc2.CopyTo(allocBlock2, 4); // Copy memAlloc2 to bytes 32-35 of final header
             header.AddRange(allocBlock2);
 
             // Bytes 44-47: Asset count (big-endian)

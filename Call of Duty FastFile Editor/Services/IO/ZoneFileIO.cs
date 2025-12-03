@@ -22,31 +22,19 @@ namespace Call_of_Duty_FastFile_Editor.Services.IO
         }
 
         /// <summary>
-        /// Writes the updated zone file size (big-endian) to the header at the defined offset.
-        /// Also updates the BlockSizeLarge to stay in sync (raw file data goes into the LARGE block).
+        /// Writes the updated zone file size (big-endian) to the header.
+        /// Only updates ZoneSize (offset 0x00). BlockSizeLarge (offset 0x18) should NOT be modified
+        /// as it represents XFILE_BLOCK_LARGE memory allocation which is set at zone creation time.
         /// </summary>
         public static void WriteZoneFileSize(string path, uint newSize)
         {
-            // Read the current BlockSizeLarge to calculate the offset from ZoneSize
-            uint currentZoneSize = ReadZoneFileSize(path);
-            uint currentBlockSizeLarge = ReadBlockSizeLarge(path);
-
-            // Calculate the difference between BlockSizeLarge and ZoneSize
-            // This offset should remain constant when we update the size
-            uint blockOffset = currentBlockSizeLarge - currentZoneSize;
-            uint newBlockSizeLarge = newSize + blockOffset;
-
             Span<byte> b = stackalloc byte[4];
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Write);
 
-            // Write the new ZoneSize
+            // Write new ZoneSize at offset 0x00 only
+            // BlockSizeLarge (0x18) should NOT be modified - it's for memory allocation
             System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(b, newSize);
             fs.Seek(ZoneFileHeaderConstants.ZoneSizeOffset, SeekOrigin.Begin);
-            fs.Write(b);
-
-            // Write the new BlockSizeLarge
-            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(b, newBlockSizeLarge);
-            fs.Seek(ZoneFileHeaderConstants.BlockSizeLargeOffset, SeekOrigin.Begin);
             fs.Write(b);
         }
 

@@ -88,13 +88,9 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
                 node.RawFileBytes = rawBytes;
                 node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
 
-                // Calculate end positions
-                node.RawFileEndPosition = fileDataOffset + dataLength;
-                // Skip null terminator after data if present
-                if (node.RawFileEndPosition < zoneData.Length && zoneData[node.RawFileEndPosition] == 0x00)
-                {
-                    node.RawFileEndPosition++;
-                }
+                // Calculate end position (data end + 1 for null terminator)
+                // This matches the old computed property: CodeStartPosition + MaxSize + 1
+                node.RawFileEndPosition = fileDataOffset + dataLength + 1;
             }
             else
             {

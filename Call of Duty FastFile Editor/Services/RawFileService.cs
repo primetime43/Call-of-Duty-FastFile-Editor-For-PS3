@@ -2,6 +2,8 @@
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.UI;
 using Call_of_Duty_FastFile_Editor.Services.IO;
+using Call_of_Duty_FastFile_Editor.GameDefinitions;
+using FastFileLib;
 using static Call_of_Duty_FastFile_Editor.Models.FastFile;
 
 namespace Call_of_Duty_FastFile_Editor.Services
@@ -130,60 +132,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 return;
             }
 
-            int sizeIncrease = newSize - oldSize;
-
             // Create the new content: copy the existing data then pad with zeros.
             byte[] currentContent = rawFileNode.RawFileBytes;
             byte[] newContent = new byte[newSize];
             Array.Copy(currentContent, newContent, currentContent.Length);
             // The remaining bytes in newContent are already 0.
 
-            ZoneFile currentZone = RawFileNode.CurrentZone;
-            currentZone.ModifyZoneFile(fs =>
-            {
-                // Calculate where the raw file's data ends; that is,
-                // the starting point from which we need to shift subsequent bytes.
-                long shiftStart = rawFileNode.CodeStartPosition + oldSize;
-                long tailLength = fs.Length - shiftStart;
-
-                // If there's any tail data after the raw file entry,
-                // shift it further down by sizeIncrease bytes.
-                if (tailLength > 0)
-                {
-                    fs.Seek(shiftStart, SeekOrigin.Begin);
-                    byte[] tailData = new byte[tailLength];
-                    fs.Read(tailData, 0, tailData.Length);
-                    fs.Seek(shiftStart + sizeIncrease, SeekOrigin.Begin);
-                    fs.Write(tailData, 0, tailData.Length);
-                }
-
-                // Overwrite the raw file's data block (starting at CodeStartPosition)
-                // with our new content (which is padded with zeros).
-                fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
-                fs.Write(newContent, 0, newContent.Length);
-
-                // Update the size in the raw file header.
-                // The header is expected to have a 4-byte size field at offset 4 from the start.
-                // Overwrite the 4‑byte size field at header+4 in big‑endian.
-                Span<byte> buf = stackalloc byte[4];
-                System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(buf, (uint)newSize);
-                fs.Seek(rawFileNode.StartOfFileHeader + 4, SeekOrigin.Begin);
-                fs.Write(buf);
-            });
-
-            // Update in-memory RawFileNode properties.
-            rawFileNode.MaxSize = newSize;
-            rawFileNode.RawFileBytes = newContent;
-            rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
-
-            // Update the zone file size header.
-            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
-            uint updatedZoneSize = currentZoneSize + (uint)sizeIncrease;
-            ZoneFileIO.WriteZoneFileSize(zoneFilePath, updatedZoneSize);
-
-            // Refresh zone header fields after modification.
-            currentZone.LoadData();
-            currentZone.ReadHeaderFields();
+            // Use the same rebuild approach as IncreaseSize
+            IncreaseSize(zoneFilePath, rawFileNode, newContent);
         }
 
         /// <summary>
@@ -344,42 +300,148 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 return;
             }
 
-            int sizeIncrease = newSize - oldSize;
             ZoneFile currentZone = RawFileNode.CurrentZone;
 
-            currentZone.ModifyZoneFile(fs =>
+            // Rebuild the zone fresh using ZoneBuilder - same approach as FF Compiler
+            // This ensures all headers and structures are correctly calculated
+            byte[] originalZone = File.ReadAllBytes(zoneFilePath);
+            GameVersion gameVersion = GetGameVersionFromZone();
+
+            // Extract all raw files from the current zone
+            var allRawFiles = ExtractRawFilesFromZone(originalZone);
+
+            // Replace the modified file's content
+            for (int i = 0; i < allRawFiles.Count; i++)
             {
-                long shiftStart = rawFileNode.CodeStartPosition + oldSize;
-                long bytesToShift = fs.Length - shiftStart;
-                if (bytesToShift > 0)
+                if (allRawFiles[i].Name.Equals(rawFileNode.FileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    fs.Seek(shiftStart, SeekOrigin.Begin);
-                    byte[] buffer = new byte[bytesToShift];
-                    fs.Read(buffer, 0, buffer.Length);
-                    fs.Seek(shiftStart + sizeIncrease, SeekOrigin.Begin);
-                    fs.Write(buffer, 0, buffer.Length);
+                    allRawFiles[i] = new FastFileLib.Models.RawFile(rawFileNode.FileName, newContent);
+                    break;
                 }
-                fs.Seek(rawFileNode.CodeStartPosition, SeekOrigin.Begin);
-                fs.Write(newContent, 0, newSize);
+            }
 
-                // Update the size field in the raw file header (4 bytes at StartOfFileHeader + 4)
-                Span<byte> sizeBuf = stackalloc byte[4];
-                System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(sizeBuf, (uint)newSize);
-                fs.Seek(rawFileNode.StartOfFileHeader + 4, SeekOrigin.Begin);
-                fs.Write(sizeBuf);
-            });
+            // Build a new zone using ZoneBuilder
+            var builder = new ZoneBuilder(gameVersion, "patch_mp");
+            builder.AddRawFiles(allRawFiles);
+            byte[] newZone = builder.Build();
 
+            // Write the new zone to disk
+            File.WriteAllBytes(zoneFilePath, newZone);
+
+            // Update in-memory node properties
             rawFileNode.MaxSize = newSize;
             rawFileNode.RawFileBytes = newContent;
             rawFileNode.RawFileContent = Encoding.Default.GetString(newContent);
 
-            uint currentZoneSize = ZoneFileIO.ReadZoneFileSize(zoneFilePath);
-            uint newZoneSize = currentZoneSize + (uint)sizeIncrease;
-            ZoneFileIO.WriteZoneFileSize(zoneFilePath, newZoneSize);
-
-            // Refresh zone header fields after modification
+            // Refresh zone data from disk
             currentZone.LoadData();
             currentZone.ReadHeaderFields();
+        }
+
+        /// <summary>
+        /// Extracts all raw files from a zone file.
+        /// </summary>
+        private static List<FastFileLib.Models.RawFile> ExtractRawFilesFromZone(byte[] zoneData)
+        {
+            var rawFiles = new List<FastFileLib.Models.RawFile>();
+            var validExtensions = new[] { ".cfg", ".gsc", ".atr", ".csc", ".rmb", ".arena", ".vision", ".txt", ".str", ".menu" };
+            var foundOffsets = new HashSet<int>();
+
+            foreach (var ext in validExtensions)
+            {
+                byte[] pattern = Encoding.ASCII.GetBytes(ext + "\0");
+
+                for (int i = 0; i <= zoneData.Length - pattern.Length; i++)
+                {
+                    bool match = true;
+                    for (int j = 0; j < pattern.Length; j++)
+                    {
+                        if (zoneData[i + j] != pattern[j])
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (!match) continue;
+
+                    // Search backwards for FF FF FF FF marker
+                    int markerEnd = i - 1;
+                    while (markerEnd >= 4)
+                    {
+                        if (zoneData[markerEnd] == 0xFF &&
+                            zoneData[markerEnd - 1] == 0xFF &&
+                            zoneData[markerEnd - 2] == 0xFF &&
+                            zoneData[markerEnd - 3] == 0xFF)
+                            break;
+                        markerEnd--;
+                        if (i - markerEnd > 300)
+                        {
+                            markerEnd = -1;
+                            break;
+                        }
+                    }
+
+                    if (markerEnd < 4) continue;
+                    if (zoneData[markerEnd + 1] == 0x00) continue;
+
+                    int sizeOffset = markerEnd - 7;
+                    if (sizeOffset < 0) continue;
+
+                    int headerOffset = sizeOffset - 4;
+                    if (headerOffset < 0) continue;
+                    if (foundOffsets.Contains(headerOffset)) continue;
+
+                    // Read size (big-endian)
+                    int size = (zoneData[sizeOffset] << 24) |
+                              (zoneData[sizeOffset + 1] << 16) |
+                              (zoneData[sizeOffset + 2] << 8) |
+                              zoneData[sizeOffset + 3];
+
+                    if (size <= 0 || size > 10_000_000) continue;
+
+                    // Read filename
+                    int nameStart = markerEnd + 1;
+                    int nameEnd = nameStart;
+                    while (nameEnd < zoneData.Length && zoneData[nameEnd] != 0)
+                        nameEnd++;
+
+                    if (nameEnd <= nameStart) continue;
+
+                    string name = Encoding.ASCII.GetString(zoneData, nameStart, nameEnd - nameStart);
+                    if (!name.EndsWith(ext, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    int dataOffset = nameEnd + 1;
+                    if (dataOffset + size > zoneData.Length) continue;
+
+                    // Extract data
+                    byte[] data = new byte[size];
+                    Array.Copy(zoneData, dataOffset, data, 0, size);
+
+                    rawFiles.Add(new FastFileLib.Models.RawFile(name, data));
+                    foundOffsets.Add(headerOffset);
+                }
+            }
+
+            return rawFiles;
+        }
+
+        /// <summary>
+        /// Gets the FastFileLib.GameVersion based on the currently opened FastFile.
+        /// </summary>
+        private static GameVersion GetGameVersionFromZone()
+        {
+            // Get the game version from the current zone's associated FastFile
+            var zone = RawFileNode.CurrentZone;
+            if (zone == null)
+                return GameVersion.WaW; // Default to WaW
+
+            // Read version from zone header - check BlockSizeLarge pattern or use header info
+            // For now, determine based on common patterns
+            // CoD4: version 0x5 (5), WaW: version 0x183 (387), MW2: version 0x114 (276)
+
+            // Since we don't have direct access to the FF header here, default to WaW
+            // The ZonePatcher pattern matching works the same for CoD4/WaW
+            return GameVersion.WaW;
         }
 
         /// <inheritdoc/>
@@ -682,8 +744,27 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
                 if (result == DialogResult.Yes)
                 {
-                    // Expand the raw file slot in the zone file
-                    AdjustRawFileNodeSize(zoneFilePath, rawFileNode, updatedSize);
+                    try
+                    {
+                        // Backup zone file before rebuilding
+                        CreateBackup(zoneFilePath);
+
+                        // Rebuild the zone with the new content directly
+                        // This uses the same approach as raw file injection
+                        IncreaseSize(zoneFilePath, rawFileNode, updatedBytes);
+                        rawFileNode.RawFileContent = updatedText;
+
+                        MessageBox.Show(
+                            $"Raw File '{rawFileNode.FileName}' saved successfully (zone rebuilt).",
+                            "Saved",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Asterisk);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to save raw file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    return;
                 }
                 else
                 {
