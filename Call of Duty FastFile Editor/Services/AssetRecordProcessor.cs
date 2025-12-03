@@ -191,6 +191,40 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 }
 
                 Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {patternMatchedCount} additional rawfiles");
+
+                // Also use pattern matching to find localized entries
+                // Get already found localize keys to avoid duplicates
+                var existingLocalizeKeys = new HashSet<string>(
+                    result.LocalizedEntries.Select(e => e.Key),
+                    StringComparer.OrdinalIgnoreCase);
+
+                int localizeCurrentOffset = searchStartOffset;
+                int localizePatternMatchedCount = 0;
+
+                while (localizeCurrentOffset < zoneData.Length)
+                {
+                    var (entry, nextOffset) = LocalizeAssetParser.ParseSingleLocalizeAssetWithPattern(openedFastFile, localizeCurrentOffset);
+
+                    if (entry == null || nextOffset <= localizeCurrentOffset)
+                    {
+                        // No more localize entries found
+                        break;
+                    }
+
+                    // Check if we already have this entry from structure-based parsing
+                    if (!existingLocalizeKeys.Contains(entry.Key))
+                    {
+                        result.LocalizedEntries.Add(entry);
+                        existingLocalizeKeys.Add(entry.Key);
+                        localizePatternMatchedCount++;
+                        Debug.WriteLine($"[AssetRecordProcessor] Pattern matched localize: '{entry.Key}' at offset 0x{entry.StartOfFileHeader:X}");
+                    }
+
+                    // Move past this entry to continue searching
+                    localizeCurrentOffset = nextOffset;
+                }
+
+                Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {localizePatternMatchedCount} additional localized entries");
             }
 
             // Save the updated asset records into the result container.

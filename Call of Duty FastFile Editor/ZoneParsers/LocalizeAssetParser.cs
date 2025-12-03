@@ -204,8 +204,6 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         {
             Debug.WriteLine($"[LocalizeAssetParser] Starting pattern-based parse at offset 0x{startingOffset:X}.");
             byte[] fileData = openedFastFile.OpenedFastFileZone.Data;
-            int markerPos = -1;
-            bool hasInlineValue = false;
 
             // Search for a valid localize marker starting at startingOffset
             for (int pos = startingOffset; pos <= fileData.Length - 8; pos++)
@@ -235,68 +233,89 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 if (!valuePointerIsFF && nextByte == 0x00)
                     continue;
 
-                // Found a valid marker
-                markerPos = pos;
-                hasInlineValue = valuePointerIsFF;
-                break;
-            }
-
-            if (markerPos < 0)
-            {
-                Debug.WriteLine("[LocalizeAssetParser] Valid marker not found. Returning null.");
-                return (null, startingOffset);
-            }
-
-            using (MemoryStream ms = new MemoryStream(fileData))
-            using (BinaryReader br = new BinaryReader(ms, Encoding.ASCII))
-            {
-                ms.Position = markerPos + 8; // Skip the 8-byte marker
-
-                string localizedText;
-                string key;
-
-                if (hasInlineValue)
+                // Try to parse this potential marker
+                using (MemoryStream ms = new MemoryStream(fileData))
+                using (BinaryReader br = new BinaryReader(ms, Encoding.ASCII))
                 {
-                    // Both value and name are inline
-                    localizedText = ReadNullTerminatedString(br);
-                    if (localizedText == null)
+                    ms.Position = pos + 8; // Skip the 8-byte marker
+
+                    string localizedText;
+                    string key;
+
+                    if (valuePointerIsFF)
                     {
-                        Debug.WriteLine("[LocalizeAssetParser] Localized text string not found. Returning null.");
-                        return (null, (int)ms.Position);
+                        // Both value and name are inline
+                        localizedText = ReadNullTerminatedString(br);
+                        if (localizedText == null)
+                            continue; // Invalid, try next position
+
+                        key = ReadNullTerminatedString(br);
+                        if (key == null)
+                            continue; // Invalid, try next position
+                    }
+                    else
+                    {
+                        // Only name is inline, value is empty/external
+                        localizedText = string.Empty;
+                        key = ReadNullTerminatedString(br);
+                        if (key == null)
+                            continue; // Invalid, try next position
                     }
 
-                    key = ReadNullTerminatedString(br);
-                    if (key == null)
+                    // Validate the key looks like a proper localization key
+                    if (!IsValidLocalizeKey(key))
                     {
-                        Debug.WriteLine("[LocalizeAssetParser] Key string not found. Returning null.");
-                        return (null, (int)ms.Position);
+                        Debug.WriteLine($"[LocalizeAssetParser] Invalid key format at 0x{pos:X}: '{key}' - skipping");
+                        continue; // Not a valid localization key, try next position
                     }
+
+                    int entryEnd = (int)ms.Position;
+                    LocalizedEntry entry = new LocalizedEntry
+                    {
+                        Key = key,
+                        LocalizedText = localizedText,
+                        StartOfFileHeader = pos,
+                        EndOfFileHeader = entryEnd
+                    };
+
+                    Debug.WriteLine($"[LocalizeAssetParser] Parsed entry with key: {entry.Key}, range: 0x{pos:X}-0x{entryEnd:X}.");
+                    return (entry, entryEnd);
                 }
-                else
-                {
-                    // Only name is inline, value is empty/external
-                    localizedText = string.Empty;
-                    key = ReadNullTerminatedString(br);
-                    if (key == null)
-                    {
-                        Debug.WriteLine("[LocalizeAssetParser] Key string not found. Returning null.");
-                        return (null, (int)ms.Position);
-                    }
-                    Debug.WriteLine($"[LocalizeAssetParser] Key-only entry (empty value): {key}");
-                }
-
-                int entryEnd = (int)ms.Position;
-                LocalizedEntry entry = new LocalizedEntry
-                {
-                    Key = key,
-                    LocalizedText = localizedText,
-                    StartOfFileHeader = markerPos,
-                    EndOfFileHeader = entryEnd
-                };
-
-                Debug.WriteLine($"[LocalizeAssetParser] Parsed entry with key: {entry.Key}, range: 0x{markerPos:X}-0x{entryEnd:X}.");
-                return (entry, entryEnd);
             }
+
+            Debug.WriteLine("[LocalizeAssetParser] Valid marker not found. Returning null.");
+            return (null, startingOffset);
+        }
+
+        /// <summary>
+        /// Validates that a string looks like a valid localization key.
+        /// Valid keys are typically in SCREAMING_SNAKE_CASE format:
+        /// - Start with an uppercase letter
+        /// - Contain only uppercase letters, digits, and underscores
+        /// - Reasonable length (2-100 characters)
+        /// </summary>
+        private static bool IsValidLocalizeKey(string key)
+        {
+            if (string.IsNullOrEmpty(key) || key.Length < 2 || key.Length > 100)
+                return false;
+
+            // Must start with an uppercase letter
+            if (!char.IsUpper(key[0]))
+                return false;
+
+            // Check all characters are valid (uppercase letters, digits, underscores)
+            foreach (char c in key)
+            {
+                if (!char.IsUpper(c) && !char.IsDigit(c) && c != '_')
+                    return false;
+            }
+
+            // Must contain at least one underscore (most localization keys do)
+            // This helps filter out false positives
+            if (!key.Contains('_'))
+                return false;
+
+            return true;
         }
 
         /// <summary>
