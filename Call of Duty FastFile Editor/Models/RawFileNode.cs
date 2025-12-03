@@ -54,10 +54,27 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int StartOfFileHeader { get; set; }
 
         /// <summary>
-        /// Gets the position where the code starts, calculated as StartOfFileHeader + 12 + FileName.Length + 1.
-        /// 12 comes from FF FF FF FF name pointer, 4 bytes for data length, and FF FF FF FF for data pointer
+        /// Size of the rawfile header in bytes.
+        /// CoD4/WaW use 12-byte header: [FF FF FF FF] [len] [FF FF FF FF]
+        /// MW2 uses 16-byte header: [FF FF FF FF] [compressedLen] [len] [FF FF FF FF]
+        /// Default is 12 for backwards compatibility.
         /// </summary>
-        public int CodeStartPosition => StartOfFileHeader + 12 + (FileName?.Length ?? 0) + 1;
+        public int HeaderSize { get; set; } = 12;
+
+        /// <summary>
+        /// Backing field for CodeStartPosition when set explicitly by game-specific parsers.
+        /// </summary>
+        private int? _codeStartPosition;
+
+        /// <summary>
+        /// Gets or sets the position where the code starts.
+        /// When set explicitly, uses that value. Otherwise, calculated as StartOfFileHeader + HeaderSize + FileName.Length + 1.
+        /// </summary>
+        public int CodeStartPosition
+        {
+            get => _codeStartPosition ?? (StartOfFileHeader + HeaderSize + (FileName?.Length ?? 0) + 1);
+            set => _codeStartPosition = value;
+        }
 
         /// <summary>
         /// Gets the position where the code ends, calculated as CodeStartPosition + MaxSize

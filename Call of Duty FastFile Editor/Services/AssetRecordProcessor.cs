@@ -158,12 +158,14 @@ namespace Call_of_Duty_FastFile_Editor.Services
                     StringComparer.OrdinalIgnoreCase);
 
                 // Use pattern matching to scan for rawfiles
+                // Pass game definition for MW2-aware pattern matching
                 int currentOffset = searchStartOffset;
                 int patternMatchedCount = 0;
 
                 while (currentOffset < zoneData.Length)
                 {
-                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneData, currentOffset);
+                    // Use game-aware pattern matching (handles MW2's 16-byte header and compression)
+                    RawFileNode node = RawFileParser.ExtractSingleRawFileNodeWithPattern(zoneData, currentOffset, gameDefinition);
 
                     if (node == null)
                     {
@@ -174,7 +176,10 @@ namespace Call_of_Duty_FastFile_Editor.Services
                     // Check if we already have this file from structure-based parsing
                     if (!existingFileNames.Contains(node.FileName))
                     {
-                        node.AdditionalData = "Raw file parsed using pattern matching (fallback).";
+                        if (string.IsNullOrEmpty(node.AdditionalData))
+                        {
+                            node.AdditionalData = "Raw file parsed using pattern matching (fallback).";
+                        }
                         result.RawFileNodes.Add(node);
                         existingFileNames.Add(node.FileName);
                         patternMatchedCount++;

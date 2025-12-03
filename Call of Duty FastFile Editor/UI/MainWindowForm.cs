@@ -1177,11 +1177,16 @@ namespace Call_of_Duty_FastFile_Editor
                 }
             }
 
-            // Add the final rawfile terminator entry (required by zone format)
+            // Add the final rawfile terminator entry (required by CoD4/WaW zone format)
             // This entry exists in the asset table but has no corresponding file data
+            // Note: MW2 does NOT have this terminator - the extra asset records are other asset types
             int totalDisplayed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0);
             int totalInZone = _zoneAssetRecords?.Count ?? 0;
-            if (totalInZone > totalDisplayed)
+            bool isCoD4OrWaW = _openedFastFile?.IsCod4File == true || _openedFastFile?.IsCod5File == true;
+
+            // Only show terminator for CoD4/WaW when there's exactly one more asset than displayed
+            // (the terminator is a single rawfile entry with no data)
+            if (isCoD4OrWaW && totalInZone == totalDisplayed + 1)
             {
                 var terminator = new ListViewItem(index.ToString());
                 terminator.SubItems.Add("rawfile");

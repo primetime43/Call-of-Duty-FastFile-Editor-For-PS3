@@ -1,6 +1,8 @@
-﻿using Call_of_Duty_FastFile_Editor.Models;
+﻿using Call_of_Duty_FastFile_Editor.GameDefinitions;
+using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.Services;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Net;
 using System.Text;
 using Call_of_Duty_FastFile_Editor.Constants;
@@ -218,6 +220,195 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 Debug.WriteLine($"DEBUG: Detected file header for '{node.FileName}' at offset 0x{node.StartOfFileHeader:X}");
                 return node;
             }
+        }
+
+        /// <summary>
+        /// Game-aware pattern matching for MW2 which uses a 16-byte header with optional compression.
+        /// MW2 RawFile header: [FF FF FF FF] [compressedLen BE] [len BE] [FF FF FF FF] [name\0] [data]
+        /// </summary>
+        public static RawFileNode ExtractSingleRawFileNodeWithPattern(byte[] fileData, int startOffset, IGameDefinition gameDefinition)
+        {
+            // For non-MW2 games, use the standard pattern matching
+            if (gameDefinition.ShortName != "MW2")
+            {
+                return ExtractSingleRawFileNodeWithPattern(fileData, startOffset);
+            }
+
+            Debug.WriteLine("================================ Start of MW2 raw file node search =============================================");
+            Debug.WriteLine($"[MW2PatternMatch] Starting search at 0x{startOffset:X}");
+
+            // Use the plain text patterns from our constants.
+            string[] patternStrings = RawFileConstants.FileNamePatternStrings;
+            var patternBytes = patternStrings.Select(s => Encoding.ASCII.GetBytes(s + "\0")).ToList();
+            string[] validExtensions = patternStrings;
+
+            int foundIndex = -1;
+            string foundPatternStr = null;
+
+            // Scan the file data from startOffset to the end.
+            for (int i = startOffset; i < fileData.Length; i++)
+            {
+                for (int p = 0; p < patternBytes.Count; p++)
+                {
+                    var pattern = patternBytes[p];
+                    if (i <= fileData.Length - pattern.Length)
+                    {
+                        if (fileData.AsSpan(i, pattern.Length).SequenceEqual(pattern))
+                        {
+                            foundIndex = i;
+                            foundPatternStr = patternStrings[p];
+                            Debug.WriteLine($"[MW2PatternMatch] Pattern '{foundPatternStr}' found at offset 0x{i:X}");
+                            goto FoundMatch;
+                        }
+                    }
+                }
+            }
+        FoundMatch:
+            if (foundIndex < 0)
+            {
+                Debug.WriteLine("[MW2PatternMatch] No matching pattern found.");
+                return null;
+            }
+
+            int patternIndex = foundIndex;
+            // Back up to locate the preceding 4-byte 0xFF marker sequence (second marker before name).
+            int ffffPositionBeforeName = patternIndex - 1;
+            while (ffffPositionBeforeName >= 4 &&
+                   !(fileData[ffffPositionBeforeName] == 0xFF &&
+                     fileData[ffffPositionBeforeName - 1] == 0xFF &&
+                     fileData[ffffPositionBeforeName - 2] == 0xFF &&
+                     fileData[ffffPositionBeforeName - 3] == 0xFF))
+            {
+                ffffPositionBeforeName--;
+                if (ffffPositionBeforeName < 4)
+                {
+                    Debug.WriteLine($"WARN: Could not find valid FF FF FF FF header for file at offset 0x{patternIndex:X}");
+                    return null;
+                }
+            }
+
+            // MW2 16-byte header:
+            // [FF FF FF FF] [compressedLen BE] [len BE] [FF FF FF FF] [name\0] [data]
+            //   offset 0         offset 4       offset 8    offset 12
+            // ffffPositionBeforeName points to the LAST byte of the second FF marker (offset 15)
+
+            // len is at marker2End - 7 (same as CoD4/WaW calculation, but it's the second size field)
+            int lenPosition = ffffPositionBeforeName - 7;
+            // compressedLen is 4 bytes before len
+            int compressedLenPosition = lenPosition - 4;
+            // Header starts 4 bytes before compressedLen (first FF marker)
+            int startOfHeaderPosition = compressedLenPosition - 4;
+
+            if (startOfHeaderPosition < 0 || compressedLenPosition < 0)
+            {
+                Debug.WriteLine($"[MW2PatternMatch] Header position invalid. Returning null.");
+                return null;
+            }
+
+            // Verify the first FF FF FF FF marker
+            if (!(fileData[startOfHeaderPosition] == 0xFF && fileData[startOfHeaderPosition + 1] == 0xFF &&
+                  fileData[startOfHeaderPosition + 2] == 0xFF && fileData[startOfHeaderPosition + 3] == 0xFF))
+            {
+                Debug.WriteLine($"[MW2PatternMatch] First marker not found at expected position 0x{startOfHeaderPosition:X}");
+                // Fall back to standard pattern matching
+                return ExtractSingleRawFileNodeWithPattern(fileData, startOffset);
+            }
+
+            // Read the header fields
+            int compressedLen = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(fileData, compressedLenPosition));
+            int len = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(fileData, lenPosition));
+
+            Debug.WriteLine($"[MW2PatternMatch] compressedLen={compressedLen}, len={len}");
+
+            // Validate lengths
+            if (len <= 0 || len > 10_000_000)
+            {
+                Debug.WriteLine($"[MW2PatternMatch] Invalid len={len}. Returning null.");
+                return null;
+            }
+            if (compressedLen < 0 || compressedLen > 10_000_000)
+            {
+                Debug.WriteLine($"[MW2PatternMatch] Invalid compressedLen={compressedLen}. Returning null.");
+                return null;
+            }
+
+            // Extract the file name starting immediately after the FF sequence.
+            int fileNameStart = ffffPositionBeforeName + 1;
+            string fileName = ExtractFullFileName(fileData, fileNameStart);
+            Debug.WriteLine($"[MW2PatternMatch] Extracted name: '{fileName}' at offset 0x{fileNameStart:X}");
+
+            // Validate extension
+            bool isValidExtension = validExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+            if (!isValidExtension)
+            {
+                Debug.WriteLine($"[MW2PatternMatch] Skipping file '{fileName}' because its extension is not recognized.");
+                return null;
+            }
+
+            // Calculate data start position
+            int nameByteCount = Encoding.ASCII.GetByteCount(fileName) + 1; // +1 for null terminator
+            int dataStartOffset = fileNameStart + nameByteCount;
+            int dataSize = compressedLen > 0 ? compressedLen : len;
+
+            if (dataStartOffset + dataSize > fileData.Length)
+            {
+                Debug.WriteLine($"[MW2PatternMatch] Data extends beyond file. Returning null.");
+                return null;
+            }
+
+            // Extract and optionally decompress data
+            byte[] rawBytes;
+            string additionalData = "";
+
+            if (compressedLen > 0)
+            {
+                // Data is zlib compressed
+                byte[] compressedData = new byte[compressedLen];
+                Array.Copy(fileData, dataStartOffset, compressedData, 0, compressedLen);
+
+                try
+                {
+                    using var inputStream = new MemoryStream(compressedData);
+                    using var zlibStream = new ZLibStream(inputStream, CompressionMode.Decompress);
+                    using var outputStream = new MemoryStream();
+                    zlibStream.CopyTo(outputStream);
+                    rawBytes = outputStream.ToArray();
+                    additionalData = $"Compressed: {compressedLen} -> {len} bytes (pattern match)";
+                    Debug.WriteLine($"[MW2PatternMatch] Decompressed {compressedLen} -> {rawBytes.Length} bytes");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[MW2PatternMatch] Zlib decompression failed: {ex.Message}. Using raw data.");
+                    rawBytes = compressedData;
+                    additionalData = $"Decompression failed: {ex.Message}";
+                }
+            }
+            else
+            {
+                // Data is uncompressed
+                rawBytes = new byte[len];
+                Array.Copy(fileData, dataStartOffset, rawBytes, 0, len);
+            }
+
+            string fileContent = Encoding.UTF8.GetString(rawBytes);
+            int rawFileEndPosition = dataStartOffset + dataSize + 1; // +1 for null terminator
+
+            var node = new RawFileNode
+            {
+                PatternIndexPosition = patternIndex,
+                MaxSize = len,
+                StartOfFileHeader = startOfHeaderPosition,
+                HeaderSize = 16, // MW2 uses 16-byte header
+                FileName = fileName,
+                RawFileContent = fileContent,
+                RawFileBytes = rawBytes,
+                RawFileEndPosition = rawFileEndPosition,
+                AdditionalData = additionalData
+            };
+
+            Debug.WriteLine($"[MW2PatternMatch] Successfully parsed '{fileName}' at header 0x{startOfHeaderPosition:X}");
+            Debug.WriteLine("================================ End of MW2 raw file node search =============================================");
+            return node;
         }
 
         /// <summary>
