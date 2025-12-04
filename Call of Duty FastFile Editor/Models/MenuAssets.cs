@@ -3,6 +3,25 @@ using System.Text;
 namespace Call_of_Duty_FastFile_Editor.Models
 {
     /// <summary>
+    /// Represents a string extracted from menu binary data with its offset.
+    /// Used for tracking editable strings that can be saved back to the zone.
+    /// </summary>
+    public class MenuString
+    {
+        public string Value { get; set; } = string.Empty;
+        public int Offset { get; set; }
+        public int OriginalLength { get; set; }
+        public bool IsModified { get; set; }
+
+        public MenuString(string value, int offset, int originalLength)
+        {
+            Value = value;
+            Offset = offset;
+            OriginalLength = originalLength;
+        }
+    }
+
+    /// <summary>
     /// Rectangle definition used in menu windows.
     /// Size: 0x14 bytes (with padding)
     /// </summary>
@@ -104,11 +123,27 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int StartOffset { get; set; }
         public int EndOffset { get; set; }
 
+        /// <summary>
+        /// Extracted strings from this menu's binary data with their offsets.
+        /// </summary>
+        public List<MenuString> ExtractedStrings { get; set; }
+
+        /// <summary>
+        /// The current text content displayed in the editor for this menu.
+        /// </summary>
+        public string StringContent { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Whether this menu has unsaved changes.
+        /// </summary>
+        public bool HasUnsavedChanges { get; set; }
+
         public MenuDef()
         {
             Items = new List<ItemDef>();
             FocusColor = new float[4];
             CursorItems = new int[1]; // PC default
+            ExtractedStrings = new List<MenuString>();
         }
 
         public string Name => Window?.Name ?? "(unnamed)";
@@ -131,6 +166,22 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int DataEndOffset { get; set; }
 
         /// <summary>
+        /// Extracted strings from the menu binary data with their offsets.
+        /// These can be edited and saved back to the zone.
+        /// </summary>
+        public List<MenuString> ExtractedStrings { get; set; }
+
+        /// <summary>
+        /// The current text content displayed in the editor (strings joined by newlines).
+        /// </summary>
+        public string StringContent { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Whether this menu list has unsaved changes.
+        /// </summary>
+        public bool HasUnsavedChanges { get; set; }
+
+        /// <summary>
         /// Static property to hold the currently loaded zone.
         /// </summary>
         public static ZoneFile CurrentZone { get; set; }
@@ -138,6 +189,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public MenuList()
         {
             Menus = new List<MenuDef>();
+            ExtractedStrings = new List<MenuString>();
         }
 
         public void UpdateAssetRecord(ref ZoneAssetRecord assetRecord)

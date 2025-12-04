@@ -74,6 +74,9 @@ namespace Call_of_Duty_FastFile_Editor
             localizeTabPage = new TabPage();
             localizeListView = new ListView();
             menuFilesTabPage = new TabPage();
+            menuFilesSplitContainer = new SplitContainer();
+            menuFilesTreeView = new TreeView();
+            menuFilesTextEditor = new TextEditorControlEx();
             menuFilesListView = new ListView();
             tagsTabPage = new TabPage();
             tagsListView = new ListView();
@@ -98,6 +101,10 @@ namespace Call_of_Duty_FastFile_Editor
             collision_Map_AssetTabPage.SuspendLayout();
             localizeTabPage.SuspendLayout();
             menuFilesTabPage.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)menuFilesSplitContainer).BeginInit();
+            menuFilesSplitContainer.Panel1.SuspendLayout();
+            menuFilesSplitContainer.Panel2.SuspendLayout();
+            menuFilesSplitContainer.SuspendLayout();
             tagsTabPage.SuspendLayout();
             assetPoolTabPage.SuspendLayout();
             techSetsTabPage.SuspendLayout();
@@ -458,6 +465,7 @@ namespace Call_of_Duty_FastFile_Editor
             mainTabControl.Controls.Add(rawFilesPage);
             mainTabControl.Controls.Add(collision_Map_AssetTabPage);
             mainTabControl.Controls.Add(localizeTabPage);
+            mainTabControl.Controls.Add(menuFilesTabPage);
             mainTabControl.Controls.Add(techSetsTabPage);
             mainTabControl.Controls.Add(tagsTabPage);
             mainTabControl.Controls.Add(assetPoolTabPage);
@@ -537,7 +545,7 @@ namespace Call_of_Duty_FastFile_Editor
             //
             // menuFilesTabPage
             //
-            menuFilesTabPage.Controls.Add(menuFilesListView);
+            menuFilesTabPage.Controls.Add(menuFilesSplitContainer);
             menuFilesTabPage.Location = new Point(4, 24);
             menuFilesTabPage.Name = "menuFilesTabPage";
             menuFilesTabPage.Padding = new Padding(3);
@@ -546,7 +554,38 @@ namespace Call_of_Duty_FastFile_Editor
             menuFilesTabPage.Text = "Menu Files";
             menuFilesTabPage.UseVisualStyleBackColor = true;
             //
-            // menuFilesListView
+            // menuFilesSplitContainer
+            //
+            menuFilesSplitContainer.Dock = DockStyle.Fill;
+            menuFilesSplitContainer.Location = new Point(3, 3);
+            menuFilesSplitContainer.Name = "menuFilesSplitContainer";
+            menuFilesSplitContainer.Panel1.Controls.Add(menuFilesTreeView);
+            menuFilesSplitContainer.Panel2.Controls.Add(menuFilesTextEditor);
+            menuFilesSplitContainer.Size = new Size(1436, 743);
+            menuFilesSplitContainer.SplitterDistance = 350;
+            menuFilesSplitContainer.TabIndex = 0;
+            //
+            // menuFilesTreeView
+            //
+            menuFilesTreeView.Dock = DockStyle.Fill;
+            menuFilesTreeView.Location = new Point(0, 0);
+            menuFilesTreeView.Name = "menuFilesTreeView";
+            menuFilesTreeView.Size = new Size(350, 743);
+            menuFilesTreeView.TabIndex = 0;
+            //
+            // menuFilesTextEditor
+            //
+            menuFilesTextEditor.ContextMenuEnabled = true;
+            menuFilesTextEditor.Dock = DockStyle.Fill;
+            menuFilesTextEditor.FoldingStrategy = "C#";
+            menuFilesTextEditor.Font = new Font("Courier New", 10F);
+            menuFilesTextEditor.Location = new Point(0, 0);
+            menuFilesTextEditor.Name = "menuFilesTextEditor";
+            menuFilesTextEditor.Size = new Size(1082, 743);
+            menuFilesTextEditor.SyntaxHighlighting = "C#";
+            menuFilesTextEditor.TabIndex = 0;
+            //
+            // menuFilesListView (kept for compatibility)
             //
             menuFilesListView.ContextMenuStrip = universalContextMenu;
             menuFilesListView.Dock = DockStyle.Fill;
@@ -679,6 +718,10 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.ResumeLayout(false);
             collision_Map_AssetTabPage.ResumeLayout(false);
             localizeTabPage.ResumeLayout(false);
+            menuFilesSplitContainer.Panel1.ResumeLayout(false);
+            menuFilesSplitContainer.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)menuFilesSplitContainer).EndInit();
+            menuFilesSplitContainer.ResumeLayout(false);
             menuFilesTabPage.ResumeLayout(false);
             tagsTabPage.ResumeLayout(false);
             assetPoolTabPage.ResumeLayout(false);
@@ -743,6 +786,9 @@ namespace Call_of_Duty_FastFile_Editor
         private TabPage localizeTabPage;
         private ListView localizeListView;
         private TabPage menuFilesTabPage;
+        private SplitContainer menuFilesSplitContainer;
+        private TreeView menuFilesTreeView;
+        private TextEditorControlEx menuFilesTextEditor;
         private ListView menuFilesListView;
         private ToolStripMenuItem extractAllRawFilesToolStripMenuItem;
         private ToolStripMenuItem increaseFileSizeToolStripMenuItem;

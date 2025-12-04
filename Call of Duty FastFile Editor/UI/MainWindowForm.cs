@@ -63,6 +63,16 @@ namespace Call_of_Duty_FastFile_Editor
         private AssetRecordCollection _processResult;
         private IFastFileHandler _fastFileHandler;
 
+        /// <summary>
+        /// Currently selected MenuList in the menu files tree.
+        /// </summary>
+        private MenuList? _selectedMenuList;
+
+        /// <summary>
+        /// Currently selected MenuDef in the menu files tree.
+        /// </summary>
+        private MenuDef? _selectedMenuDef;
+
         public MainWindowForm(IRawFileService rawFileService)
         {
             InitializeComponent();
@@ -329,6 +339,9 @@ namespace Call_of_Duty_FastFile_Editor
                     }
                 }
 
+                // Apply menu file string changes to the zone data
+                ApplyMenuFileChangesToZone();
+
                 // Rebuild the zone file from parsed assets (only includes supported types)
                 string zoneName = Path.GetFileNameWithoutExtension(_openedFastFile.FfFilePath);
                 byte[]? newZoneData = ZoneFileBuilder.BuildFreshZone(_rawFileNodes, _localizedEntries, _openedFastFile, zoneName);
@@ -399,6 +412,9 @@ namespace Call_of_Duty_FastFile_Editor
                                 node.RawFileBytes = Encoding.ASCII.GetBytes(node.RawFileContent);
                             }
                         }
+
+                        // Apply menu file string changes to the zone data
+                        ApplyMenuFileChangesToZone();
 
                         string newFilePath = saveFileDialog.FileName;
 
@@ -912,15 +928,10 @@ namespace Call_of_Duty_FastFile_Editor
 
         private void PopulateMenuFiles()
         {
-            // Menu files in CoD are actually rawfiles with .menu extension
-            // Filter rawfiles to show only .menu files (like Red-EyeX32 does)
-            var menuRawFiles = _rawFileNodes?
-                .Where(r => r.FileName != null &&
-                       (r.FileName.EndsWith(".menu", StringComparison.OrdinalIgnoreCase) ||
-                        r.FileName.Contains("menu", StringComparison.OrdinalIgnoreCase) && r.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)))
-                .ToList() ?? new List<RawFileNode>();
+            // Check if we have any parsed MenuList assets
+            bool hasMenuLists = _menuLists != null && _menuLists.Count > 0;
 
-            if (menuRawFiles.Count <= 0)
+            if (!hasMenuLists)
             {
                 mainTabControl.TabPages.Remove(menuFilesTabPage); // hide the tab page if there's no data to show
                 return;
@@ -932,41 +943,191 @@ namespace Call_of_Duty_FastFile_Editor
                 mainTabControl.TabPages.Add(menuFilesTabPage);
             }
 
-            // Clear any existing items and columns.
-            menuFilesListView.Items.Clear();
-            menuFilesListView.Columns.Clear();
+            // Clear existing items
+            menuFilesTreeView.Nodes.Clear();
+            menuFilesTextEditor.Text = string.Empty;
+            _selectedMenuList = null;
 
-            // Set up the ListView.
-            menuFilesListView.View = View.Details;
-            menuFilesListView.FullRowSelect = true;
-            menuFilesListView.GridLines = true;
+            // Add selection handler if not already added
+            menuFilesTreeView.AfterSelect -= MenuFilesTreeView_AfterSelect;
+            menuFilesTreeView.AfterSelect += MenuFilesTreeView_AfterSelect;
 
-            // Add the required columns.
-            menuFilesListView.Columns.Add("File Name", 300);
-            menuFilesListView.Columns.Add("Size", 100);
-            menuFilesListView.Columns.Add("Start Offset", 100);
-            menuFilesListView.Columns.Add("End Offset", 100);
+            // Add text change handler for saving modifications
+            menuFilesTextEditor.TextChanged -= MenuFilesTextEditor_TextChanged;
+            menuFilesTextEditor.TextChanged += MenuFilesTextEditor_TextChanged;
 
-            // Loop through each menu rawfile.
-            foreach (var rawFile in menuRawFiles)
+            // Create decompiler for formatting menu data (PS3 = big endian)
+            var decompiler = new ZoneParsers.MenuDecompiler(
+                _openedFastFile.OpenedFastFileZone.Data,
+                isBigEndian: true);
+
+            // Populate the tree view with MenuLists and decompile each menu individually
+            foreach (var menuList in _menuLists)
             {
-                // Create a new ListViewItem with the FileName as the main text.
-                ListViewItem lvi = new ListViewItem(rawFile.FileName);
+                // Create MenuList node
+                TreeNode menuListNode = new TreeNode($"{menuList.Name} ({menuList.Menus.Count} menus)");
+                menuListNode.Tag = menuList;
 
-                // Add subitems.
-                lvi.SubItems.Add($"{rawFile.MaxSize} bytes");
-                lvi.SubItems.Add($"0x{rawFile.StartOfFileHeader:X}");
-                lvi.SubItems.Add($"0x{rawFile.RawFileEndPosition:X}");
+                // Decompile each menu individually
+                foreach (var menu in menuList.Menus)
+                {
+                    // Decompile this specific menu
+                    var (formattedText, strings) = decompiler.DecompileMenuDef(menu);
+                    menu.ExtractedStrings = strings;
+                    menu.StringContent = formattedText;
 
-                // Store the rawfile reference for potential selection handling
-                lvi.Tag = rawFile;
+                    string menuName = menu.Name ?? "(unnamed)";
+                    string itemInfo = menu.ItemCount > 0 ? $" [{menu.ItemCount} items]" : "";
+                    TreeNode menuNode = new TreeNode($"{menuName}{itemInfo}");
+                    menuNode.Tag = menu;
+                    menuListNode.Nodes.Add(menuNode);
+                }
 
-                // Add the ListViewItem to the ListView.
-                menuFilesListView.Items.Add(lvi);
+                menuFilesTreeView.Nodes.Add(menuListNode);
             }
 
-            // Auto-resize columns to fit header size.
-            menuFilesListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+            // Expand all nodes
+            menuFilesTreeView.ExpandAll();
+
+            // Select first item if available
+            if (menuFilesTreeView.Nodes.Count > 0)
+            {
+                menuFilesTreeView.SelectedNode = menuFilesTreeView.Nodes[0];
+            }
+        }
+
+        private void MenuFilesTreeView_AfterSelect(object? sender, TreeViewEventArgs e)
+        {
+            // Save current menu content before switching
+            if (_selectedMenuDef != null && _selectedMenuDef.HasUnsavedChanges)
+            {
+                _selectedMenuDef.StringContent = menuFilesTextEditor.Text;
+            }
+
+            if (e.Node?.Tag == null)
+            {
+                menuFilesTextEditor.TextChanged -= MenuFilesTextEditor_TextChanged;
+                menuFilesTextEditor.Text = string.Empty;
+                menuFilesTextEditor.TextChanged += MenuFilesTextEditor_TextChanged;
+                _selectedMenuList = null;
+                _selectedMenuDef = null;
+                return;
+            }
+
+            // Detach handler while loading text
+            menuFilesTextEditor.TextChanged -= MenuFilesTextEditor_TextChanged;
+
+            if (e.Node.Tag is MenuList menuList)
+            {
+                _selectedMenuList = menuList;
+                _selectedMenuDef = null;
+
+                // For MenuList, show info about selecting a menu
+                menuFilesTextEditor.Text = $"// {menuList.Name}\n// Select a menu from the list to view and edit its code.\n//\n// Menus in this file:\n" +
+                    string.Join("\n", menuList.Menus.Select(m => $"//   - {m.Name}"));
+
+                // Update status bar
+                selectedItemStatusLabel.Text = $"MenuList: {menuList.Name}";
+                selectedItemStatusLabel.Visible = true;
+                selectedFileMaxSizeStatusLabel.Text = $"Menus: {menuList.Menus.Count}";
+                selectedFileMaxSizeStatusLabel.Visible = true;
+            }
+            else if (e.Node.Tag is MenuDef menu)
+            {
+                // Find the parent MenuList
+                if (e.Node.Parent?.Tag is MenuList parentList)
+                {
+                    _selectedMenuList = parentList;
+                }
+
+                _selectedMenuDef = menu;
+
+                // Load only this menu's code
+                menuFilesTextEditor.Text = menu.StringContent;
+
+                // Update status bar
+                selectedItemStatusLabel.Text = $"Menu: {menu.Name}";
+                selectedItemStatusLabel.Visible = true;
+                selectedFileMaxSizeStatusLabel.Text = $"Strings: {menu.ExtractedStrings?.Count ?? 0}";
+                selectedFileMaxSizeStatusLabel.Visible = true;
+            }
+
+            // Reattach handler
+            menuFilesTextEditor.TextChanged += MenuFilesTextEditor_TextChanged;
+        }
+
+        /// <summary>
+        /// Handles text changes in the menu files text editor.
+        /// </summary>
+        private void MenuFilesTextEditor_TextChanged(object? sender, EventArgs e)
+        {
+            if (_selectedMenuDef == null)
+                return;
+
+            // Mark as having unsaved changes
+            _selectedMenuDef.HasUnsavedChanges = true;
+            _selectedMenuDef.StringContent = menuFilesTextEditor.Text;
+
+            // Update the title to show unsaved changes
+            if (!this.Text.EndsWith("*"))
+            {
+                this.Text += "*";
+            }
+        }
+
+        /// <summary>
+        /// Applies menu file string changes to the zone data.
+        /// Modified strings are written back to their original offsets.
+        /// Parses the formatted text to match strings regardless of formatting.
+        /// </summary>
+        private void ApplyMenuFileChangesToZone()
+        {
+            if (_menuLists == null || _openedFastFile?.OpenedFastFileZone?.Data == null)
+                return;
+
+            byte[] zoneData = _openedFastFile.OpenedFastFileZone.Data;
+
+            // Iterate over all menus in all menu lists
+            foreach (var menuList in _menuLists)
+            {
+                foreach (var menu in menuList.Menus)
+                {
+                    if (!menu.HasUnsavedChanges || menu.ExtractedStrings == null)
+                        continue;
+
+                    // Parse the formatted text to extract edited strings
+                    var changes = ZoneParsers.MenuDecompiler.ParseEditedText(
+                        menu.StringContent, menu.ExtractedStrings);
+
+                    // Apply each change to the zone data
+                    foreach (var (original, newValue) in changes)
+                    {
+                        if (string.IsNullOrEmpty(newValue))
+                            continue;
+
+                        // Write the new string to the zone data at the original offset
+                        // Pad with nulls if shorter, truncate if longer
+                        int maxLength = original.OriginalLength;
+                        string valueToWrite = newValue.Length <= maxLength
+                            ? newValue.PadRight(maxLength, '\0')
+                            : newValue.Substring(0, maxLength);
+
+                        byte[] newBytes = Encoding.ASCII.GetBytes(valueToWrite);
+
+                        // Copy the new string bytes to the zone data
+                        for (int j = 0; j < maxLength && original.Offset + j < zoneData.Length; j++)
+                        {
+                            zoneData[original.Offset + j] = j < newBytes.Length ? newBytes[j] : (byte)0;
+                        }
+
+                        original.Value = newValue;
+                        original.IsModified = true;
+                    }
+
+                    // Reset the unsaved changes flag
+                    menu.HasUnsavedChanges = false;
+                }
+            }
         }
 
         private void PopulateTechSets()

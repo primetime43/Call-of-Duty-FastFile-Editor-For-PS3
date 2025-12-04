@@ -1,29 +1,54 @@
 using Call_of_Duty_FastFile_Editor.Models;
-using Call_of_Duty_FastFile_Editor.Services;
 using System.Diagnostics;
 using System.Text;
 
 namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 {
     /// <summary>
-    /// Parser for MenuList (menufile) assets.
+    /// Parser for MenuList (menufile) assets in CoD5 WaW PS3 zone files.
     ///
     /// MenuList structure in zone:
     /// struct MenuList {
     ///     const char* name;      // 4 bytes - 0xFFFFFFFF when inline
-    ///     int menuCount;         // 4 bytes
+    ///     int menuCount;         // 4 bytes (big-endian on PS3)
     ///     menuDef_t** menus;     // 4 bytes - 0xFFFFFFFF when inline
     /// };
     ///
     /// Zone layout when inline:
     /// [FF FF FF FF] [menuCount BE] [FF FF FF FF] [name\0] [menu pointers...] [menu data...]
+    ///
+    /// Each menuDef_t starts with a windowDef_t which contains:
+    /// struct windowDef_t {
+    ///     const char* name;       // 0x00 - 4 bytes (0xFFFFFFFF when inline)
+    ///     rectDef_t rect;         // 0x04 - 20 bytes (x, y, w, h, horzAlign, vertAlign, padding)
+    ///     rectDef_t rectClient;   // 0x18 - 20 bytes
+    ///     const char* group;      // 0x2C - 4 bytes pointer
+    ///     int style;              // 0x30
+    ///     int border;             // 0x34
+    ///     int ownerDraw;          // 0x38
+    ///     int ownerDrawFlags;     // 0x3C
+    ///     float borderSize;       // 0x40
+    ///     int staticFlags;        // 0x44
+    ///     int dynamicFlags[1];    // 0x48 (varies)
+    ///     ... more fields
+    /// };
     /// </summary>
     public static class MenuListParser
     {
+        // WindowDef size varies between PC and console
+        // PS3 Console: Approximately 0xB0 bytes (larger due to multi-resolution rects)
+        // PC: 0xA4 bytes
+        private const int WINDOW_DEF_SIZE_CONSOLE = 0xB0;
+        private const int RECT_DEF_SIZE = 0x14; // 20 bytes: x, y, w, h (4 floats) + horzAlign, vertAlign (2 bytes) + 2 padding
+
+        // menuDef_t has windowDef_t at start, then additional fields
+        // The full structure is very complex, but we can estimate end by looking for next marker
+        private const int MIN_MENU_DEF_SIZE = 0x180; // Minimum size estimate
+
         /// <summary>
         /// Parses a MenuList asset starting at the given offset.
         /// </summary>
-        public static MenuList ParseMenuList(byte[] zoneData, int offset, bool isBigEndian = true)
+        public static MenuList? ParseMenuList(byte[] zoneData, int offset, bool isBigEndian = true)
         {
             Debug.WriteLine($"[MenuListParser] Parsing MenuList at offset 0x{offset:X}");
 
@@ -43,7 +68,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
             // Read menu count
             int menuCount = ReadInt32(zoneData, offset + 4, isBigEndian);
-            if (menuCount < 0 || menuCount > 1000)
+            if (menuCount < 0 || menuCount > 500)
             {
                 Debug.WriteLine($"[MenuListParser] Invalid menu count {menuCount} at offset 0x{offset + 4:X}");
                 return null;
@@ -75,15 +100,15 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             }
 
             int nameByteCount = Encoding.ASCII.GetByteCount(name) + 1;
-            int dataOffset = nameOffset + nameByteCount;
+            int afterNameOffset = nameOffset + nameByteCount;
 
             var menuList = new MenuList
             {
                 Name = name,
                 MenuCount = menuCount,
                 StartOfFileHeader = offset,
-                EndOfFileHeader = dataOffset,
-                DataStartOffset = dataOffset
+                EndOfFileHeader = afterNameOffset,
+                DataStartOffset = afterNameOffset
             };
 
             Debug.WriteLine($"[MenuListParser] Found MenuList: '{name}' with {menuCount} menus");
@@ -91,31 +116,50 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             // Parse individual menus if count > 0
             if (menuCount > 0)
             {
-                int currentOffset = dataOffset;
+                int currentOffset = afterNameOffset;
 
-                // First, there are menuCount pointers (each 4 bytes, 0xFFFFFFFF when inline)
+                // Read menu pointers (each 4 bytes, 0xFFFFFFFF when inline)
+                int[] menuPointers = new int[menuCount];
                 for (int i = 0; i < menuCount && currentOffset + 4 <= zoneData.Length; i++)
                 {
                     uint menuPtr = ReadUInt32(zoneData, currentOffset, isBigEndian);
+                    menuPointers[i] = (int)menuPtr;
                     currentOffset += 4;
-
-                    // If pointer is 0xFFFFFFFF, menu data follows
-                    // If pointer is something else, it's an external reference
                 }
 
-                // Now parse each menu definition
+                Debug.WriteLine($"[MenuListParser] Menu pointers start at 0x{afterNameOffset:X}, end at 0x{currentOffset:X}");
+
+                // Now parse each menuDef_t
                 for (int i = 0; i < menuCount && currentOffset < zoneData.Length; i++)
                 {
-                    var menu = ParseMenuDef(zoneData, currentOffset, isBigEndian);
+                    // Check if this menu is inline (pointer was 0xFFFFFFFF)
+                    if (menuPointers[i] != unchecked((int)0xFFFFFFFF))
+                    {
+                        Debug.WriteLine($"[MenuListParser] Menu {i} is external reference (0x{menuPointers[i]:X}), skipping");
+                        continue;
+                    }
+
+                    var menu = ParseMenuDef(zoneData, currentOffset, isBigEndian, i);
                     if (menu != null)
                     {
                         menuList.Menus.Add(menu);
                         currentOffset = menu.EndOffset;
+                        Debug.WriteLine($"[MenuListParser] Parsed menu {i}: '{menu.Name}', endOffset=0x{currentOffset:X}");
                     }
                     else
                     {
-                        Debug.WriteLine($"[MenuListParser] Failed to parse menu {i} at offset 0x{currentOffset:X}");
-                        break;
+                        Debug.WriteLine($"[MenuListParser] Failed to parse menu {i} at offset 0x{currentOffset:X}, trying to skip");
+                        // Try to find the next menu by pattern
+                        int nextMenuOffset = FindNextMenuDef(zoneData, currentOffset + 4, isBigEndian);
+                        if (nextMenuOffset > 0)
+                        {
+                            currentOffset = nextMenuOffset;
+                        }
+                        else
+                        {
+                            // Can't recover, stop parsing menus
+                            break;
+                        }
                     }
                 }
 
@@ -123,35 +167,26 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             }
             else
             {
-                menuList.DataEndOffset = dataOffset;
+                menuList.DataEndOffset = afterNameOffset;
             }
 
-            Debug.WriteLine($"[MenuListParser] Parsed MenuList '{name}': {menuList.Menus.Count} menus loaded");
+            Debug.WriteLine($"[MenuListParser] Completed MenuList '{name}': {menuList.Menus.Count}/{menuCount} menus parsed, end=0x{menuList.DataEndOffset:X}");
             return menuList;
         }
 
         /// <summary>
         /// Parses a single menuDef_t structure.
-        /// This is a complex structure - we'll parse the key fields.
         /// </summary>
-        private static MenuDef ParseMenuDef(byte[] zoneData, int offset, bool isBigEndian)
+        private static MenuDef? ParseMenuDef(byte[] zoneData, int offset, bool isBigEndian, int menuIndex)
         {
-            Debug.WriteLine($"[MenuListParser] Parsing menuDef_t at offset 0x{offset:X}");
+            Debug.WriteLine($"[MenuListParser] Parsing menuDef_t #{menuIndex} at offset 0x{offset:X}");
 
-            // menuDef_t starts with windowDef_t
-            // windowDef_t starts with name pointer
             if (offset + 4 > zoneData.Length)
                 return null;
 
-            uint namePtr = ReadUInt32(zoneData, offset, isBigEndian);
-            if (namePtr != 0xFFFFFFFF)
-            {
-                Debug.WriteLine($"[MenuListParser] menuDef_t name pointer not 0xFFFFFFFF at 0x{offset:X}");
-                return null;
-            }
-
-            // For now, we'll do a simplified parse - just get the window name
-            // The full structure is very complex with many nested pointers
+            // menuDef_t starts with windowDef_t
+            // windowDef_t starts with name pointer
+            uint windowNamePtr = ReadUInt32(zoneData, offset, isBigEndian);
 
             var menu = new MenuDef
             {
@@ -159,68 +194,191 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 StartOffset = offset
             };
 
-            // Try to find the window name after the header
-            // The exact layout depends on how pointers are resolved
-            int searchOffset = offset + 4;
-            string windowName = TryFindMenuName(zoneData, searchOffset);
+            int currentOffset = offset;
 
-            if (!string.IsNullOrEmpty(windowName))
+            // Parse window name
+            if (windowNamePtr == 0xFFFFFFFF)
             {
-                menu.Window.Name = windowName;
-                Debug.WriteLine($"[MenuListParser] Found menu name: '{windowName}'");
+                // Name is inline - skip the windowDef_t structure to find where name string is
+                // The name string typically follows immediately after the window structure
+                // But we need to parse the structure first to know where inline strings go
+
+                // For now, search for the name string after the minimum window structure size
+                int nameSearchStart = offset + 4; // After the name pointer
+                string windowName = FindWindowName(zoneData, nameSearchStart, isBigEndian);
+
+                if (!string.IsNullOrEmpty(windowName))
+                {
+                    menu.Window.Name = windowName;
+                    Debug.WriteLine($"[MenuListParser] Menu #{menuIndex} name: '{windowName}'");
+                }
+            }
+            else if (windowNamePtr == 0)
+            {
+                // Null name - menu has no name
+                menu.Window.Name = $"(menu_{menuIndex})";
+            }
+            else
+            {
+                // External reference - shouldn't happen for inline menus
+                Debug.WriteLine($"[MenuListParser] Menu #{menuIndex} has external name reference: 0x{windowNamePtr:X}");
+                menu.Window.Name = $"(external_{windowNamePtr:X})";
             }
 
-            // Estimate end offset - this is imprecise without full parsing
-            // For now, look for the next 0xFFFFFFFF marker that could start another structure
-            menu.EndOffset = EstimateMenuEnd(zoneData, offset, isBigEndian);
+            // Parse rect (offset 0x04 in windowDef_t)
+            if (offset + 4 + RECT_DEF_SIZE <= zoneData.Length)
+            {
+                menu.Window.Rect = ParseRectDef(zoneData, offset + 4, isBigEndian);
+            }
+
+            // Try to find item count - it's at a fixed offset in menuDef_t
+            // For PS3, itemCount is typically around offset 0xB8-0xC0 in the menuDef_t
+            // This varies by game version, so we'll try to detect it
+            int itemCount = TryFindItemCount(zoneData, offset, isBigEndian);
+            if (itemCount >= 0 && itemCount < 200)
+            {
+                menu.ItemCount = itemCount;
+                Debug.WriteLine($"[MenuListParser] Menu #{menuIndex} itemCount: {itemCount}");
+            }
+
+            // Estimate end offset - look for next 0xFFFFFFFF marker that could start another structure
+            menu.EndOffset = EstimateMenuDefEnd(zoneData, offset, isBigEndian);
 
             return menu;
         }
 
         /// <summary>
-        /// Tries to find the menu name in the structure.
+        /// Finds the window name by searching for a valid menu name string.
         /// </summary>
-        private static string TryFindMenuName(byte[] zoneData, int offset)
+        private static string FindWindowName(byte[] zoneData, int searchStart, bool isBigEndian)
         {
-            // Look for a valid string after the initial pointer
-            for (int i = offset; i < Math.Min(offset + 256, zoneData.Length); i++)
+            // The name string location varies, but it's usually after the header structures
+            // Look for 0xFFFFFFFF markers and try to find valid strings after them
+
+            for (int searchOffset = searchStart; searchOffset < Math.Min(searchStart + 512, zoneData.Length - 4); searchOffset++)
             {
-                if (zoneData[i] >= 0x20 && zoneData[i] <= 0x7E)
+                // Look for a sequence that looks like a name
+                if (zoneData[searchOffset] >= 'a' && zoneData[searchOffset] <= 'z' ||
+                    zoneData[searchOffset] >= 'A' && zoneData[searchOffset] <= 'Z')
                 {
-                    string candidate = ReadNullTerminatedString(zoneData, i);
-                    if (!string.IsNullOrEmpty(candidate) && candidate.Length >= 2 && candidate.Length <= 128)
+                    string candidate = ReadNullTerminatedString(zoneData, searchOffset);
+                    if (IsValidMenuName(candidate))
                     {
-                        // Check if it looks like a menu name (alphanumeric, underscores, no weird chars)
-                        if (IsValidMenuName(candidate))
-                        {
-                            return candidate;
-                        }
+                        return candidate;
                     }
                 }
             }
+
             return null;
         }
 
         /// <summary>
-        /// Estimates where a menu definition ends.
-        /// This is approximate - full parsing would require following all pointers.
+        /// Tries to find the item count in the menuDef_t structure.
         /// </summary>
-        private static int EstimateMenuEnd(byte[] zoneData, int startOffset, bool isBigEndian)
+        private static int TryFindItemCount(byte[] zoneData, int menuOffset, bool isBigEndian)
         {
-            // menuDef_t is at least 0x188 bytes on PC
-            // On console it may be larger due to array size differences
-            int minSize = 0x188;
+            // itemCount is typically at a known offset, but varies by platform
+            // On PS3, it's often around 0xB8 or 0xBC
+            int[] possibleOffsets = { 0xB8, 0xBC, 0xAC, 0xB0, 0xB4 };
 
-            if (startOffset + minSize > zoneData.Length)
-                return zoneData.Length;
+            foreach (int off in possibleOffsets)
+            {
+                if (menuOffset + off + 4 <= zoneData.Length)
+                {
+                    int value = ReadInt32(zoneData, menuOffset + off, isBigEndian);
+                    // Item count should be a reasonable number
+                    if (value >= 0 && value <= 100)
+                    {
+                        // Additional check: the next int might be fontIndex or similar (0-10 range)
+                        int nextValue = ReadInt32(zoneData, menuOffset + off + 4, isBigEndian);
+                        if (nextValue >= 0 && nextValue <= 20)
+                        {
+                            return value;
+                        }
+                    }
+                }
+            }
 
-            // For now, return a minimum estimate
-            // Full parsing would track all inline data
-            return startOffset + minSize;
+            return -1;
+        }
+
+        /// <summary>
+        /// Parses a rectDef_t structure.
+        /// </summary>
+        private static RectDef ParseRectDef(byte[] zoneData, int offset, bool isBigEndian)
+        {
+            return new RectDef
+            {
+                X = ReadFloat(zoneData, offset, isBigEndian),
+                Y = ReadFloat(zoneData, offset + 4, isBigEndian),
+                W = ReadFloat(zoneData, offset + 8, isBigEndian),
+                H = ReadFloat(zoneData, offset + 12, isBigEndian),
+                HorzAlign = zoneData[offset + 16],
+                VertAlign = zoneData[offset + 17]
+            };
+        }
+
+        /// <summary>
+        /// Estimates where a menuDef_t structure ends.
+        /// </summary>
+        private static int EstimateMenuDefEnd(byte[] zoneData, int startOffset, bool isBigEndian)
+        {
+            // Look for the next 0xFFFFFFFF marker that could be the start of another menuDef_t or the end
+            int searchEnd = Math.Min(startOffset + 0x2000, zoneData.Length - 4); // Max 8KB per menu
+
+            for (int pos = startOffset + MIN_MENU_DEF_SIZE; pos < searchEnd; pos++)
+            {
+                uint value = ReadUInt32(zoneData, pos, isBigEndian);
+                if (value == 0xFFFFFFFF)
+                {
+                    // Check if this looks like the start of another structure
+                    // A new menuDef_t would have: [FF FF FF FF] followed by rect data (floats)
+                    if (pos + 8 < zoneData.Length)
+                    {
+                        float possibleX = ReadFloat(zoneData, pos + 4, isBigEndian);
+                        // Menu positions are usually in the range -1000 to 2000
+                        if (possibleX >= -1000 && possibleX <= 2000)
+                        {
+                            return pos;
+                        }
+                    }
+                }
+            }
+
+            // If we can't find a marker, use minimum size
+            return Math.Min(startOffset + MIN_MENU_DEF_SIZE, zoneData.Length);
+        }
+
+        /// <summary>
+        /// Finds the next menuDef_t by looking for the characteristic pattern.
+        /// </summary>
+        private static int FindNextMenuDef(byte[] zoneData, int searchStart, bool isBigEndian)
+        {
+            int searchEnd = Math.Min(searchStart + 0x2000, zoneData.Length - 4);
+
+            for (int pos = searchStart; pos < searchEnd; pos++)
+            {
+                uint value = ReadUInt32(zoneData, pos, isBigEndian);
+                if (value == 0xFFFFFFFF)
+                {
+                    // Validate this looks like a menuDef_t start
+                    if (pos + 8 < zoneData.Length)
+                    {
+                        float possibleX = ReadFloat(zoneData, pos + 4, isBigEndian);
+                        if (possibleX >= -1000 && possibleX <= 2000)
+                        {
+                            return pos;
+                        }
+                    }
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>
         /// Validates that a string looks like a valid menu file name.
+        /// Examples: "ui_mp/main.menu", "ui/scriptmenus/class.menu"
         /// </summary>
         private static bool IsValidMenuFileName(string name)
         {
@@ -243,13 +401,18 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         /// <summary>
         /// Validates that a string looks like a valid menu name.
+        /// Examples: "main_menu", "class_select", "popup_findmatch"
         /// </summary>
         private static bool IsValidMenuName(string name)
         {
             if (string.IsNullOrEmpty(name) || name.Length < 2 || name.Length > 128)
                 return false;
 
-            // Check for valid identifier characters
+            // Must start with a letter
+            if (!char.IsLetter(name[0]))
+                return false;
+
+            // Check for valid identifier characters (letters, digits, underscores)
             foreach (char c in name)
             {
                 if (!char.IsLetterOrDigit(c) && c != '_')
@@ -259,9 +422,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             return true;
         }
 
-        /// <summary>
-        /// Reads a null-terminated ASCII string.
-        /// </summary>
+        #region Read Helpers
+
         private static string ReadNullTerminatedString(byte[] data, int offset)
         {
             var sb = new StringBuilder();
@@ -278,6 +440,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         private static uint ReadUInt32(byte[] data, int offset, bool isBigEndian)
         {
+            if (offset + 4 > data.Length) return 0;
             if (isBigEndian)
             {
                 return (uint)((data[offset] << 24) | (data[offset + 1] << 16) |
@@ -290,5 +453,18 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         {
             return (int)ReadUInt32(data, offset, isBigEndian);
         }
+
+        private static float ReadFloat(byte[] data, int offset, bool isBigEndian)
+        {
+            if (offset + 4 > data.Length) return 0;
+            if (isBigEndian)
+            {
+                byte[] bytes = { data[offset + 3], data[offset + 2], data[offset + 1], data[offset] };
+                return BitConverter.ToSingle(bytes, 0);
+            }
+            return BitConverter.ToSingle(data, offset);
+        }
+
+        #endregion
     }
 }

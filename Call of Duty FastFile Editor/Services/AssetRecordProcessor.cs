@@ -392,6 +392,41 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
                     Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {techSetsParsed} techsets");
                 }
+
+                // For menufiles, use pattern matching to find them
+                int expectedMenuFileCount = CountExpectedAssetType(openedFastFile, zoneAssetRecords,
+                    structureParsingStoppedAtIndex, gameDefinition.MenuFileAssetType);
+                int alreadyParsedMenuFiles = result.MenuLists.Count;
+                int remainingMenuFiles = expectedMenuFileCount - alreadyParsedMenuFiles;
+
+                Debug.WriteLine($"[AssetRecordProcessor] Expected {expectedMenuFileCount} menufiles, already parsed {alreadyParsedMenuFiles}, remaining {remainingMenuFiles}");
+
+                if (remainingMenuFiles > 0)
+                {
+                    // Use pattern matching to find menufiles
+                    int menuFileSearchOffset = searchStartOffset;
+                    int menuFilesParsed = 0;
+
+                    while (menuFilesParsed < remainingMenuFiles && menuFileSearchOffset < zoneData.Length)
+                    {
+                        var menuList = FindNextMenuList(zoneData, menuFileSearchOffset, 100000, isBigEndian: true);
+
+                        if (menuList == null)
+                        {
+                            Debug.WriteLine($"[AssetRecordProcessor] No more menufiles found after 0x{menuFileSearchOffset:X}");
+                            break;
+                        }
+
+                        result.MenuLists.Add(menuList);
+                        menuFilesParsed++;
+                        Debug.WriteLine($"[AssetRecordProcessor] Pattern matched menufile #{menuFilesParsed}: '{menuList.Name}' at 0x{menuList.StartOfFileHeader:X}");
+
+                        // Move past this menulist to find the next one
+                        menuFileSearchOffset = menuList.DataEndOffset;
+                    }
+
+                    Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {menuFilesParsed} menufiles");
+                }
             }
 
             // Save the updated asset records into the result container.
@@ -592,6 +627,101 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Finds the next MenuList by pattern matching.
+        /// Searches for the MenuList header pattern: [FF FF FF FF] [menuCount] [FF FF FF FF] [name string]
+        /// </summary>
+        private static MenuList? FindNextMenuList(byte[] zoneData, int startOffset, int maxSearchBytes, bool isBigEndian)
+        {
+            Debug.WriteLine($"[AssetRecordProcessor] Searching for MenuList from 0x{startOffset:X}, max {maxSearchBytes} bytes");
+
+            int endOffset = Math.Min(startOffset + maxSearchBytes, zoneData.Length - 16);
+
+            for (int pos = startOffset; pos < endOffset; pos++)
+            {
+                // Look for the pattern: [FF FF FF FF] [4 bytes count] [FF FF FF FF]
+                uint namePtr = ReadUInt32BE(zoneData, pos);
+                if (namePtr != 0xFFFFFFFF)
+                    continue;
+
+                // Check if menus pointer at offset +8 is also 0xFFFFFFFF
+                if (pos + 12 >= zoneData.Length)
+                    continue;
+
+                uint menusPtr = ReadUInt32BE(zoneData, pos + 8);
+                if (menusPtr != 0xFFFFFFFF)
+                    continue;
+
+                // Read menu count
+                int menuCount = (int)ReadUInt32BE(zoneData, pos + 4);
+                if (menuCount < 0 || menuCount > 500)
+                    continue;
+
+                // Check for valid name string after header
+                int nameOffset = pos + 12;
+                if (nameOffset >= zoneData.Length)
+                    continue;
+
+                // First byte should be printable ASCII (start of path like 'u' for "ui/...")
+                byte firstChar = zoneData[nameOffset];
+                if (firstChar < 0x20 || firstChar > 0x7E)
+                    continue;
+
+                // Try to read and validate the name
+                string name = ReadNullTerminatedStringAt(zoneData, nameOffset);
+                if (!IsValidMenuFileName(name))
+                    continue;
+
+                Debug.WriteLine($"[AssetRecordProcessor] Found potential MenuList at 0x{pos:X}: name='{name}', count={menuCount}");
+
+                // Try to parse it
+                var menuList = MenuListParser.ParseMenuList(zoneData, pos, isBigEndian);
+                if (menuList != null)
+                {
+                    Debug.WriteLine($"[AssetRecordProcessor] Successfully parsed MenuList '{menuList.Name}' with {menuList.Menus.Count} menus");
+                    return menuList;
+                }
+            }
+
+            Debug.WriteLine($"[AssetRecordProcessor] No MenuList found in search range");
+            return null;
+        }
+
+        /// <summary>
+        /// Validates that a string looks like a valid menu file name.
+        /// Examples: "ui_mp/main.menu", "ui/scriptmenus/class.menu"
+        /// </summary>
+        private static bool IsValidMenuFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name) || name.Length < 5 || name.Length > 256)
+                return false;
+
+            // Should contain path separators and look like a menu path
+            if (!name.Contains('/') && !name.Contains('\\'))
+                return false;
+
+            // Should end with .menu or contain "menu" in path
+            if (!name.EndsWith(".menu", StringComparison.OrdinalIgnoreCase) &&
+                !name.Contains("menu", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // Check for valid path characters
+            foreach (char c in name)
+            {
+                if (!char.IsLetterOrDigit(c) && c != '_' && c != '/' && c != '\\' && c != '.' && c != '-')
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static uint ReadUInt32BE(byte[] data, int offset)
+        {
+            if (offset + 4 > data.Length) return 0;
+            return (uint)((data[offset] << 24) | (data[offset + 1] << 16) |
+                          (data[offset + 2] << 8) | data[offset + 3]);
         }
     }
 }
