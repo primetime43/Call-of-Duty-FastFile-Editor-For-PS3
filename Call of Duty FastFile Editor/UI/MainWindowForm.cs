@@ -1652,12 +1652,16 @@ namespace Call_of_Duty_FastFile_Editor
                 lv.Columns.Clear();
             }
 
-            // Clear menu files UI
+            // Clear menu files UI and hide the tab
             menuFilesTreeView.Nodes.Clear();
             menuFilesTextEditor.ResetText();
             _selectedMenuList = null;
             _selectedMenuDef = null;
             _menuLists?.Clear();
+            if (mainTabControl.TabPages.Contains(menuFilesTabPage))
+            {
+                mainTabControl.TabPages.Remove(menuFilesTabPage);
+            }
 
             zoneInfoDataGridView.DataSource = null;
             textEditorControlEx1.ResetText();

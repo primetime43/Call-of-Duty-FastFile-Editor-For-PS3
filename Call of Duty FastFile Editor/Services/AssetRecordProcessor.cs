@@ -394,8 +394,9 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 }
 
                 // For menufiles, use pattern matching to find them
+                // Note: Count from index 0 because menu files may appear before other asset types in the pool
                 int expectedMenuFileCount = CountExpectedAssetType(openedFastFile, zoneAssetRecords,
-                    structureParsingStoppedAtIndex, gameDefinition.MenuFileAssetType);
+                    0, gameDefinition.MenuFileAssetType);
                 int alreadyParsedMenuFiles = result.MenuLists.Count;
                 int remainingMenuFiles = expectedMenuFileCount - alreadyParsedMenuFiles;
 
@@ -404,12 +405,15 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 if (remainingMenuFiles > 0)
                 {
                     // Use pattern matching to find menufiles
-                    int menuFileSearchOffset = searchStartOffset;
+                    // Start from asset pool end since menu files can appear anywhere after the pool
+                    int menuFileSearchOffset = openedFastFile.OpenedFastFileZone.AssetPoolEndOffset;
                     int menuFilesParsed = 0;
 
                     while (menuFilesParsed < remainingMenuFiles && menuFileSearchOffset < zoneData.Length)
                     {
-                        var menuList = FindNextMenuList(zoneData, menuFileSearchOffset, 100000, isBigEndian: true);
+                        // Search up to 1MB or remaining file length for menu files
+                        int maxSearchBytes = Math.Min(1000000, zoneData.Length - menuFileSearchOffset);
+                        var menuList = FindNextMenuList(zoneData, menuFileSearchOffset, maxSearchBytes, isBigEndian: true);
 
                         if (menuList == null)
                         {
