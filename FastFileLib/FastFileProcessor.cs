@@ -28,27 +28,65 @@ public static class FastFileProcessor
         SkipToCompressedData(br, info);
 
         int blockCount = 0;
-        try
+        int errorCount = 0;
+        long lastGoodPosition = br.BaseStream.Position;
+
+        for (int i = 0; i < 5000; i++)
         {
-            for (int i = 0; i < 5000; i++)
+            if (br.BaseStream.Position >= br.BaseStream.Length - 1)
+                break;
+
+            byte[] lengthBytes = br.ReadBytes(2);
+            if (lengthBytes.Length < 2) break;
+
+            int chunkLength = (lengthBytes[0] << 8) | lengthBytes[1];
+
+            // Check for end marker (0x00 0x01 or 0x00 0x00)
+            if (chunkLength == 0 || chunkLength == 1) break;
+
+            // Sanity check: block size should be reasonable (max ~128KB for safety)
+            if (chunkLength > 131072 || chunkLength < 0)
             {
-                byte[] lengthBytes = br.ReadBytes(2);
-                if (lengthBytes.Length < 2) break;
+                // Invalid block size - might be corrupted or at end of file
+                break;
+            }
 
-                int chunkLength = (lengthBytes[0] << 8) | lengthBytes[1];
-                if (chunkLength == 0 || chunkLength == 1) break;
+            // Check if we have enough data
+            if (br.BaseStream.Position + chunkLength > br.BaseStream.Length)
+                break;
 
-                byte[] compressedData = br.ReadBytes(chunkLength);
-                if (compressedData.Length < chunkLength) break;
+            byte[] compressedData = br.ReadBytes(chunkLength);
+            if (compressedData.Length < chunkLength) break;
 
+            try
+            {
                 byte[] decompressedData = DecompressBlock(compressedData);
                 bw.Write(decompressedData);
                 blockCount++;
+                lastGoodPosition = br.BaseStream.Position;
+            }
+            catch (Exception ex)
+            {
+                errorCount++;
+                // Log the error but try to continue
+                System.Diagnostics.Debug.WriteLine(
+                    $"[FastFileProcessor] Block {i} decompression failed at position 0x{lastGoodPosition:X}: {ex.Message}");
+
+                // If we've had too many errors, stop
+                if (errorCount > 3)
+                {
+                    throw new InvalidDataException(
+                        $"Too many decompression errors ({errorCount}). Last successful block: {blockCount}. " +
+                        $"File position: 0x{lastGoodPosition:X}. Error: {ex.Message}", ex);
+                }
             }
         }
-        catch (Exception)
+
+        if (blockCount == 0)
         {
-            // End of file or invalid data
+            throw new InvalidDataException(
+                $"No blocks could be decompressed from the FastFile. " +
+                $"File may be corrupted, encrypted, or in an unsupported format.");
         }
 
         return blockCount;
@@ -131,6 +169,9 @@ public static class FastFileProcessor
     /// </summary>
     public static byte[] DecompressBlock(byte[] compressedData)
     {
+        if (compressedData == null || compressedData.Length == 0)
+            return Array.Empty<byte>();
+
         // Check if data has zlib header (0x78 followed by compression level byte)
         // MW2 uses zlib-wrapped deflate, CoD4/WaW use raw deflate
         bool hasZlibHeader = compressedData.Length >= 2 &&
@@ -143,7 +184,6 @@ public static class FastFileProcessor
 
         if (hasZlibHeader)
         {
-            // Use ZLibStream for zlib-wrapped data (MW2)
             using (var zlib = new ZLibStream(input, CompressionMode.Decompress))
             {
                 zlib.CopyTo(output);
@@ -151,12 +191,12 @@ public static class FastFileProcessor
         }
         else
         {
-            // Use DeflateStream for raw deflate data (CoD4/WaW)
             using (var deflate = new DeflateStream(input, CompressionMode.Decompress))
             {
                 deflate.CopyTo(output);
             }
         }
+
         return output.ToArray();
     }
 

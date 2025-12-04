@@ -54,9 +54,9 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
 
             // Read data length (size of the file data)
             int dataLength = (int)ReadUInt32BE(zoneData, offset + 4);
-            if (dataLength == 0 || dataLength > zoneData.Length)
+            if (dataLength < 0)
             {
-                Debug.WriteLine($"[{ShortName}] Invalid dataLength: {dataLength} at 0x{offset + 4:X}");
+                Debug.WriteLine($"[{ShortName}] Negative dataLength: {dataLength} at 0x{offset + 4:X}");
                 return null;
             }
 
@@ -79,29 +79,42 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
             string fileName = ReadNullTerminatedString(zoneData, fileNameOffset);
             node.FileName = fileName;
 
-            Debug.WriteLine($"[{ShortName}] Found rawfile: '{fileName}' size={dataLength}");
-
             // Calculate filename byte length including null terminator
             int nameByteCount = Encoding.UTF8.GetByteCount(fileName) + 1;
             int fileDataOffset = fileNameOffset + nameByteCount;
 
-            // Read file data
-            if (fileDataOffset + dataLength <= zoneData.Length)
-            {
-                byte[] rawBytes = new byte[dataLength];
-                Array.Copy(zoneData, fileDataOffset, rawBytes, 0, dataLength);
-                node.RawFileBytes = rawBytes;
-                node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
+            // Check if data fits in zone, or if we need to read truncated data
+            // Some rawfiles (e.g., embedded Bink videos) may have sizes larger than available data
+            int availableData = zoneData.Length - fileDataOffset;
+            int actualDataLength = Math.Min(dataLength, availableData);
 
-                // Calculate end position (data end + 1 for null terminator)
-                // This matches the old computed property: CodeStartPosition + MaxSize + 1
-                node.RawFileEndPosition = fileDataOffset + dataLength + 1;
+            if (dataLength > availableData)
+            {
+                Debug.WriteLine($"[{ShortName}] Rawfile '{fileName}' claims {dataLength} bytes but only {availableData} available (truncated/external data)");
             }
             else
             {
-                Debug.WriteLine($"[{ShortName}] Data exceeds zone length");
+                Debug.WriteLine($"[{ShortName}] Found rawfile: '{fileName}' size={dataLength}");
+            }
+
+            // Read file data (may be truncated for large embedded files)
+            if (actualDataLength > 0)
+            {
+                byte[] rawBytes = new byte[actualDataLength];
+                Array.Copy(zoneData, fileDataOffset, rawBytes, 0, actualDataLength);
+                node.RawFileBytes = rawBytes;
+                node.RawFileContent = Encoding.UTF8.GetString(rawBytes);
+
+                // Calculate end position based on CLAIMED size for next asset calculation
+                // but cap it to zone length
+                node.RawFileEndPosition = Math.Min(fileDataOffset + dataLength + 1, zoneData.Length);
+            }
+            else
+            {
+                Debug.WriteLine($"[{ShortName}] No data available for rawfile");
                 node.RawFileBytes = Array.Empty<byte>();
                 node.RawFileContent = string.Empty;
+                node.RawFileEndPosition = fileDataOffset;
             }
 
             return node;

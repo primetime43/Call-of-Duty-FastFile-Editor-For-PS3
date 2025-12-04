@@ -48,10 +48,29 @@ namespace Call_of_Duty_FastFile_Editor.IO
                 {
                     for (int i = 1; i < 5000; i++)
                     {
+                        // Check if we've reached end of file
+                        if (binaryReader.BaseStream.Position >= binaryReader.BaseStream.Length - 1)
+                            break;
+
                         byte[] array = binaryReader.ReadBytes(2);
+                        if (array.Length < 2)
+                            break;
+
                         string text = BitConverter.ToString(array).Replace("-", "");
                         int count = int.Parse(text, System.Globalization.NumberStyles.AllowHexSpecifier);
+
+                        // Check for end marker (0x00 0x00 or 0x00 0x01)
+                        if (count == 0 || count == 1)
+                            break;
+
+                        // Sanity check: block size should be reasonable
+                        if (count > 131072)
+                            break;
+
                         byte[] compressedData = binaryReader.ReadBytes(count);
+                        if (compressedData.Length < count)
+                            break;
+
                         byte[] decompressedData = DecompressFF(compressedData);
                         binaryWriter.Write(decompressedData);
                     }
