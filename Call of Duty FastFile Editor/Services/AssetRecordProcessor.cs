@@ -357,6 +357,41 @@ namespace Call_of_Duty_FastFile_Editor.Services
                         Debug.WriteLine($"[AssetRecordProcessor] Could not find localize marker in search range");
                     }
                 }
+
+                // For techsets, use pattern matching to find them
+                int expectedTechSetCount = CountExpectedAssetType(openedFastFile, zoneAssetRecords,
+                    structureParsingStoppedAtIndex, gameDefinition.IsTechSetType);
+                int alreadyParsedTechSets = result.TechSets.Count;
+                int remainingTechSets = expectedTechSetCount - alreadyParsedTechSets;
+
+                Debug.WriteLine($"[AssetRecordProcessor] Expected {expectedTechSetCount} techsets, already parsed {alreadyParsedTechSets}, remaining {remainingTechSets}");
+
+                if (remainingTechSets > 0)
+                {
+                    // Use pattern matching to find techsets
+                    int techSetSearchOffset = searchStartOffset;
+                    int techSetsParsed = 0;
+
+                    while (techSetsParsed < remainingTechSets && techSetSearchOffset < zoneData.Length)
+                    {
+                        var techSet = TechSetParser.FindNextTechSet(zoneData, techSetSearchOffset, 100000, isBigEndian: true);
+
+                        if (techSet == null)
+                        {
+                            Debug.WriteLine($"[AssetRecordProcessor] No more techsets found after 0x{techSetSearchOffset:X}");
+                            break;
+                        }
+
+                        result.TechSets.Add(techSet);
+                        techSetsParsed++;
+                        Debug.WriteLine($"[AssetRecordProcessor] Pattern matched techset #{techSetsParsed}: '{techSet.Name}' at 0x{techSet.StartOffset:X}");
+
+                        // Move past this techset to find the next one
+                        techSetSearchOffset = techSet.EndOffset;
+                    }
+
+                    Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {techSetsParsed} techsets");
+                }
             }
 
             // Save the updated asset records into the result container.
@@ -434,6 +469,23 @@ namespace Call_of_Duty_FastFile_Editor.Services
             {
                 int recordAssetType = GetAssetTypeValue(fastFile, records[i]);
                 if (recordAssetType == assetType)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Counts the expected number of assets matching a predicate from the asset pool records.
+        /// </summary>
+        private static int CountExpectedAssetType(FastFile fastFile, List<ZoneAssetRecord> records, int startIndex, Func<int, bool> assetTypePredicate)
+        {
+            int count = 0;
+            for (int i = startIndex; i < records.Count; i++)
+            {
+                int recordAssetType = GetAssetTypeValue(fastFile, records[i]);
+                if (assetTypePredicate(recordAssetType))
                 {
                     count++;
                 }

@@ -31,6 +31,11 @@ namespace Call_of_Duty_FastFile_Editor
         private List<MenuList> _menuLists;
 
         /// <summary>
+        /// List of techsets extracted from the zone file.
+        /// </summary>
+        private List<TechSetAsset> _techSets;
+
+        /// <summary>
         /// List of tags extracted from the zone file.
         /// </summary>
         private TagCollection? _tags;
@@ -110,6 +115,7 @@ namespace Call_of_Duty_FastFile_Editor
             RawFileNode.CurrentZone = zone;
             _localizedEntries = loadLocalizedEntries ? _processResult.LocalizedEntries : new List<LocalizedEntry>();
             _menuLists = _processResult.MenuLists ?? new List<MenuList>();
+            _techSets = _processResult.TechSets ?? new List<TechSetAsset>();
 
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
@@ -152,6 +158,7 @@ namespace Call_of_Duty_FastFile_Editor
 
             PopulateLocalizeAssets();
             PopulateMenuFiles();
+            PopulateTechSets();
             PopulateCollision_Map_Asset_StringData();
         }
 
@@ -962,6 +969,78 @@ namespace Call_of_Duty_FastFile_Editor
             menuFilesListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
+        private void PopulateTechSets()
+        {
+            // Check if we have any techsets in our processed results.
+            if (_techSets == null || _techSets.Count <= 0)
+            {
+                mainTabControl.TabPages.Remove(techSetsTabPage); // hide the tab page if there's no data to show
+                return;
+            }
+
+            // Ensure the tab is shown
+            if (!mainTabControl.TabPages.Contains(techSetsTabPage))
+            {
+                mainTabControl.TabPages.Add(techSetsTabPage);
+            }
+
+            // Clear any existing items and columns.
+            techSetsListView.Items.Clear();
+            techSetsListView.Columns.Clear();
+
+            // Set up the ListView.
+            techSetsListView.View = View.Details;
+            techSetsListView.FullRowSelect = true;
+            techSetsListView.GridLines = true;
+
+            // Add the required columns.
+            techSetsListView.Columns.Add("Name", 200);
+            techSetsListView.Columns.Add("Active Techniques", 120);
+            techSetsListView.Columns.Add("World Vert Format", 120);
+            techSetsListView.Columns.Add("Start Offset", 100);
+            techSetsListView.Columns.Add("End Offset", 100);
+            techSetsListView.Columns.Add("Size", 80);
+            techSetsListView.Columns.Add("Technique List", 400);
+
+            // Loop through each techset.
+            foreach (var techSet in _techSets)
+            {
+                // Create a new ListViewItem with the Name as the main text.
+                ListViewItem lvi = new ListViewItem(techSet.Name);
+
+                // Add subitems.
+                lvi.SubItems.Add($"{techSet.ActiveTechniqueCount}/{TechSetAsset.TECHNIQUE_COUNT}");
+                lvi.SubItems.Add($"0x{techSet.WorldVertFormat:X2}");
+                lvi.SubItems.Add($"0x{techSet.StartOffset:X}");
+                lvi.SubItems.Add($"0x{techSet.EndOffset:X}");
+                int size = techSet.EndOffset - techSet.StartOffset;
+                lvi.SubItems.Add($"0x{size:X}");
+
+                // Build list of active technique names (show just the names for cleaner display)
+                var activeTechniqueNames = new List<string>();
+                if (techSet.Techniques != null)
+                {
+                    for (int i = 0; i < techSet.Techniques.Length; i++)
+                    {
+                        if (techSet.Techniques[i] != null && techSet.Techniques[i].IsPresent)
+                        {
+                            activeTechniqueNames.Add(techSet.Techniques[i].Name);
+                        }
+                    }
+                }
+                lvi.SubItems.Add(string.Join(", ", activeTechniqueNames));
+
+                // Store the techset reference for potential selection handling
+                lvi.Tag = techSet;
+
+                // Add the ListViewItem to the ListView.
+                techSetsListView.Items.Add(lvi);
+            }
+
+            // Auto-resize columns to fit header size.
+            techSetsListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
         private void PopulateCollision_Map_Asset_StringData()
         {
             int offset = Collision_Map_Operations.FindCollision_Map_DataOffsetViaFF(_openedFastFile.OpenedFastFileZone);
@@ -1182,7 +1261,8 @@ namespace Call_of_Duty_FastFile_Editor
             var gameDefinition = GameDefinitions.GameDefinitionFactory.GetDefinition(_openedFastFile);
 
             // Count total parsed assets
-            int totalParsed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0) + (_menuLists?.Count ?? 0);
+            int totalParsed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0) +
+                              (_menuLists?.Count ?? 0) + (_techSets?.Count ?? 0);
             int totalAssets = _zoneAssetRecords.Count;
 
             // Columns for the list view
@@ -1211,6 +1291,7 @@ namespace Call_of_Duty_FastFile_Editor
             int rawFileIndex = 0;
             int localizeIndex = 0;
             int menuIndex = 0;
+            int techSetIndex = 0;
 
             // Iterate through ALL asset records from the asset pool
             for (int i = 0; i < _zoneAssetRecords.Count; i++)
@@ -1223,6 +1304,7 @@ namespace Call_of_Duty_FastFile_Editor
                 bool isRawFile = gameDefinition.IsRawFileType(assetTypeValue);
                 bool isLocalize = gameDefinition.IsLocalizeType(assetTypeValue);
                 bool isMenuFile = gameDefinition.IsMenuFileType(assetTypeValue);
+                bool isTechSet = gameDefinition.IsTechSetType(assetTypeValue);
 
                 var lvi = new ListViewItem((i + 1).ToString());
                 lvi.SubItems.Add(assetTypeName);
@@ -1270,6 +1352,18 @@ namespace Call_of_Duty_FastFile_Editor
                     size = $"0x{menuSize:X}";
                     status = $"MenuList parsed ({menu.MenuCount} menus)";
                     menuIndex++;
+                }
+                else if (isTechSet && _techSets != null && techSetIndex < _techSets.Count)
+                {
+                    var techSet = _techSets[techSetIndex];
+                    isParsed = true;
+                    name = techSet.Name ?? "-";
+                    dataStart = $"0x{techSet.StartOffset:X}";
+                    dataEnd = $"0x{techSet.EndOffset:X}";
+                    int techSetSize = techSet.EndOffset - techSet.StartOffset;
+                    size = $"0x{techSetSize:X}";
+                    status = $"TechSet parsed ({techSet.ActiveTechniqueCount} techniques)";
+                    techSetIndex++;
                 }
 
                 lvi.SubItems.Add(dataStart);
@@ -1388,8 +1482,10 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.Columns.Clear();
             localizeListView.Items.Clear();
             localizeListView.Columns.Clear();
+            techSetsListView.Items.Clear();
+            techSetsListView.Columns.Clear();
             treeViewMapEnt.Nodes.Clear();
-            foreach (var lv in new[] { tagsListView, assetPoolListView, localizeListView })
+            foreach (var lv in new[] { tagsListView, assetPoolListView, localizeListView, techSetsListView })
             {
                 lv.Items.Clear();
                 lv.Columns.Clear();

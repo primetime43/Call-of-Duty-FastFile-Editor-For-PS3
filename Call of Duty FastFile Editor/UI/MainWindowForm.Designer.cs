@@ -79,6 +79,8 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView = new ListView();
             assetPoolTabPage = new TabPage();
             assetPoolListView = new ListView();
+            techSetsTabPage = new TabPage();
+            techSetsListView = new ListView();
             zoneFileTabPage = new TabPage();
             zoneInfoDataGridView = new DataGridView();
             bindingSource1 = new BindingSource(components);
@@ -98,6 +100,7 @@ namespace Call_of_Duty_FastFile_Editor
             menuFilesTabPage.SuspendLayout();
             tagsTabPage.SuspendLayout();
             assetPoolTabPage.SuspendLayout();
+            techSetsTabPage.SuspendLayout();
             zoneFileTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)zoneInfoDataGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
@@ -455,6 +458,7 @@ namespace Call_of_Duty_FastFile_Editor
             mainTabControl.Controls.Add(rawFilesPage);
             mainTabControl.Controls.Add(collision_Map_AssetTabPage);
             mainTabControl.Controls.Add(localizeTabPage);
+            mainTabControl.Controls.Add(techSetsTabPage);
             mainTabControl.Controls.Add(tagsTabPage);
             mainTabControl.Controls.Add(assetPoolTabPage);
             mainTabControl.Controls.Add(zoneFileTabPage);
@@ -576,9 +580,9 @@ namespace Call_of_Duty_FastFile_Editor
             tagsListView.UseCompatibleStateImageBehavior = false;
             tagsListView.View = View.Details;
             tagsListView.MouseDown += listView_MouseDownCopy;
-            // 
+            //
             // assetPoolTabPage
-            // 
+            //
             assetPoolTabPage.Controls.Add(assetPoolListView);
             assetPoolTabPage.Location = new Point(4, 24);
             assetPoolTabPage.Name = "assetPoolTabPage";
@@ -587,9 +591,9 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolTabPage.TabIndex = 5;
             assetPoolTabPage.Text = "Asset Pool";
             assetPoolTabPage.UseVisualStyleBackColor = true;
-            // 
+            //
             // assetPoolListView
-            // 
+            //
             assetPoolListView.ContextMenuStrip = universalContextMenu;
             assetPoolListView.Dock = DockStyle.Fill;
             assetPoolListView.Location = new Point(3, 3);
@@ -598,7 +602,31 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.TabIndex = 0;
             assetPoolListView.UseCompatibleStateImageBehavior = false;
             assetPoolListView.MouseDown += listView_MouseDownCopy;
-            // 
+            //
+            // techSetsTabPage
+            //
+            techSetsTabPage.Controls.Add(techSetsListView);
+            techSetsTabPage.Location = new Point(4, 24);
+            techSetsTabPage.Name = "techSetsTabPage";
+            techSetsTabPage.Padding = new Padding(3);
+            techSetsTabPage.Size = new Size(1442, 749);
+            techSetsTabPage.TabIndex = 8;
+            techSetsTabPage.Text = "TechSets";
+            techSetsTabPage.UseVisualStyleBackColor = true;
+            //
+            // techSetsListView
+            //
+            techSetsListView.ContextMenuStrip = universalContextMenu;
+            techSetsListView.Dock = DockStyle.Fill;
+            techSetsListView.FullRowSelect = true;
+            techSetsListView.Location = new Point(3, 3);
+            techSetsListView.Name = "techSetsListView";
+            techSetsListView.Size = new Size(1436, 743);
+            techSetsListView.TabIndex = 0;
+            techSetsListView.UseCompatibleStateImageBehavior = false;
+            techSetsListView.View = View.Details;
+            techSetsListView.MouseDown += listView_MouseDownCopy;
+            //
             // zoneFileTabPage
             // 
             zoneFileTabPage.Controls.Add(zoneInfoDataGridView);
@@ -654,6 +682,7 @@ namespace Call_of_Duty_FastFile_Editor
             menuFilesTabPage.ResumeLayout(false);
             tagsTabPage.ResumeLayout(false);
             assetPoolTabPage.ResumeLayout(false);
+            techSetsTabPage.ResumeLayout(false);
             zoneFileTabPage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)zoneInfoDataGridView).EndInit();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
@@ -709,6 +738,8 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem increaseRawFileSizeToolStripMenuItem;
         private TabPage assetPoolTabPage;
         private ListView assetPoolListView;
+        private TabPage techSetsTabPage;
+        private ListView techSetsListView;
         private TabPage localizeTabPage;
         private ListView localizeListView;
         private TabPage menuFilesTabPage;
