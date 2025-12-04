@@ -311,7 +311,8 @@ namespace Call_of_Duty_FastFile_Editor
 
         /// <summary>
         /// Saves the current Fast File, recompressing it.
-        /// Automatically applies any pending editor changes first.
+        /// Patches changes in place to preserve all assets.
+        /// Only rebuilds zone when injecting files or increasing sizes.
         /// </summary>
         private void saveFastFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -323,49 +324,109 @@ namespace Call_of_Duty_FastFile_Editor
 
             try
             {
-                // Sync current editor text to the selected node
-                var selectedNode = GetSelectedRawFileNode();
-                if (selectedNode != null)
+                // Sync current raw file editor text to the selected node (if any)
+                if (filesTreeView.SelectedNode?.Tag is RawFileNode selectedNode)
                 {
                     selectedNode.RawFileContent = textEditorControlEx1.Text;
                 }
 
-                // Sync RawFileContent to RawFileBytes for ALL nodes with changes
-                foreach (var node in _rawFileNodes)
+                // Sync current menu file editor text to the selected menu (if any)
+                if (_selectedMenuDef != null)
                 {
-                    if (node.HasUnsavedChanges && !string.IsNullOrEmpty(node.RawFileContent))
+                    _selectedMenuDef.StringContent = menuFilesTextEditor.Text;
+                }
+
+                // Count changes
+                int rawFileChangeCount = 0;
+                int menuChangeCount = 0;
+
+                // Apply raw file changes in place (patch directly into zone data)
+                if (_rawFileNodes != null)
+                {
+                    byte[] zoneData = _openedFastFile.OpenedFastFileZone.Data;
+
+                    foreach (var node in _rawFileNodes)
                     {
-                        node.RawFileBytes = Encoding.ASCII.GetBytes(node.RawFileContent);
+                        if (node.HasUnsavedChanges && !string.IsNullOrEmpty(node.RawFileContent))
+                        {
+                            // Check if content fits within the allocated size
+                            byte[] newContent = Encoding.ASCII.GetBytes(node.RawFileContent);
+                            if (newContent.Length > node.MaxSize)
+                            {
+                                MessageBox.Show($"Raw file '{node.FileName}' content ({newContent.Length} bytes) exceeds max size ({node.MaxSize} bytes).\n\n" +
+                                                "Use 'Increase File Size' option first, or reduce content size.",
+                                                "Content Too Large",
+                                                MessageBoxButtons.OK,
+                                                MessageBoxIcon.Warning);
+                                return;
+                            }
+
+                            // Patch the content directly into the zone data at the file's offset
+                            // Clear the area first, then write new content
+                            for (int i = 0; i < node.MaxSize && node.CodeStartPosition + i < zoneData.Length; i++)
+                            {
+                                zoneData[node.CodeStartPosition + i] = i < newContent.Length ? newContent[i] : (byte)0;
+                            }
+
+                            node.RawFileBytes = newContent;
+                            node.HasUnsavedChanges = false;
+                            rawFileChangeCount++;
+                        }
                     }
                 }
 
-                // Apply menu file string changes to the zone data
-                ApplyMenuFileChangesToZone();
-
-                // Rebuild the zone file from parsed assets (only includes supported types)
-                string zoneName = Path.GetFileNameWithoutExtension(_openedFastFile.FfFilePath);
-                byte[]? newZoneData = ZoneFileBuilder.BuildFreshZone(_rawFileNodes, _localizedEntries, _openedFastFile, zoneName);
-
-                if (newZoneData == null)
+                // Apply menu file changes in place
+                if (_menuLists != null)
                 {
-                    MessageBox.Show("Failed to rebuild zone file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    foreach (var menuList in _menuLists)
+                    {
+                        menuChangeCount += menuList.Menus.Count(m => m.HasUnsavedChanges);
+                    }
+                }
+
+                if (menuChangeCount > 0)
+                {
+                    ApplyMenuFileChangesToZone();
+
+                    // Reset menu dirty flags
+                    foreach (var menuList in _menuLists)
+                    {
+                        foreach (var menu in menuList.Menus)
+                        {
+                            menu.HasUnsavedChanges = false;
+                        }
+                    }
+                }
+
+                // Check if there were any changes
+                if (rawFileChangeCount == 0 && menuChangeCount == 0)
+                {
+                    MessageBox.Show("No changes to save.", "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                // Write the new zone data
-                File.WriteAllBytes(_openedFastFile.ZoneFilePath, newZoneData);
+                // Write the modified zone data directly (preserves all assets)
+                File.WriteAllBytes(_openedFastFile.ZoneFilePath, _openedFastFile.OpenedFastFileZone.Data);
 
                 // Recompress to FF
                 _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
+
+                // Build save message
+                var changes = new List<string>();
+                if (rawFileChangeCount > 0) changes.Add($"{rawFileChangeCount} raw file(s)");
+                if (menuChangeCount > 0) changes.Add($"{menuChangeCount} menu(s)");
+
                 MessageBox.Show($"Fast File saved to:\n\n{_openedFastFile.FfFilePath}\n\n" +
-                                $"Zone rebuilt with {_rawFileNodes.Count} rawfiles and {_localizedEntries?.Count ?? 0} localized entries.",
+                                $"Patched {string.Join(" and ", changes)} in place. All assets preserved.",
                                 "Saved",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Asterisk);
 
-                // Reset every node's dirty flag now that the zone is saved
-                foreach (var node in _rawFileNodes)
-                    node.HasUnsavedChanges = false;
+                // Remove asterisk from title
+                if (this.Text.EndsWith("*"))
+                {
+                    this.Text = this.Text.TrimEnd('*');
+                }
             }
             catch (Exception ex)
             {
@@ -378,7 +439,7 @@ namespace Call_of_Duty_FastFile_Editor
 
         /// <summary>
         /// Saves the Fast File as a new file.
-        /// Automatically applies any pending editor changes first.
+        /// Patches changes in place to preserve all assets.
         /// </summary>
         private void saveFastFileAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -397,40 +458,93 @@ namespace Call_of_Duty_FastFile_Editor
                 {
                     try
                     {
-                        // Sync current editor text to the selected node
-                        var selectedNode = GetSelectedRawFileNode();
-                        if (selectedNode != null)
+                        // Sync current raw file editor text to the selected node (if any)
+                        if (filesTreeView.SelectedNode?.Tag is RawFileNode selectedNode)
                         {
                             selectedNode.RawFileContent = textEditorControlEx1.Text;
                         }
 
-                        // Sync RawFileContent to RawFileBytes for ALL nodes with changes
-                        foreach (var node in _rawFileNodes)
+                        // Sync current menu file editor text to the selected menu (if any)
+                        if (_selectedMenuDef != null)
                         {
-                            if (node.HasUnsavedChanges && !string.IsNullOrEmpty(node.RawFileContent))
+                            _selectedMenuDef.StringContent = menuFilesTextEditor.Text;
+                        }
+
+                        string newFilePath = saveFileDialog.FileName;
+                        string zoneName = Path.GetFileNameWithoutExtension(newFilePath);
+                        string tempZonePath = Path.Combine(Path.GetTempPath(), zoneName + ".zone");
+
+                        // Count changes
+                        int rawFileChangeCount = 0;
+                        int menuChangeCount = 0;
+
+                        // Apply raw file changes in place (patch directly into zone data)
+                        if (_rawFileNodes != null)
+                        {
+                            byte[] zoneData = _openedFastFile.OpenedFastFileZone.Data;
+
+                            foreach (var node in _rawFileNodes)
                             {
-                                node.RawFileBytes = Encoding.ASCII.GetBytes(node.RawFileContent);
+                                if (node.HasUnsavedChanges && !string.IsNullOrEmpty(node.RawFileContent))
+                                {
+                                    // Check if content fits within the allocated size
+                                    byte[] newContent = Encoding.ASCII.GetBytes(node.RawFileContent);
+                                    if (newContent.Length > node.MaxSize)
+                                    {
+                                        MessageBox.Show($"Raw file '{node.FileName}' content ({newContent.Length} bytes) exceeds max size ({node.MaxSize} bytes).\n\n" +
+                                                        "Use 'Increase File Size' option first, or reduce content size.",
+                                                        "Content Too Large",
+                                                        MessageBoxButtons.OK,
+                                                        MessageBoxIcon.Warning);
+                                        return;
+                                    }
+
+                                    // Patch the content directly into the zone data at the file's offset
+                                    for (int i = 0; i < node.MaxSize && node.CodeStartPosition + i < zoneData.Length; i++)
+                                    {
+                                        zoneData[node.CodeStartPosition + i] = i < newContent.Length ? newContent[i] : (byte)0;
+                                    }
+
+                                    node.RawFileBytes = newContent;
+                                    node.HasUnsavedChanges = false;
+                                    rawFileChangeCount++;
+                                }
                             }
                         }
 
-                        // Apply menu file string changes to the zone data
-                        ApplyMenuFileChangesToZone();
-
-                        string newFilePath = saveFileDialog.FileName;
-
-                        // Rebuild the zone file from parsed assets (only includes supported types)
-                        string zoneName = Path.GetFileNameWithoutExtension(newFilePath);
-                        byte[]? newZoneData = ZoneFileBuilder.BuildFreshZone(_rawFileNodes, _localizedEntries, _openedFastFile, zoneName);
-
-                        if (newZoneData == null)
+                        // Apply menu file changes in place
+                        if (_menuLists != null)
                         {
-                            MessageBox.Show("Failed to rebuild zone file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
+                            foreach (var menuList in _menuLists)
+                            {
+                                menuChangeCount += menuList.Menus.Count(m => m.HasUnsavedChanges);
+                            }
+
+                            if (menuChangeCount > 0)
+                            {
+                                ApplyMenuFileChangesToZone();
+
+                                // Reset menu dirty flags
+                                foreach (var menuList in _menuLists)
+                                {
+                                    foreach (var menu in menuList.Menus)
+                                    {
+                                        menu.HasUnsavedChanges = false;
+                                    }
+                                }
+                            }
                         }
 
-                        // Write the new zone data to a temp file for compression
-                        string tempZonePath = Path.Combine(Path.GetTempPath(), zoneName + ".zone");
-                        File.WriteAllBytes(tempZonePath, newZoneData);
+                        // Build save message
+                        var changes = new List<string>();
+                        if (rawFileChangeCount > 0) changes.Add($"{rawFileChangeCount} raw file(s)");
+                        if (menuChangeCount > 0) changes.Add($"{menuChangeCount} menu(s)");
+                        string saveMessage = changes.Count > 0
+                            ? $"Patched {string.Join(" and ", changes)} in place. All assets preserved."
+                            : "Zone saved with all assets preserved.";
+
+                        // Write the modified zone data to temp file
+                        File.WriteAllBytes(tempZonePath, _openedFastFile.OpenedFastFileZone.Data);
 
                         // Recompress to new FF path
                         _fastFileHandler?.Recompress(newFilePath, tempZonePath, _openedFastFile);
@@ -439,15 +553,10 @@ namespace Call_of_Duty_FastFile_Editor
                         if (File.Exists(tempZonePath))
                             File.Delete(tempZonePath);
 
-                        MessageBox.Show($"Fast File saved to:\n\n{newFilePath}\n\n" +
-                                        $"Zone rebuilt with {_rawFileNodes.Count} rawfiles and {_localizedEntries?.Count ?? 0} localized entries.",
+                        MessageBox.Show($"Fast File saved to:\n\n{newFilePath}\n\n{saveMessage}",
                                         "Saved",
                                         MessageBoxButtons.OK,
                                         MessageBoxIcon.Asterisk);
-
-                        // Clear all per-node dirty flags
-                        foreach (var node in _rawFileNodes)
-                            node.HasUnsavedChanges = false;
 
                         // Then close out
                         SaveCloseFastFileAndCleanUp();
