@@ -225,11 +225,27 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 menu.Window.Name = $"(external_{windowNamePtr:X})";
             }
 
-            // Parse rect (offset 0x04 in windowDef_t)
-            if (offset + 4 + RECT_DEF_SIZE <= zoneData.Length)
+            // Parse rect (offset 0x04 in windowDef_t) and track it
+            int rectOffset = offset + 4;
+            if (rectOffset + RECT_DEF_SIZE <= zoneData.Length)
             {
-                menu.Window.Rect = ParseRectDef(zoneData, offset + 4, isBigEndian);
+                menu.Window.Rect = ParseRectDef(zoneData, rectOffset, isBigEndian);
+
+                // Add rect as editable value
+                menu.EditableValues.Add(MenuValue.CreateRect("rect",
+                    menu.Window.Rect.X, menu.Window.Rect.Y,
+                    menu.Window.Rect.W, menu.Window.Rect.H,
+                    rectOffset));
             }
+
+            // Parse colors - they're at specific offsets in windowDef_t
+            // PS3 windowDef_t layout (approximate):
+            // 0x4C-0x5B: foreColor (16 bytes)
+            // 0x5C-0x6B: backColor (16 bytes)
+            // 0x6C-0x7B: borderColor (16 bytes)
+            // 0x7C-0x8B: outlineColor (16 bytes)
+            // 0x8C-0x9B: disableColor (16 bytes)
+            ParseAndTrackColors(zoneData, offset, isBigEndian, menu);
 
             // Try to find item count - it's at a fixed offset in menuDef_t
             // For PS3, itemCount is typically around offset 0xB8-0xC0 in the menuDef_t
@@ -245,6 +261,100 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             menu.EndOffset = EstimateMenuDefEnd(zoneData, offset, isBigEndian);
 
             return menu;
+        }
+
+        /// <summary>
+        /// Parses color values from windowDef_t and tracks them for editing.
+        /// </summary>
+        private static void ParseAndTrackColors(byte[] zoneData, int menuOffset, bool isBigEndian, MenuDef menu)
+        {
+            // Color offsets in windowDef_t vary by platform
+            // Try multiple possible offsets and validate the values
+            int[][] colorOffsetSets = new int[][]
+            {
+                // PS3 typical offsets
+                new int[] { 0x4C, 0x5C, 0x6C, 0x7C, 0x8C },
+                // Alternative offsets
+                new int[] { 0x50, 0x60, 0x70, 0x80, 0x90 },
+                new int[] { 0x54, 0x64, 0x74, 0x84, 0x94 },
+            };
+
+            string[] colorNames = { "foreColor", "backColor", "borderColor", "outlineColor", "disableColor" };
+
+            foreach (var offsets in colorOffsetSets)
+            {
+                bool allValid = true;
+                float[][] colors = new float[5][];
+
+                for (int i = 0; i < 5; i++)
+                {
+                    int colorOffset = menuOffset + offsets[i];
+                    if (colorOffset + 16 > zoneData.Length)
+                    {
+                        allValid = false;
+                        break;
+                    }
+
+                    colors[i] = new float[4];
+                    for (int j = 0; j < 4; j++)
+                    {
+                        colors[i][j] = ReadFloat(zoneData, colorOffset + j * 4, isBigEndian);
+                    }
+
+                    // Validate color values are in reasonable range (0-1 for normalized, or 0-255)
+                    if (!IsValidColor(colors[i]))
+                    {
+                        allValid = false;
+                        break;
+                    }
+                }
+
+                if (allValid)
+                {
+                    // Found valid colors at these offsets
+                    for (int i = 0; i < 5; i++)
+                    {
+                        int colorOffset = menuOffset + offsets[i];
+                        menu.EditableValues.Add(MenuValue.CreateColor(colorNames[i], colors[i], colorOffset));
+
+                        // Also store in Window for display
+                        switch (i)
+                        {
+                            case 0: menu.Window.ForeColor = colors[i]; break;
+                            case 1: menu.Window.BackColor = colors[i]; break;
+                            case 2: menu.Window.BorderColor = colors[i]; break;
+                            case 3: menu.Window.OutlineColor = colors[i]; break;
+                            case 4: menu.Window.DisableColor = colors[i]; break;
+                        }
+                    }
+
+                    Debug.WriteLine($"[MenuListParser] Found colors at offset set starting 0x{offsets[0]:X}");
+                    return;
+                }
+            }
+
+            Debug.WriteLine($"[MenuListParser] Could not find valid color values");
+        }
+
+        /// <summary>
+        /// Validates that a color array contains reasonable values.
+        /// </summary>
+        private static bool IsValidColor(float[] color)
+        {
+            if (color == null || color.Length < 4)
+                return false;
+
+            foreach (var c in color)
+            {
+                // Colors should be in range 0-1 (normalized) or 0-255
+                // Also allow small negative values for effects
+                if (float.IsNaN(c) || float.IsInfinity(c))
+                    return false;
+                if (c < -1 || c > 255)
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>

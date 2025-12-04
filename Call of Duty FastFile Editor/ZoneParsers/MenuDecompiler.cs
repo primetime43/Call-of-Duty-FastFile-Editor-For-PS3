@@ -59,6 +59,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         /// <summary>
         /// Internal method to decompile a single menuDef_t structure.
+        /// Shows editable values (strings, colors, rect) with their offsets tracked.
         /// </summary>
         private void DecompileMenuDefInternal(StringBuilder sb, MenuDef menu, int indentLevel)
         {
@@ -68,16 +69,16 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             sb.AppendLine($"{indent}menuDef");
             sb.AppendLine($"{indent}{{");
 
-            // Menu name - get the actual name from binary or show placeholder (not editable)
+            // Menu name - get the actual name from binary
             string? actualName = menu.Window?.Name ?? menu.Name;
-            bool hasValidName = !string.IsNullOrEmpty(actualName);
+            bool hasValidName = !string.IsNullOrEmpty(actualName) && actualName != "(unnamed)" &&
+                               !actualName.StartsWith("(menu_") && !actualName.StartsWith("(external_");
 
             if (hasValidName)
             {
-                sb.AppendLine($"{indent2}name\t\t\t{actualName}");
+                sb.AppendLine($"{indent2}name\t\t\t\"{actualName}\"");
 
-                // Only track strings that actually exist in the binary data
-                // Placeholder values like "(unnamed)" should NOT be saved back
+                // Track the string offset for editing
                 int nameOffset = FindStringOffset(actualName!, menu.StartOffset, menu.EndOffset);
                 if (nameOffset >= 0)
                 {
@@ -86,53 +87,34 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             }
             else
             {
-                // Show placeholder - this is NOT editable and will NOT be saved
-                sb.AppendLine($"{indent2}name\t\t\t// (no name found in binary)");
+                sb.AppendLine($"{indent2}// name: (not found in binary)");
             }
 
-            // Fullscreen, visible
-            sb.AppendLine($"{indent2}fullscreen\t\t0");
-            sb.AppendLine($"{indent2}visible\t\t\t0");
+            sb.AppendLine();
 
-            // Rect
-            if (menu.Window?.Rect != null)
+            // Display all editable values from the parsed menu
+            if (menu.EditableValues != null && menu.EditableValues.Count > 0)
             {
-                var r = menu.Window.Rect;
-                sb.AppendLine($"{indent2}rect\t\t\t{r.X} {r.Y} {r.W} {r.H} {r.HorzAlign} {r.VertAlign}");
+                sb.AppendLine($"{indent2}// === Editable Binary Values (offset) ===");
+                foreach (var value in menu.EditableValues)
+                {
+                    sb.AppendLine($"{indent2}{value.Name,-16}\t{value.GetDisplayValue()}\t// 0x{value.Offset:X}");
+                }
+                sb.AppendLine();
             }
-            else
-            {
-                sb.AppendLine($"{indent2}rect\t\t\t0 0 640 480 0 0");
-            }
 
-            sb.AppendLine($"{indent2}style\t\t\t0");
-            sb.AppendLine($"{indent2}border\t\t\t0");
-            sb.AppendLine($"{indent2}ownerDraw\t\t0");
-            sb.AppendLine($"{indent2}ownerDrawFlag\t\t0");
-            sb.AppendLine($"{indent2}borderSize\t\t0");
-
-            // Colors
-            sb.AppendLine($"{indent2}foreColor\t\t1 1 1 1");
-            sb.AppendLine($"{indent2}backColor\t\t0 0 0 0");
-            sb.AppendLine($"{indent2}borderColor\t\t0 0 0 0");
-            sb.AppendLine($"{indent2}outlineColor\t\t0 0 0 0");
-            sb.AppendLine($"{indent2}disableColor\t\t0 0 0 0");
-
-            // Fade settings
-            sb.AppendLine($"{indent2}fadeCycle\t\t0");
-            sb.AppendLine($"{indent2}fadeClamp\t\t0");
-            sb.AppendLine($"{indent2}fadeAmount\t\t0");
-            sb.AppendLine($"{indent2}fadeInAmount\t\t0");
-            sb.AppendLine($"{indent2}blurWorld\t\t0");
+            sb.AppendLine($"{indent2}// itemCount: {menu.ItemCount}");
+            sb.AppendLine();
 
             // Event handlers - extract strings from the binary
+            sb.AppendLine($"{indent2}// === Event Handler Strings ===");
             ExtractEventHandlers(sb, menu, indent2);
 
             // Item count
             if (menu.ItemCount > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine($"{indent2}// {menu.ItemCount} items");
+                sb.AppendLine($"{indent2}// === Item Strings ({menu.ItemCount} items) ===");
 
                 // Extract item data
                 ExtractItemDefs(sb, menu, indentLevel + 1);
@@ -169,6 +151,7 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         /// <summary>
         /// Extracts itemDef structures from the menu.
+        /// Only shows editable string values.
         /// </summary>
         private void ExtractItemDefs(StringBuilder sb, MenuDef menu, int indentLevel)
         {
@@ -183,16 +166,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             {
                 if (IsItemRelatedString(itemString.Value))
                 {
-                    sb.AppendLine($"{indent}itemDef");
-                    sb.AppendLine($"{indent}{{");
-                    sb.AppendLine($"{indent2}text\t\t\t\"{itemString.Value}\"");
-                    sb.AppendLine($"{indent2}visible\t\t\t0");
-                    sb.AppendLine($"{indent2}rect\t\t\t0 0 0 0 0 0");
-                    sb.AppendLine($"{indent2}style\t\t\t0");
-                    sb.AppendLine($"{indent2}border\t\t\t0");
-                    sb.AppendLine($"{indent2}foreColor\t\t1 1 1 1");
-                    sb.AppendLine($"{indent2}backColor\t\t0 0 0 0");
-                    sb.AppendLine($"{indent}}}");
+                    sb.AppendLine($"{indent}// String #{itemIndex} (offset 0x{itemString.Offset:X}):");
+                    sb.AppendLine($"{indent}\"{itemString.Value}\"");
                     sb.AppendLine();
 
                     _extractedStrings.Add(itemString);
@@ -346,24 +321,29 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
         /// <summary>
         /// Parses edited text back into strings for saving.
-        /// Matches edited strings to their original offsets.
+        /// Extracts quoted strings in order and matches them to original strings by index.
         /// </summary>
         public static List<(MenuString original, string newValue)> ParseEditedText(
             string editedText, List<MenuString> originalStrings)
         {
             var changes = new List<(MenuString original, string newValue)>();
 
-            // Extract all quoted and unquoted strings from the edited text
-            var editedStrings = ExtractStringsFromText(editedText);
+            if (originalStrings == null || originalStrings.Count == 0)
+                return changes;
 
-            // Match edited strings with original strings
-            foreach (var original in originalStrings)
+            // Extract all quoted strings from the edited text in order
+            var editedStrings = ExtractQuotedStrings(editedText);
+
+            // Match by index - edited strings should be in the same order as original
+            for (int i = 0; i < originalStrings.Count && i < editedStrings.Count; i++)
             {
-                // Try to find this string in the edited text
-                string matchedNew = FindMatchingString(original.Value, editedStrings);
-                if (matchedNew != null && matchedNew != original.Value)
+                string newValue = editedStrings[i];
+                var original = originalStrings[i];
+
+                // Check if the string was modified
+                if (newValue != original.Value)
                 {
-                    changes.Add((original, matchedNew));
+                    changes.Add((original, newValue));
                 }
             }
 
@@ -371,87 +351,180 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
         }
 
         /// <summary>
-        /// Extracts all string values from formatted menu text.
+        /// Parses edited text and updates MenuValue list with new values.
+        /// Returns list of values that were modified.
         /// </summary>
-        private static List<string> ExtractStringsFromText(string text)
+        public static List<MenuValue> ParseEditedValues(string editedText, List<MenuValue> originalValues)
         {
-            var strings = new List<string>();
-            var lines = text.Split('\n');
+            var modifiedValues = new List<MenuValue>();
 
+            if (originalValues == null || originalValues.Count == 0)
+                return modifiedValues;
+
+            // Parse each line looking for value assignments
+            var lines = editedText.Split('\n');
             foreach (var line in lines)
             {
                 string trimmed = line.Trim();
 
                 // Skip comments and braces
-                if (trimmed.StartsWith("//") || trimmed == "{" || trimmed == "}")
+                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//") ||
+                    trimmed == "{" || trimmed == "}")
                     continue;
 
-                // Extract property values
-                // Pattern: property_name<whitespace>value
-                int tabIndex = trimmed.IndexOfAny(new[] { '\t', ' ' });
-                if (tabIndex > 0)
+                // Look for property name at start of line
+                foreach (var value in originalValues)
                 {
-                    string value = trimmed.Substring(tabIndex).Trim();
-
-                    // Handle quoted strings
-                    if (value.StartsWith("\"") && value.EndsWith("\""))
+                    if (trimmed.StartsWith(value.Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        value = value.Substring(1, value.Length - 2);
-                    }
+                        // Extract the value part after the property name
+                        string valuePart = trimmed.Substring(value.Name.Length).Trim();
 
-                    if (!string.IsNullOrEmpty(value) && !IsNumericValue(value))
-                    {
-                        strings.Add(value);
+                        // Remove trailing comment if present
+                        int commentIdx = valuePart.IndexOf("//");
+                        if (commentIdx >= 0)
+                            valuePart = valuePart.Substring(0, commentIdx).Trim();
+
+                        // Parse the value
+                        string originalDisplay = value.GetDisplayValue();
+                        if (value.ParseValue(valuePart))
+                        {
+                            string newDisplay = value.GetDisplayValue();
+                            if (newDisplay != originalDisplay)
+                            {
+                                value.IsModified = true;
+                                if (!modifiedValues.Contains(value))
+                                    modifiedValues.Add(value);
+                            }
+                        }
+                        break;
                     }
                 }
             }
 
-            return strings;
+            return modifiedValues;
         }
 
-        private static string? FindMatchingString(string original, List<string> editedStrings)
+        /// <summary>
+        /// Writes modified MenuValue data back to zone data.
+        /// </summary>
+        public static void ApplyMenuValueChanges(byte[] zoneData, List<MenuValue> values, bool isBigEndian)
         {
-            // First try exact match
-            foreach (var edited in editedStrings)
+            foreach (var value in values)
             {
-                if (edited == original)
-                    return edited;
-            }
+                if (!value.IsModified)
+                    continue;
 
-            // Try to find by similarity (for edited strings)
-            foreach (var edited in editedStrings)
-            {
-                // Check if the edited string is a modified version of the original
-                if (IsSimilar(original, edited))
-                    return edited;
-            }
+                switch (value.Type)
+                {
+                    case MenuValueType.Color:
+                    case MenuValueType.Rect:
+                        // Write 4 floats
+                        for (int i = 0; i < 4; i++)
+                        {
+                            WriteFloat(zoneData, value.Offset + i * 4, value.FloatValues[i], isBigEndian);
+                        }
+                        break;
 
-            return null;
+                    case MenuValueType.Float:
+                        WriteFloat(zoneData, value.Offset, value.FloatValues[0], isBigEndian);
+                        break;
+
+                    case MenuValueType.Int:
+                        WriteInt32(zoneData, value.Offset, value.IntValue, isBigEndian);
+                        break;
+
+                    case MenuValueType.String:
+                        // String writing handled separately (same as MenuString)
+                        break;
+                }
+            }
         }
 
-        private static bool IsSimilar(string a, string b)
+        /// <summary>
+        /// Writes a float to zone data at the specified offset.
+        /// </summary>
+        private static void WriteFloat(byte[] data, int offset, float value, bool isBigEndian)
         {
-            // Simple similarity check - strings that share significant prefix
-            if (a.Length == 0 || b.Length == 0)
-                return false;
+            if (offset + 4 > data.Length)
+                return;
 
-            int commonPrefix = 0;
-            int minLen = Math.Min(a.Length, b.Length);
-            for (int i = 0; i < minLen; i++)
+            byte[] bytes = BitConverter.GetBytes(value);
+            if (isBigEndian)
             {
-                if (a[i] == b[i])
-                    commonPrefix++;
-                else
+                // Reverse byte order for big-endian
+                data[offset] = bytes[3];
+                data[offset + 1] = bytes[2];
+                data[offset + 2] = bytes[1];
+                data[offset + 3] = bytes[0];
+            }
+            else
+            {
+                Array.Copy(bytes, 0, data, offset, 4);
+            }
+        }
+
+        /// <summary>
+        /// Writes an int32 to zone data at the specified offset.
+        /// </summary>
+        private static void WriteInt32(byte[] data, int offset, int value, bool isBigEndian)
+        {
+            if (offset + 4 > data.Length)
+                return;
+
+            if (isBigEndian)
+            {
+                data[offset] = (byte)((value >> 24) & 0xFF);
+                data[offset + 1] = (byte)((value >> 16) & 0xFF);
+                data[offset + 2] = (byte)((value >> 8) & 0xFF);
+                data[offset + 3] = (byte)(value & 0xFF);
+            }
+            else
+            {
+                byte[] bytes = BitConverter.GetBytes(value);
+                Array.Copy(bytes, 0, data, offset, 4);
+            }
+        }
+
+        /// <summary>
+        /// Extracts all quoted string values from the text.
+        /// Returns strings in the order they appear.
+        /// </summary>
+        private static List<string> ExtractQuotedStrings(string text)
+        {
+            var strings = new List<string>();
+            int pos = 0;
+
+            while (pos < text.Length)
+            {
+                // Find opening quote
+                int quoteStart = text.IndexOf('"', pos);
+                if (quoteStart < 0)
                     break;
+
+                // Skip if this quote is in a comment line
+                int lineStart = text.LastIndexOf('\n', quoteStart);
+                if (lineStart < 0) lineStart = 0;
+                string linePrefix = text.Substring(lineStart, quoteStart - lineStart);
+                if (linePrefix.Contains("//"))
+                {
+                    pos = quoteStart + 1;
+                    continue;
+                }
+
+                // Find closing quote
+                int quoteEnd = text.IndexOf('"', quoteStart + 1);
+                if (quoteEnd < 0)
+                    break;
+
+                // Extract the string content (without quotes)
+                string value = text.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+                strings.Add(value);
+
+                pos = quoteEnd + 1;
             }
 
-            return commonPrefix >= minLen / 2;
-        }
-
-        private static bool IsNumericValue(string value)
-        {
-            // Check if value is numeric (including floats and color values)
-            return value.All(c => char.IsDigit(c) || c == '.' || c == '-' || c == ' ');
+            return strings;
         }
     }
 }

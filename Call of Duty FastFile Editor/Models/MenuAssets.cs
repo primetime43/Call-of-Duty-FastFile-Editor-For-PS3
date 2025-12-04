@@ -3,6 +3,174 @@ using System.Text;
 namespace Call_of_Duty_FastFile_Editor.Models
 {
     /// <summary>
+    /// Types of editable menu values.
+    /// </summary>
+    public enum MenuValueType
+    {
+        String,
+        Float,
+        Color,  // 4 floats (vec4)
+        Rect,   // 4 floats + 2 bytes alignment
+        Int
+    }
+
+    /// <summary>
+    /// Represents an editable value extracted from menu binary data with its offset.
+    /// Can be a string, float, color (4 floats), or other numeric value.
+    /// </summary>
+    public class MenuValue
+    {
+        public string Name { get; set; } = string.Empty;
+        public MenuValueType Type { get; set; }
+        public int Offset { get; set; }
+        public int Size { get; set; }
+        public bool IsModified { get; set; }
+
+        // String value
+        public string StringValue { get; set; } = string.Empty;
+
+        // Float/numeric values
+        public float[] FloatValues { get; set; }
+        public int IntValue { get; set; }
+
+        public MenuValue(string name, MenuValueType type, int offset)
+        {
+            Name = name;
+            Type = type;
+            Offset = offset;
+            FloatValues = new float[4];
+        }
+
+        /// <summary>
+        /// Creates a string menu value.
+        /// </summary>
+        public static MenuValue CreateString(string name, string value, int offset, int maxLength)
+        {
+            return new MenuValue(name, MenuValueType.String, offset)
+            {
+                StringValue = value,
+                Size = maxLength
+            };
+        }
+
+        /// <summary>
+        /// Creates a color (vec4) menu value.
+        /// </summary>
+        public static MenuValue CreateColor(string name, float[] values, int offset)
+        {
+            return new MenuValue(name, MenuValueType.Color, offset)
+            {
+                FloatValues = values ?? new float[4],
+                Size = 16  // 4 floats x 4 bytes
+            };
+        }
+
+        /// <summary>
+        /// Creates a rect menu value.
+        /// </summary>
+        public static MenuValue CreateRect(string name, float x, float y, float w, float h, int offset)
+        {
+            return new MenuValue(name, MenuValueType.Rect, offset)
+            {
+                FloatValues = new float[] { x, y, w, h },
+                Size = 16  // 4 floats x 4 bytes (alignment bytes separate)
+            };
+        }
+
+        /// <summary>
+        /// Creates a single float menu value.
+        /// </summary>
+        public static MenuValue CreateFloat(string name, float value, int offset)
+        {
+            return new MenuValue(name, MenuValueType.Float, offset)
+            {
+                FloatValues = new float[] { value, 0, 0, 0 },
+                Size = 4
+            };
+        }
+
+        /// <summary>
+        /// Creates an int menu value.
+        /// </summary>
+        public static MenuValue CreateInt(string name, int value, int offset)
+        {
+            return new MenuValue(name, MenuValueType.Int, offset)
+            {
+                IntValue = value,
+                Size = 4
+            };
+        }
+
+        /// <summary>
+        /// Gets the display string for this value.
+        /// </summary>
+        public string GetDisplayValue()
+        {
+            return Type switch
+            {
+                MenuValueType.String => $"\"{StringValue}\"",
+                MenuValueType.Color => $"{FloatValues[0]:F2} {FloatValues[1]:F2} {FloatValues[2]:F2} {FloatValues[3]:F2}",
+                MenuValueType.Rect => $"{FloatValues[0]:F0} {FloatValues[1]:F0} {FloatValues[2]:F0} {FloatValues[3]:F0}",
+                MenuValueType.Float => $"{FloatValues[0]:F2}",
+                MenuValueType.Int => $"{IntValue}",
+                _ => StringValue
+            };
+        }
+
+        /// <summary>
+        /// Parses a string value and updates this MenuValue.
+        /// Returns true if parsing was successful.
+        /// </summary>
+        public bool ParseValue(string input)
+        {
+            try
+            {
+                switch (Type)
+                {
+                    case MenuValueType.String:
+                        // Remove quotes if present
+                        if (input.StartsWith("\"") && input.EndsWith("\""))
+                            input = input.Substring(1, input.Length - 2);
+                        StringValue = input;
+                        return true;
+
+                    case MenuValueType.Color:
+                    case MenuValueType.Rect:
+                        var parts = input.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 4)
+                        {
+                            for (int i = 0; i < 4; i++)
+                            {
+                                if (float.TryParse(parts[i], out float f))
+                                    FloatValues[i] = f;
+                            }
+                            return true;
+                        }
+                        return false;
+
+                    case MenuValueType.Float:
+                        if (float.TryParse(input, out float fv))
+                        {
+                            FloatValues[0] = fv;
+                            return true;
+                        }
+                        return false;
+
+                    case MenuValueType.Int:
+                        if (int.TryParse(input, out int iv))
+                        {
+                            IntValue = iv;
+                            return true;
+                        }
+                        return false;
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Represents a string extracted from menu binary data with its offset.
     /// Used for tracking editable strings that can be saved back to the zone.
     /// </summary>
@@ -129,6 +297,11 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public List<MenuString> ExtractedStrings { get; set; }
 
         /// <summary>
+        /// Editable values (strings, colors, floats) with their binary offsets.
+        /// </summary>
+        public List<MenuValue> EditableValues { get; set; }
+
+        /// <summary>
         /// The current text content displayed in the editor for this menu.
         /// </summary>
         public string StringContent { get; set; } = string.Empty;
@@ -144,6 +317,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
             FocusColor = new float[4];
             CursorItems = new int[1]; // PC default
             ExtractedStrings = new List<MenuString>();
+            EditableValues = new List<MenuValue>();
         }
 
         public string Name => Window?.Name ?? "(unnamed)";

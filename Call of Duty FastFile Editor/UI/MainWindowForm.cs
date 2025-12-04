@@ -1195,42 +1195,56 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
 
             byte[] zoneData = _openedFastFile.OpenedFastFileZone.Data;
+            bool isBigEndian = true; // PS3 is big-endian
 
             // Iterate over all menus in all menu lists
             foreach (var menuList in _menuLists)
             {
                 foreach (var menu in menuList.Menus)
                 {
-                    if (!menu.HasUnsavedChanges || menu.ExtractedStrings == null)
+                    if (!menu.HasUnsavedChanges)
                         continue;
 
-                    // Parse the formatted text to extract edited strings
-                    var changes = ZoneParsers.MenuDecompiler.ParseEditedText(
-                        menu.StringContent, menu.ExtractedStrings);
-
-                    // Apply each change to the zone data
-                    foreach (var (original, newValue) in changes)
+                    // Parse and apply MenuValue changes (colors, rect, floats, etc.)
+                    if (menu.EditableValues != null && menu.EditableValues.Count > 0)
                     {
-                        if (string.IsNullOrEmpty(newValue))
-                            continue;
+                        var modifiedValues = ZoneParsers.MenuDecompiler.ParseEditedValues(
+                            menu.StringContent, menu.EditableValues);
 
-                        // Write the new string to the zone data at the original offset
-                        // Pad with nulls if shorter, truncate if longer
-                        int maxLength = original.OriginalLength;
-                        string valueToWrite = newValue.Length <= maxLength
-                            ? newValue.PadRight(maxLength, '\0')
-                            : newValue.Substring(0, maxLength);
+                        // Apply the float/color/rect changes to zone data
+                        ZoneParsers.MenuDecompiler.ApplyMenuValueChanges(zoneData, modifiedValues, isBigEndian);
+                    }
 
-                        byte[] newBytes = Encoding.ASCII.GetBytes(valueToWrite);
+                    // Parse and apply string changes
+                    if (menu.ExtractedStrings != null && menu.ExtractedStrings.Count > 0)
+                    {
+                        var stringChanges = ZoneParsers.MenuDecompiler.ParseEditedText(
+                            menu.StringContent, menu.ExtractedStrings);
 
-                        // Copy the new string bytes to the zone data
-                        for (int j = 0; j < maxLength && original.Offset + j < zoneData.Length; j++)
+                        // Apply each string change to the zone data
+                        foreach (var (original, newValue) in stringChanges)
                         {
-                            zoneData[original.Offset + j] = j < newBytes.Length ? newBytes[j] : (byte)0;
-                        }
+                            if (string.IsNullOrEmpty(newValue))
+                                continue;
 
-                        original.Value = newValue;
-                        original.IsModified = true;
+                            // Write the new string to the zone data at the original offset
+                            // Pad with nulls if shorter, truncate if longer
+                            int maxLength = original.OriginalLength;
+                            string valueToWrite = newValue.Length <= maxLength
+                                ? newValue.PadRight(maxLength, '\0')
+                                : newValue.Substring(0, maxLength);
+
+                            byte[] newBytes = Encoding.ASCII.GetBytes(valueToWrite);
+
+                            // Copy the new string bytes to the zone data
+                            for (int j = 0; j < maxLength && original.Offset + j < zoneData.Length; j++)
+                            {
+                                zoneData[original.Offset + j] = j < newBytes.Length ? newBytes[j] : (byte)0;
+                            }
+
+                            original.Value = newValue;
+                            original.IsModified = true;
+                        }
                     }
 
                     // Reset the unsaved changes flag
