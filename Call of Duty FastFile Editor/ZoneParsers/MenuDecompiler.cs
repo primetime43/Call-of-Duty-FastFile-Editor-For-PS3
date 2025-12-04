@@ -68,15 +68,26 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             sb.AppendLine($"{indent}menuDef");
             sb.AppendLine($"{indent}{{");
 
-            // Menu name - this is an editable string
-            string menuName = menu.Window?.Name ?? menu.Name ?? "(unnamed)";
-            sb.AppendLine($"{indent2}name\t\t\t{menuName}");
+            // Menu name - get the actual name from binary or show placeholder (not editable)
+            string? actualName = menu.Window?.Name ?? menu.Name;
+            bool hasValidName = !string.IsNullOrEmpty(actualName);
 
-            // Track the name string if we can find its offset
-            int nameOffset = FindStringOffset(menuName, menu.StartOffset, menu.EndOffset);
-            if (nameOffset >= 0)
+            if (hasValidName)
             {
-                _extractedStrings.Add(new MenuString(menuName, nameOffset, menuName.Length));
+                sb.AppendLine($"{indent2}name\t\t\t{actualName}");
+
+                // Only track strings that actually exist in the binary data
+                // Placeholder values like "(unnamed)" should NOT be saved back
+                int nameOffset = FindStringOffset(actualName!, menu.StartOffset, menu.EndOffset);
+                if (nameOffset >= 0)
+                {
+                    _extractedStrings.Add(new MenuString(actualName!, nameOffset, actualName!.Length));
+                }
+            }
+            else
+            {
+                // Show placeholder - this is NOT editable and will NOT be saved
+                sb.AppendLine($"{indent2}name\t\t\t// (no name found in binary)");
             }
 
             // Fullscreen, visible

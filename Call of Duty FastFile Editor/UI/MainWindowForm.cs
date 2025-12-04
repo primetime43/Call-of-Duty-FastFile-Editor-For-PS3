@@ -1651,6 +1651,14 @@ namespace Call_of_Duty_FastFile_Editor
                 lv.Items.Clear();
                 lv.Columns.Clear();
             }
+
+            // Clear menu files UI
+            menuFilesTreeView.Nodes.Clear();
+            menuFilesTextEditor.ResetText();
+            _selectedMenuList = null;
+            _selectedMenuDef = null;
+            _menuLists?.Clear();
+
             zoneInfoDataGridView.DataSource = null;
             textEditorControlEx1.ResetText();
             loadedFileNameStatusLabel.Visible = false;
