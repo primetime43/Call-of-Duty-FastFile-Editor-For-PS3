@@ -21,6 +21,9 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
         public const byte RawFileAssetType = 0x22;     // 34
         public const byte LocalizeAssetType = 0x19;    // 25
         public const byte StringTableAssetType = 0x23; // 35
+        public const byte MenuFileAssetType = 0x17;    // 23
+        public const byte MaterialAssetType = 0x06;    // 6
+        public const byte TechSetAssetType = 0x09;     // 9
     }
 
     /// <summary>

@@ -44,9 +44,19 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
         byte LocalizeAssetType { get; }
 
         /// <summary>
+        /// Asset type ID for menufile assets.
+        /// </summary>
+        byte MenuFileAssetType { get; }
+
+        /// <summary>
         /// Checks if the given asset type value is a rawfile.
         /// </summary>
         bool IsRawFileType(int assetType);
+
+        /// <summary>
+        /// Checks if the given asset type value is a menufile.
+        /// </summary>
+        bool IsMenuFileType(int assetType);
 
         /// <summary>
         /// Checks if the given asset type value is a localize entry.
@@ -78,5 +88,39 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
         /// <param name="offset">Starting offset to parse from.</param>
         /// <returns>Tuple of parsed LocalizedEntry and the next offset, or null entry if parsing failed.</returns>
         (LocalizedEntry? entry, int nextOffset) ParseLocalizedEntry(byte[] zoneData, int offset);
+
+        /// <summary>
+        /// Parses a menufile/menulist asset from the zone data at the given offset.
+        /// </summary>
+        /// <param name="zoneData">The zone file data.</param>
+        /// <param name="offset">Starting offset to parse from.</param>
+        /// <returns>Parsed MenuList, or null if parsing failed.</returns>
+        MenuList? ParseMenuFile(byte[] zoneData, int offset);
+
+        /// <summary>
+        /// Checks if the given asset type value is a material.
+        /// </summary>
+        bool IsMaterialType(int assetType);
+
+        /// <summary>
+        /// Checks if the given asset type value is a techset.
+        /// </summary>
+        bool IsTechSetType(int assetType);
+
+        /// <summary>
+        /// Parses a material asset from the zone data at the given offset.
+        /// </summary>
+        /// <param name="zoneData">The zone file data.</param>
+        /// <param name="offset">Starting offset to parse from.</param>
+        /// <returns>Parsed MaterialAsset, or null if parsing failed.</returns>
+        MaterialAsset? ParseMaterial(byte[] zoneData, int offset);
+
+        /// <summary>
+        /// Parses a techset asset from the zone data at the given offset.
+        /// </summary>
+        /// <param name="zoneData">The zone file data.</param>
+        /// <param name="offset">Starting offset to parse from.</param>
+        /// <returns>Parsed TechSetAsset, or null if parsing failed.</returns>
+        TechSetAsset? ParseTechSet(byte[] zoneData, int offset);
     }
 }

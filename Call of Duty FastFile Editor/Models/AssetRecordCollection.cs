@@ -12,6 +12,9 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public List<RawFileNode> RawFileNodes { get; set; } = new List<RawFileNode>();
         public List<StringTable> StringTables { get; set; } = new List<StringTable>();
         public List<LocalizedEntry> LocalizedEntries { get; set; } = new List<LocalizedEntry>();
+        public List<MenuList> MenuLists { get; set; } = new List<MenuList>();
+        public List<MaterialAsset> Materials { get; set; } = new List<MaterialAsset>();
+        public List<TechSetAsset> TechSets { get; set; } = new List<TechSetAsset>();
         public List<ZoneAssetRecord> UpdatedRecords { get; set; } = new List<ZoneAssetRecord>();
     }
 

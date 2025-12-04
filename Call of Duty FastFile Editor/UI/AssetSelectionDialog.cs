@@ -33,6 +33,11 @@ namespace Call_of_Duty_FastFile_Editor.UI
         public bool LoadTags { get; private set; } = true;
 
         /// <summary>
+        /// Gets whether to load menufiles.
+        /// </summary>
+        public bool LoadMenuFiles { get; private set; } = true;
+
+        /// <summary>
         /// Creates a new AssetSelectionDialog.
         /// </summary>
         /// <param name="zoneAssetRecords">The asset records from the zone.</param>
@@ -72,7 +77,8 @@ namespace Call_of_Duty_FastFile_Editor.UI
             var result = new List<AssetTypeInfo>();
             foreach (var kvp in assetCounts.OrderByDescending(x => x.Value))
             {
-                bool isSupported = kvp.Key == "rawfile" || kvp.Key == "localize";
+                bool isSupported = kvp.Key == "rawfile" || kvp.Key == "localize" || kvp.Key == "menufile" ||
+                                   kvp.Key == "material" || kvp.Key == "techset";
                 result.Add(new AssetTypeInfo
                 {
                     TypeName = kvp.Key,
@@ -154,6 +160,8 @@ namespace Call_of_Duty_FastFile_Editor.UI
                         LoadLocalizedEntries = item.Checked;
                     else if (asset.TypeName == "tags")
                         LoadTags = item.Checked;
+                    else if (asset.TypeName == "menufile")
+                        LoadMenuFiles = item.Checked;
                 }
             }
 

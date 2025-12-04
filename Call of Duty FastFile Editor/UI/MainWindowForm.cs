@@ -26,6 +26,11 @@ namespace Call_of_Duty_FastFile_Editor
         private List<LocalizedEntry> _localizedEntries;
 
         /// <summary>
+        /// List of menu lists extracted from the zone file.
+        /// </summary>
+        private List<MenuList> _menuLists;
+
+        /// <summary>
         /// List of tags extracted from the zone file.
         /// </summary>
         private TagCollection? _tags;
@@ -104,6 +109,7 @@ namespace Call_of_Duty_FastFile_Editor
             _rawFileNodes = loadRawFiles ? _processResult.RawFileNodes : new List<RawFileNode>();
             RawFileNode.CurrentZone = zone;
             _localizedEntries = loadLocalizedEntries ? _processResult.LocalizedEntries : new List<LocalizedEntry>();
+            _menuLists = _processResult.MenuLists ?? new List<MenuList>();
 
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
@@ -145,6 +151,7 @@ namespace Call_of_Duty_FastFile_Editor
             LoadZoneHeaderValues(_openedFastFile.OpenedFastFileZone);
 
             PopulateLocalizeAssets();
+            PopulateMenuFiles();
             PopulateCollision_Map_Asset_StringData();
         }
 
@@ -896,6 +903,65 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
+        private void PopulateMenuFiles()
+        {
+            // Menu files in CoD are actually rawfiles with .menu extension
+            // Filter rawfiles to show only .menu files (like Red-EyeX32 does)
+            var menuRawFiles = _rawFileNodes?
+                .Where(r => r.FileName != null &&
+                       (r.FileName.EndsWith(".menu", StringComparison.OrdinalIgnoreCase) ||
+                        r.FileName.Contains("menu", StringComparison.OrdinalIgnoreCase) && r.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)))
+                .ToList() ?? new List<RawFileNode>();
+
+            if (menuRawFiles.Count <= 0)
+            {
+                mainTabControl.TabPages.Remove(menuFilesTabPage); // hide the tab page if there's no data to show
+                return;
+            }
+
+            // Ensure the tab is shown
+            if (!mainTabControl.TabPages.Contains(menuFilesTabPage))
+            {
+                mainTabControl.TabPages.Add(menuFilesTabPage);
+            }
+
+            // Clear any existing items and columns.
+            menuFilesListView.Items.Clear();
+            menuFilesListView.Columns.Clear();
+
+            // Set up the ListView.
+            menuFilesListView.View = View.Details;
+            menuFilesListView.FullRowSelect = true;
+            menuFilesListView.GridLines = true;
+
+            // Add the required columns.
+            menuFilesListView.Columns.Add("File Name", 300);
+            menuFilesListView.Columns.Add("Size", 100);
+            menuFilesListView.Columns.Add("Start Offset", 100);
+            menuFilesListView.Columns.Add("End Offset", 100);
+
+            // Loop through each menu rawfile.
+            foreach (var rawFile in menuRawFiles)
+            {
+                // Create a new ListViewItem with the FileName as the main text.
+                ListViewItem lvi = new ListViewItem(rawFile.FileName);
+
+                // Add subitems.
+                lvi.SubItems.Add($"{rawFile.MaxSize} bytes");
+                lvi.SubItems.Add($"0x{rawFile.StartOfFileHeader:X}");
+                lvi.SubItems.Add($"0x{rawFile.RawFileEndPosition:X}");
+
+                // Store the rawfile reference for potential selection handling
+                lvi.Tag = rawFile;
+
+                // Add the ListViewItem to the ListView.
+                menuFilesListView.Items.Add(lvi);
+            }
+
+            // Auto-resize columns to fit header size.
+            menuFilesListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
         private void PopulateCollision_Map_Asset_StringData()
         {
             int offset = Collision_Map_Operations.FindCollision_Map_DataOffsetViaFF(_openedFastFile.OpenedFastFileZone);
@@ -1090,13 +1156,15 @@ namespace Call_of_Duty_FastFile_Editor
         }
 
         /// <summary>
-        /// Populates the Zone Asset Pool list view from the _zoneAssetRecords
+        /// Populates the Zone Asset Pool list view from the _zoneAssetRecords.
+        /// Shows ALL assets from the asset pool, with parsed data where available.
         /// </summary>
         private void LoadAssetPoolIntoListView()
         {
             // Make sure we have valid data
             if (_openedFastFile == null ||
-                _openedFastFile.OpenedFastFileZone == null)
+                _openedFastFile.OpenedFastFileZone == null ||
+                _zoneAssetRecords == null)
             {
                 return;
             }
@@ -1110,99 +1178,130 @@ namespace Call_of_Duty_FastFile_Editor
             assetPoolListView.FullRowSelect = true;
             assetPoolListView.GridLines = true;
 
+            // Get game definition for asset type names
+            var gameDefinition = GameDefinitions.GameDefinitionFactory.GetDefinition(_openedFastFile);
+
             // Count total parsed assets
-            int totalParsed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0);
+            int totalParsed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0) + (_menuLists?.Count ?? 0);
+            int totalAssets = _zoneAssetRecords.Count;
 
             // Columns for the list view
-            assetPoolListView.Columns.Add($"Index ({totalParsed} parsed)", 100);
-            assetPoolListView.Columns.Add("Asset Type", 100);
-            assetPoolListView.Columns.Add("Header Start", 100);
-            assetPoolListView.Columns.Add("Data Start", 100);
-            assetPoolListView.Columns.Add("Data End", 100);
-            assetPoolListView.Columns.Add("Size", 80);
-            assetPoolListView.Columns.Add("Asset End", 100);
+            assetPoolListView.Columns.Add($"Index", 60);
+            assetPoolListView.Columns.Add("Asset Type", 120);
+            assetPoolListView.Columns.Add("Pool Offset", 90);
+            assetPoolListView.Columns.Add("Data Start", 90);
+            assetPoolListView.Columns.Add("Data End", 90);
+            assetPoolListView.Columns.Add("Size", 70);
             assetPoolListView.Columns.Add("Name", 250);
-            assetPoolListView.Columns.Add("Parsing Method", 350);
+            assetPoolListView.Columns.Add("Status", 200);
 
             // Place the asset pool header info at the top
-            var pool = new ListViewItem("");
-            pool.SubItems.Add("Asset Pool");
+            var pool = new ListViewItem("--");
+            pool.SubItems.Add("ASSET POOL");
             pool.SubItems.Add($"0x{_assetPoolStartOffset:X}");
             pool.SubItems.Add($"0x{_assetPoolEndOffset:X}");
             pool.SubItems.Add("");
             pool.SubItems.Add($"0x{(_assetPoolEndOffset - _assetPoolStartOffset):X}");
+            pool.SubItems.Add($"Total: {totalAssets} assets, {totalParsed} parsed");
             pool.SubItems.Add("");
-            pool.SubItems.Add($"Total zone assets: {_zoneAssetRecords?.Count ?? 0}");
-            pool.SubItems.Add("");
+            pool.Font = new System.Drawing.Font(assetPoolListView.Font, System.Drawing.FontStyle.Bold);
             assetPoolListView.Items.Add(pool);
 
-            int index = 1;
+            // Create lookup sets for quick matching against parsed data
+            int rawFileIndex = 0;
+            int localizeIndex = 0;
+            int menuIndex = 0;
 
-            // Add rawfiles from parsed data
-            if (_rawFileNodes != null)
+            // Iterate through ALL asset records from the asset pool
+            for (int i = 0; i < _zoneAssetRecords.Count; i++)
             {
-                foreach (var node in _rawFileNodes)
+                var record = _zoneAssetRecords[i];
+
+                // Get the asset type based on game
+                int assetTypeValue = GetAssetTypeValue(record);
+                string assetTypeName = gameDefinition.GetAssetTypeName(assetTypeValue);
+                bool isRawFile = gameDefinition.IsRawFileType(assetTypeValue);
+                bool isLocalize = gameDefinition.IsLocalizeType(assetTypeValue);
+                bool isMenuFile = gameDefinition.IsMenuFileType(assetTypeValue);
+
+                var lvi = new ListViewItem((i + 1).ToString());
+                lvi.SubItems.Add(assetTypeName);
+                lvi.SubItems.Add($"0x{record.AssetPoolRecordOffset:X}");
+
+                // Check if this record has been parsed by matching against parsed lists
+                bool isParsed = false;
+                string name = "-";
+                string dataStart = "-";
+                string dataEnd = "-";
+                string size = "-";
+                string status = "Not parsed (unsupported type)";
+
+                if (isRawFile && _rawFileNodes != null && rawFileIndex < _rawFileNodes.Count)
                 {
-                    var lvi = new ListViewItem(index.ToString());
-                    lvi.SubItems.Add("rawfile");
-                    lvi.SubItems.Add($"0x{node.StartOfFileHeader:X}");
-                    lvi.SubItems.Add($"0x{node.CodeStartPosition:X}");
-                    lvi.SubItems.Add($"0x{node.CodeEndPosition:X}");
-                    lvi.SubItems.Add($"0x{node.MaxSize:X}");
-                    lvi.SubItems.Add($"0x{node.RawFileEndPosition:X}");
-                    lvi.SubItems.Add(node.FileName ?? string.Empty);
-                    lvi.SubItems.Add(node.AdditionalData ?? "Parsed");
-                    assetPoolListView.Items.Add(lvi);
-                    index++;
+                    var node = _rawFileNodes[rawFileIndex];
+                    isParsed = true;
+                    name = node.FileName ?? "-";
+                    dataStart = $"0x{node.CodeStartPosition:X}";
+                    dataEnd = $"0x{node.CodeEndPosition:X}";
+                    size = $"0x{node.MaxSize:X}";
+                    status = node.AdditionalData ?? "Parsed";
+                    rawFileIndex++;
                 }
-            }
-
-            // Add localize entries from parsed data
-            if (_localizedEntries != null)
-            {
-                foreach (var entry in _localizedEntries)
+                else if (isLocalize && _localizedEntries != null && localizeIndex < _localizedEntries.Count)
                 {
-                    var lvi = new ListViewItem(index.ToString());
-                    lvi.SubItems.Add("localize");
-                    lvi.SubItems.Add($"0x{entry.StartOfFileHeader:X}");
-                    lvi.SubItems.Add($"0x{entry.StartOfFileData:X}");
-                    lvi.SubItems.Add($"0x{entry.EndOfFileData:X}");
-                    int size = entry.EndOfFileData - entry.StartOfFileData;
-                    lvi.SubItems.Add($"0x{size:X}");
-                    lvi.SubItems.Add($"0x{entry.EndOfFileHeader:X}");
-                    lvi.SubItems.Add(entry.Key ?? string.Empty);
-                    lvi.SubItems.Add("Localized asset parsed using structure-based offset.");
-                    assetPoolListView.Items.Add(lvi);
-                    index++;
+                    var entry = _localizedEntries[localizeIndex];
+                    isParsed = true;
+                    name = entry.Key ?? "-";
+                    dataStart = $"0x{entry.StartOfFileHeader:X}";
+                    dataEnd = $"0x{entry.EndOfFileHeader:X}";
+                    int entrySize = entry.EndOfFileHeader - entry.StartOfFileHeader;
+                    size = $"0x{entrySize:X}";
+                    status = "Localized asset parsed";
+                    localizeIndex++;
                 }
-            }
+                else if (isMenuFile && _menuLists != null && menuIndex < _menuLists.Count)
+                {
+                    var menu = _menuLists[menuIndex];
+                    isParsed = true;
+                    name = menu.Name ?? "-";
+                    dataStart = $"0x{menu.DataStartOffset:X}";
+                    dataEnd = $"0x{menu.DataEndOffset:X}";
+                    int menuSize = menu.DataEndOffset - menu.DataStartOffset;
+                    size = $"0x{menuSize:X}";
+                    status = $"MenuList parsed ({menu.MenuCount} menus)";
+                    menuIndex++;
+                }
 
-            // Add the final rawfile terminator entry (required by CoD4/WaW zone format)
-            // This entry exists in the asset table but has no corresponding file data
-            // Note: MW2 does NOT have this terminator - the extra asset records are other asset types
-            int totalDisplayed = (_rawFileNodes?.Count ?? 0) + (_localizedEntries?.Count ?? 0);
-            int totalInZone = _zoneAssetRecords?.Count ?? 0;
-            bool isCoD4OrWaW = _openedFastFile?.IsCod4File == true || _openedFastFile?.IsCod5File == true;
+                lvi.SubItems.Add(dataStart);
+                lvi.SubItems.Add(dataEnd);
+                lvi.SubItems.Add(size);
+                lvi.SubItems.Add(name);
+                lvi.SubItems.Add(status);
 
-            // Only show terminator for CoD4/WaW when there's exactly one more asset than displayed
-            // (the terminator is a single rawfile entry with no data)
-            if (isCoD4OrWaW && totalInZone == totalDisplayed + 1)
-            {
-                var terminator = new ListViewItem(index.ToString());
-                terminator.SubItems.Add("rawfile");
-                terminator.SubItems.Add("-");
-                terminator.SubItems.Add("-");
-                terminator.SubItems.Add("-");
-                terminator.SubItems.Add("-");
-                terminator.SubItems.Add("-");
-                terminator.SubItems.Add("(Final Entry - Terminator)");
-                terminator.SubItems.Add("Asset table terminator entry (no file data)");
-                terminator.ForeColor = System.Drawing.Color.Gray;
-                assetPoolListView.Items.Add(terminator);
+                if (!isParsed)
+                {
+                    lvi.ForeColor = System.Drawing.Color.Gray;
+                }
+
+                assetPoolListView.Items.Add(lvi);
             }
 
             // Auto-resize columns to fit header size or content
             assetPoolListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
+        /// <summary>
+        /// Gets the asset type value from a record based on the current game.
+        /// </summary>
+        private int GetAssetTypeValue(Models.ZoneAssetRecord record)
+        {
+            if (_openedFastFile.IsCod4File)
+                return (int)record.AssetType_COD4;
+            if (_openedFastFile.IsCod5File)
+                return (int)record.AssetType_COD5;
+            if (_openedFastFile.IsMW2File)
+                return (int)record.AssetType_MW2;
+            return 0;
         }
 
         /// <summary>

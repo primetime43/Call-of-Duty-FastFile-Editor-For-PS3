@@ -1,5 +1,6 @@
 using Call_of_Duty_FastFile_Editor.Models;
 using Call_of_Duty_FastFile_Editor.Services;
+using Call_of_Duty_FastFile_Editor.ZoneParsers;
 using System.Diagnostics;
 using System.Text;
 
@@ -18,10 +19,14 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
         public abstract byte[] VersionBytes { get; }
         public abstract byte RawFileAssetType { get; }
         public abstract byte LocalizeAssetType { get; }
+        public virtual byte MenuFileAssetType => 0; // Default 0 means not supported
 
         public virtual bool IsRawFileType(int assetType) => assetType == RawFileAssetType;
         public virtual bool IsLocalizeType(int assetType) => assetType == LocalizeAssetType;
-        public virtual bool IsSupportedAssetType(int assetType) => IsRawFileType(assetType) || IsLocalizeType(assetType);
+        public virtual bool IsMenuFileType(int assetType) => MenuFileAssetType != 0 && assetType == MenuFileAssetType;
+        public virtual bool IsMaterialType(int assetType) => false; // Override in game-specific definitions
+        public virtual bool IsTechSetType(int assetType) => false; // Override in game-specific definitions
+        public virtual bool IsSupportedAssetType(int assetType) => IsRawFileType(assetType) || IsLocalizeType(assetType) || IsMenuFileType(assetType);
         public abstract string GetAssetTypeName(int assetType);
 
         /// <summary>
@@ -152,6 +157,33 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
             Debug.WriteLine($"[{ShortName}] Found localize: key='{key}'");
 
             return (entry, currentOffset);
+        }
+
+        /// <summary>
+        /// Default menufile parsing using MenuListParser.
+        /// </summary>
+        public virtual MenuList? ParseMenuFile(byte[] zoneData, int offset)
+        {
+            Debug.WriteLine($"[{ShortName}] ParseMenuFile at offset 0x{offset:X}");
+            return MenuListParser.ParseMenuList(zoneData, offset, isBigEndian: true);
+        }
+
+        /// <summary>
+        /// Default material parsing using MaterialParser.
+        /// </summary>
+        public virtual MaterialAsset? ParseMaterial(byte[] zoneData, int offset)
+        {
+            Debug.WriteLine($"[{ShortName}] ParseMaterial at offset 0x{offset:X}");
+            return MaterialParser.ParseMaterial(zoneData, offset, isBigEndian: true);
+        }
+
+        /// <summary>
+        /// Default techset parsing using TechSetParser.
+        /// </summary>
+        public virtual TechSetAsset? ParseTechSet(byte[] zoneData, int offset)
+        {
+            Debug.WriteLine($"[{ShortName}] ParseTechSet at offset 0x{offset:X}");
+            return TechSetParser.ParseTechSet(zoneData, offset, isBigEndian: true);
         }
 
         #region Helper Methods

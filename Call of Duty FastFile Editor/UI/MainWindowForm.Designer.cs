@@ -73,6 +73,8 @@ namespace Call_of_Duty_FastFile_Editor
             treeViewMapEnt = new TreeView();
             localizeTabPage = new TabPage();
             localizeListView = new ListView();
+            menuFilesTabPage = new TabPage();
+            menuFilesListView = new ListView();
             tagsTabPage = new TabPage();
             tagsListView = new ListView();
             assetPoolTabPage = new TabPage();
@@ -93,6 +95,7 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.SuspendLayout();
             collision_Map_AssetTabPage.SuspendLayout();
             localizeTabPage.SuspendLayout();
+            menuFilesTabPage.SuspendLayout();
             tagsTabPage.SuspendLayout();
             assetPoolTabPage.SuspendLayout();
             zoneFileTabPage.SuspendLayout();
@@ -518,7 +521,7 @@ namespace Call_of_Duty_FastFile_Editor
             localizeTabPage.UseVisualStyleBackColor = true;
             // 
             // localizeListView
-            // 
+            //
             localizeListView.ContextMenuStrip = universalContextMenu;
             localizeListView.Dock = DockStyle.Fill;
             localizeListView.Location = new Point(3, 3);
@@ -527,7 +530,31 @@ namespace Call_of_Duty_FastFile_Editor
             localizeListView.TabIndex = 0;
             localizeListView.UseCompatibleStateImageBehavior = false;
             localizeListView.MouseDown += listView_MouseDownCopy;
-            // 
+            //
+            // menuFilesTabPage
+            //
+            menuFilesTabPage.Controls.Add(menuFilesListView);
+            menuFilesTabPage.Location = new Point(4, 24);
+            menuFilesTabPage.Name = "menuFilesTabPage";
+            menuFilesTabPage.Padding = new Padding(3);
+            menuFilesTabPage.Size = new Size(1442, 749);
+            menuFilesTabPage.TabIndex = 7;
+            menuFilesTabPage.Text = "Menu Files";
+            menuFilesTabPage.UseVisualStyleBackColor = true;
+            //
+            // menuFilesListView
+            //
+            menuFilesListView.ContextMenuStrip = universalContextMenu;
+            menuFilesListView.Dock = DockStyle.Fill;
+            menuFilesListView.FullRowSelect = true;
+            menuFilesListView.Location = new Point(3, 3);
+            menuFilesListView.Name = "menuFilesListView";
+            menuFilesListView.Size = new Size(1436, 743);
+            menuFilesListView.TabIndex = 0;
+            menuFilesListView.UseCompatibleStateImageBehavior = false;
+            menuFilesListView.View = View.Details;
+            menuFilesListView.MouseDown += listView_MouseDownCopy;
+            //
             // tagsTabPage
             // 
             tagsTabPage.Controls.Add(tagsListView);
@@ -624,6 +651,7 @@ namespace Call_of_Duty_FastFile_Editor
             rawFilesPage.ResumeLayout(false);
             collision_Map_AssetTabPage.ResumeLayout(false);
             localizeTabPage.ResumeLayout(false);
+            menuFilesTabPage.ResumeLayout(false);
             tagsTabPage.ResumeLayout(false);
             assetPoolTabPage.ResumeLayout(false);
             zoneFileTabPage.ResumeLayout(false);
@@ -683,6 +711,8 @@ namespace Call_of_Duty_FastFile_Editor
         private ListView assetPoolListView;
         private TabPage localizeTabPage;
         private ListView localizeListView;
+        private TabPage menuFilesTabPage;
+        private ListView menuFilesListView;
         private ToolStripMenuItem extractAllRawFilesToolStripMenuItem;
         private ToolStripMenuItem increaseFileSizeToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;

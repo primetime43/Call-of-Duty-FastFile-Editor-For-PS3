@@ -313,6 +313,19 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 offset += 8;
             }
 
+            // After loop, check if we're at end marker and skip it
+            // This handles the case where we process exactly 'count' records
+            // and exit the loop without encountering the end marker check
+            if (offset + 8 <= _data.Length &&
+                _data[offset] == 0xFF && _data[offset + 1] == 0xFF &&
+                _data[offset + 2] == 0xFF && _data[offset + 3] == 0xFF &&
+                _data[offset + 4] == 0xFF && _data[offset + 5] == 0xFF &&
+                _data[offset + 6] == 0xFF && _data[offset + 7] == 0xFF)
+            {
+                Debug.WriteLine($"[ReadAssetRecords] Skipping end marker at 0x{offset:X} after processing {records.Count} records");
+                offset += 8;
+            }
+
             return (records, offset);
         }
 
