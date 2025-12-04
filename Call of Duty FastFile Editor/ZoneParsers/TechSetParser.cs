@@ -118,65 +118,87 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             int endOffset = Math.Min(startOffset + maxSearchBytes, zoneData.Length - HEADER_SIZE);
             int ffCount = 0; // Count how many 0xFFFFFFFF we find
             int detailedLogCount = 0; // Limit detailed logging
+            int invalidWorldVertFormat = 0; // Throttle noisy rejects
 
-            for (int pos = startOffset; pos < endOffset; pos++)
+            for (int pos = startOffset; pos < endOffset; pos += 4) // dword-aligned scan to avoid checking every byte
             {
                 // Quick check for 0xFFFFFFFF first
                 uint val = ReadUInt32(zoneData, pos, isBigEndian);
-                if (val == 0xFFFFFFFF)
+                if (val != 0xFFFFFFFF)
+                    continue;
+
+                ffCount++;
+                byte worldVertFormat = pos + 4 < zoneData.Length ? zoneData[pos + 4] : (byte)0xFF;
+
+                // Silent skip for common padding/sentinels
+                if (worldVertFormat == 0xFF)
+                    continue;
+
+                // Throttle noisy invalid values
+                if (worldVertFormat > 0x0B)
                 {
-                    ffCount++;
-                    byte worldVertFormat = pos + 4 < zoneData.Length ? zoneData[pos + 4] : (byte)0xFF;
+                    invalidWorldVertFormat++;
+                    if (invalidWorldVertFormat <= 5 || invalidWorldVertFormat % 500 == 0)
+                        Debug.WriteLine($"[TechSetParser] worldVertFormat=0x{worldVertFormat:X2} at 0x{pos:X}, skipping (count={invalidWorldVertFormat})");
+                    continue;
+                }
 
-                    // Log first few with detailed info
-                    if (detailedLogCount < 20)
+                // Quick sanity check on the first few technique pointers before deeper checks
+                int sampleCount = Math.Min(8, TECHNIQUE_COUNT);
+                int sanePointers = 0;
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    uint techPtr = ReadUInt32(zoneData, pos + 5 + (i * 4), isBigEndian);
+                    if (techPtr == 0x00000000 || techPtr == 0xFFFFFFFF)
+                        sanePointers++;
+                }
+                if (sanePointers < sampleCount - 2) // require most of the first 8 to look valid
+                    continue;
+
+                // Log first few with detailed info
+                if (detailedLogCount < 20)
+                {
+                    detailedLogCount++;
+                    Debug.WriteLine($"[TechSetParser] Found 0xFFFFFFFF #{ffCount} at 0x{pos:X}, worldVertFormat byte=0x{worldVertFormat:X2}");
+
+                    // If worldVertFormat is valid, log more details about what happens
+                    int validPtrs = 0, inlinePtrs = 0;
+                    for (int i = 0; i < Math.Min(10, TECHNIQUE_COUNT); i++)
                     {
-                        detailedLogCount++;
-                        Debug.WriteLine($"[TechSetParser] Found 0xFFFFFFFF #{ffCount} at 0x{pos:X}, worldVertFormat byte=0x{worldVertFormat:X2}");
+                        uint techPtr = ReadUInt32(zoneData, pos + 5 + (i * 4), isBigEndian);
+                        if (techPtr == 0x00000000) validPtrs++;
+                        else if (techPtr == 0xFFFFFFFF) { validPtrs++; inlinePtrs++; }
+                    }
+                    Debug.WriteLine($"[TechSetParser]   First 10 tech ptrs: valid={validPtrs}, inline={inlinePtrs}");
 
-                        // If worldVertFormat is valid, log more details about what happens
-                        if (worldVertFormat <= 0x0B)
+                    // Check what's at the name position
+                    int nameOff = pos + HEADER_SIZE;
+                    if (nameOff < zoneData.Length)
+                    {
+                        string maybeName = ReadNullTerminatedString(zoneData, nameOff);
+                        if (maybeName.Length > 0 && maybeName.Length < 50)
                         {
-                            // Check first few technique pointers to diagnose
-                            int validPtrs = 0, inlinePtrs = 0;
-                            for (int i = 0; i < Math.Min(10, TECHNIQUE_COUNT); i++)
-                            {
-                                uint techPtr = ReadUInt32(zoneData, pos + 5 + (i * 4), isBigEndian);
-                                if (techPtr == 0x00000000) validPtrs++;
-                                else if (techPtr == 0xFFFFFFFF) { validPtrs++; inlinePtrs++; }
-                            }
-                            Debug.WriteLine($"[TechSetParser]   First 10 tech ptrs: valid={validPtrs}, inline={inlinePtrs}");
-
-                            // Check what's at the name position
-                            int nameOff = pos + HEADER_SIZE;
-                            if (nameOff < zoneData.Length)
-                            {
-                                string maybeName = ReadNullTerminatedString(zoneData, nameOff);
-                                if (maybeName.Length > 0 && maybeName.Length < 50)
-                                {
-                                    Debug.WriteLine($"[TechSetParser]   String at header end (0x{nameOff:X}): '{maybeName}'");
-                                }
-                            }
+                            Debug.WriteLine($"[TechSetParser]   String at header end (0x{nameOff:X}): '{maybeName}'");
                         }
                     }
-                    else if (ffCount % 500 == 0)
-                    {
-                        Debug.WriteLine($"[TechSetParser] ... found {ffCount} 0xFFFFFFFF markers so far at 0x{pos:X}");
-                    }
+                }
+                else if (ffCount % 500 == 0)
+                {
+                    Debug.WriteLine($"[TechSetParser] ... found {ffCount} 0xFFFFFFFF markers so far at 0x{pos:X}");
+                }
 
-                    if (LooksLikeTechSetHeader(zoneData, pos, isBigEndian))
+                if (LooksLikeTechSetHeader(zoneData, pos, isBigEndian))
+                {
+                    Debug.WriteLine($"[TechSetParser] Header pattern matched at 0x{pos:X}, trying to parse...");
+                    var result = TryParseTechSetAt(zoneData, pos, isBigEndian);
+                    if (result != null)
                     {
-                        Debug.WriteLine($"[TechSetParser] Header pattern matched at 0x{pos:X}, trying to parse...");
-                        var result = TryParseTechSetAt(zoneData, pos, isBigEndian);
-                        if (result != null)
-                        {
-                            Debug.WriteLine($"[TechSetParser] Successfully parsed techset '{result.Name}' at 0x{pos:X}");
-                            return result;
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"[TechSetParser] Parse failed at 0x{pos:X}");
-                        }
+                        Debug.WriteLine($"[TechSetParser] Successfully parsed techset '{result.Name}' at 0x{pos:X}");
+                        return result;
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[TechSetParser] Parse failed at 0x{pos:X}");
                     }
                 }
             }
@@ -206,8 +228,11 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             byte worldVertFormat = data[offset + 4];
             if (worldVertFormat > 0x0B)
             {
-                // Debug: log if worldVertFormat is out of range
-                Debug.WriteLine($"[TechSetParser] At 0x{offset:X}: worldVertFormat=0x{worldVertFormat:X2} > 0x0B, rejecting");
+                // Debug: log if worldVertFormat is out of range (ignore common 0xFF padding)
+                if (worldVertFormat != 0xFF)
+                {
+                    Debug.WriteLine($"[TechSetParser] At 0x{offset:X}: worldVertFormat=0x{worldVertFormat:X2} > 0x0B, rejecting");
+                }
                 return false;
             }
 
