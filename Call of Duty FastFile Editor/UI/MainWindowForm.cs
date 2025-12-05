@@ -2033,6 +2033,8 @@ namespace Call_of_Duty_FastFile_Editor
 
         private static string? PromptForLocalizeEdit(string key, string currentText)
         {
+            int originalLength = currentText?.Length ?? 0;
+
             using var form = new Form
             {
                 Text = $"Edit Localize: {key}",
@@ -2050,6 +2052,12 @@ namespace Call_of_Duty_FastFile_Editor
                 Location = new Point(10, 10)
             };
 
+            var charCountLabel = new Label
+            {
+                AutoSize = true,
+                Location = new Point(10, 310)
+            };
+
             var textbox = new TextBox
             {
                 Multiline = true,
@@ -2059,10 +2067,24 @@ namespace Call_of_Duty_FastFile_Editor
                 Text = currentText
             };
 
+            // Update character count label
+            void UpdateCharCount()
+            {
+                int current = textbox.Text?.Length ?? 0;
+                string status = current > originalLength ? " (will rebuild zone)" :
+                               current < originalLength ? " (will pad with spaces)" : "";
+                charCountLabel.Text = $"Characters: {current} / Original: {originalLength}{status}";
+                charCountLabel.ForeColor = current > originalLength ? Color.OrangeRed : SystemColors.ControlText;
+            }
+
+            textbox.TextChanged += (s, e) => UpdateCharCount();
+            UpdateCharCount(); // Initial update
+
             var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(455, 320), Width = 80 };
             var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(550, 320), Width = 80 };
 
             form.Controls.Add(label);
+            form.Controls.Add(charCountLabel);
             form.Controls.Add(textbox);
             form.Controls.Add(ok);
             form.Controls.Add(cancel);
