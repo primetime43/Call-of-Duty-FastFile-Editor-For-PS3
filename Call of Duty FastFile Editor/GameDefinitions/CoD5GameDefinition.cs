@@ -22,7 +22,8 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
         public byte TechSetAssetType => CoD5Definition.TechSetAssetType;
 
         // Maximum bytes to search forward for alignment/padding
-        private const int MAX_ALIGNMENT_SEARCH = 64;
+        // WaW localize entries may have larger gaps between them
+        private const int MAX_ALIGNMENT_SEARCH = 512;
 
         public override string GetAssetTypeName(int assetType)
         {
@@ -196,32 +197,24 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
 
         /// <summary>
         /// Validates that a string looks like a valid localization key.
-        /// Valid keys are typically in SCREAMING_SNAKE_CASE format:
-        /// - Start with an uppercase letter
-        /// - Contain only uppercase letters, digits, and underscores
-        /// - Reasonable length (2-100 characters)
-        /// - Must contain at least one underscore (helps filter false positives like filenames)
+        /// Keys are typically in SCREAMING_SNAKE_CASE but may vary by game.
         /// </summary>
         private static bool IsValidLocalizeKey(string key)
         {
-            if (string.IsNullOrEmpty(key) || key.Length < 2 || key.Length > 100)
+            if (string.IsNullOrEmpty(key) || key.Length < 2 || key.Length > 150)
                 return false;
 
-            // Must start with an uppercase letter
-            if (!char.IsUpper(key[0]))
+            // Must start with a letter
+            if (!char.IsLetter(key[0]))
                 return false;
 
-            // Check all characters are valid (uppercase letters, digits, underscores)
+            // Check all characters are valid (letters, digits, underscores)
+            // Allow both upper and lower case for flexibility across game versions
             foreach (char c in key)
             {
-                if (!char.IsUpper(c) && !char.IsDigit(c) && c != '_')
+                if (!char.IsLetterOrDigit(c) && c != '_')
                     return false;
             }
-
-            // Must contain at least one underscore (most localization keys do)
-            // This helps filter out false positives like filenames
-            if (!key.Contains('_'))
-                return false;
 
             return true;
         }

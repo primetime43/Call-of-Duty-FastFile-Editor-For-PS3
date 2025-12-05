@@ -321,41 +321,45 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
                 if (remainingLocalizes > 0)
                 {
-                    // Find the first localize marker (limited search, not entire zone)
-                    int localizeStartOffset = FindFirstLocalizeMarker(zoneData, searchStartOffset,
-                        Math.Min(searchStartOffset + 100000, zoneData.Length)); // Search up to 100KB
+                    // WaW localize entries are NOT stored consecutively - they're scattered throughout the zone
+                    // Use pattern matching to find each entry independently
+                    int localizeSearchOffset = searchStartOffset;
+                    int localizesParsed = 0;
+                    int maxSearchEnd = zoneData.Length;
 
-                    if (localizeStartOffset >= 0)
+                    Debug.WriteLine($"[AssetRecordProcessor] Searching for {remainingLocalizes} localize entries using pattern matching from 0x{localizeSearchOffset:X}");
+
+                    while (localizesParsed < remainingLocalizes && localizeSearchOffset < maxSearchEnd)
                     {
-                        Debug.WriteLine($"[AssetRecordProcessor] Found first localize marker at 0x{localizeStartOffset:X}");
+                        // Find the next localize marker
+                        int markerOffset = FindFirstLocalizeMarker(zoneData, localizeSearchOffset, maxSearchEnd);
 
-                        // Parse localizes sequentially using structure-based parser
-                        int localizeCurrentOffset = localizeStartOffset;
-                        int localizesParsed = 0;
-
-                        while (localizesParsed < remainingLocalizes && localizeCurrentOffset < zoneData.Length)
+                        if (markerOffset < 0)
                         {
-                            var (entry, nextOffset) = gameDefinition.ParseLocalizedEntry(zoneData, localizeCurrentOffset);
-
-                            if (entry == null || nextOffset <= localizeCurrentOffset)
-                            {
-                                Debug.WriteLine($"[AssetRecordProcessor] Failed to parse localize #{localizesParsed + 1} at 0x{localizeCurrentOffset:X}");
-                                break;
-                            }
-
-                            result.LocalizedEntries.Add(entry);
-                            localizesParsed++;
-                            Debug.WriteLine($"[AssetRecordProcessor] Parsed localize #{localizesParsed}: '{entry.Key}' at 0x{localizeCurrentOffset:X}");
-
-                            localizeCurrentOffset = nextOffset;
+                            Debug.WriteLine($"[AssetRecordProcessor] No more localize markers found after 0x{localizeSearchOffset:X}");
+                            break;
                         }
 
-                        Debug.WriteLine($"[AssetRecordProcessor] Sequential parsing found {localizesParsed} localized entries");
+                        // Try to parse the localize entry at this marker
+                        var (entry, nextOffset) = gameDefinition.ParseLocalizedEntry(zoneData, markerOffset);
+
+                        if (entry != null && nextOffset > markerOffset)
+                        {
+                            result.LocalizedEntries.Add(entry);
+                            localizesParsed++;
+                            Debug.WriteLine($"[AssetRecordProcessor] Parsed localize #{localizesParsed}: '{entry.Key}' at 0x{markerOffset:X}");
+                            // Continue searching from after this entry
+                            localizeSearchOffset = nextOffset;
+                        }
+                        else
+                        {
+                            // Marker found but parsing failed - skip past this marker and continue searching
+                            Debug.WriteLine($"[AssetRecordProcessor] Marker at 0x{markerOffset:X} failed to parse, continuing search");
+                            localizeSearchOffset = markerOffset + 8;
+                        }
                     }
-                    else
-                    {
-                        Debug.WriteLine($"[AssetRecordProcessor] Could not find localize marker in search range");
-                    }
+
+                    Debug.WriteLine($"[AssetRecordProcessor] Pattern matching found {localizesParsed} localized entries");
                 }
 
                 // For techsets, use pattern matching to find them
@@ -608,27 +612,24 @@ namespace Call_of_Duty_FastFile_Editor.Services
 
         /// <summary>
         /// Validates that a string looks like a valid localization key.
-        /// Valid keys are in SCREAMING_SNAKE_CASE format.
+        /// Keys are typically in SCREAMING_SNAKE_CASE but may vary by game.
         /// </summary>
         private static bool IsValidLocalizeKey(string key)
         {
-            if (string.IsNullOrEmpty(key) || key.Length < 2 || key.Length > 100)
+            if (string.IsNullOrEmpty(key) || key.Length < 2 || key.Length > 150)
                 return false;
 
-            // Must start with an uppercase letter
-            if (!char.IsUpper(key[0]))
+            // Must start with a letter
+            if (!char.IsLetter(key[0]))
                 return false;
 
-            // Check all characters are valid (uppercase letters, digits, underscores)
+            // Check all characters are valid (letters, digits, underscores)
+            // Allow both upper and lower case for flexibility across game versions
             foreach (char c in key)
             {
-                if (!char.IsUpper(c) && !char.IsDigit(c) && c != '_')
+                if (!char.IsLetterOrDigit(c) && c != '_')
                     return false;
             }
-
-            // Must contain at least one underscore
-            if (!key.Contains('_'))
-                return false;
 
             return true;
         }
