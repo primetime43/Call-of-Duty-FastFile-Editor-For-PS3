@@ -157,22 +157,26 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
 
             string localizedValue;
             string key;
+            int keyStartOffset;
 
             if (valuePointerIsFF)
             {
                 // Case A: Both pointers are FF - read value then key
                 localizedValue = ReadNullTerminatedString(zoneData, currentOffset);
-                currentOffset += Encoding.UTF8.GetByteCount(localizedValue) + 1;
+                // Use Length, not UTF8.GetByteCount - we read byte-by-byte, each byte = one char
+                currentOffset += localizedValue.Length + 1;
 
+                keyStartOffset = currentOffset; // Track where key starts for in-place patching
                 key = ReadNullTerminatedString(zoneData, currentOffset);
-                currentOffset += Encoding.UTF8.GetByteCount(key) + 1;
+                currentOffset += key.Length + 1;
             }
             else
             {
                 // Case B: Only key pointer is FF - value is empty, read only key
                 localizedValue = string.Empty;
+                keyStartOffset = currentOffset; // Key starts immediately after marker
                 key = ReadNullTerminatedString(zoneData, currentOffset);
-                currentOffset += Encoding.UTF8.GetByteCount(key) + 1;
+                currentOffset += key.Length + 1;
                 Debug.WriteLine($"[COD5] Key-only entry (empty value): {key}");
             }
 
@@ -188,7 +192,8 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
                 Key = key,
                 LocalizedText = localizedValue,
                 StartOfFileHeader = offset,
-                EndOfFileHeader = currentOffset
+                EndOfFileHeader = currentOffset,
+                KeyStartOffset = keyStartOffset
             };
 
             Debug.WriteLine($"[COD5] Parsed localize: key='{key}', valueLen={localizedValue.Length}, range=0x{offset:X}-0x{currentOffset:X}");

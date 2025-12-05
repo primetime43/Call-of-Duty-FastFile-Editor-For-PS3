@@ -65,7 +65,8 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
             Debug.WriteLine($"[RawFile] Inline name read: '{inlineName}'.");
 
             // Calculate the total bytes consumed by the file name (including null terminator)
-            int nameByteCount = Encoding.UTF8.GetByteCount(inlineName) + 1;
+            // Use Length, not UTF8.GetByteCount - we read byte-by-byte, each byte = one char
+            int nameByteCount = inlineName.Length + 1;
 
             // File data starts immediately after the file name
             int fileDataOffset = fileNameOffset + nameByteCount;

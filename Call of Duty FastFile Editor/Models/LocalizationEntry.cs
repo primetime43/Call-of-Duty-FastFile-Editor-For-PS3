@@ -41,6 +41,12 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public int StartOfFileData { get; set; }
         public int EndOfFileData { get; set; }
 
+        /// <summary>
+        /// Original offset in zone where the key starts (after text null terminator).
+        /// Used for in-place patching to keep key at its original position.
+        /// </summary>
+        public int KeyStartOffset { get; set; }
+
         public void UpdateAssetRecord(ref ZoneAssetRecord assetRecord)
         {
             assetRecord.AssetDataStartPosition = this.StartOfFileHeader;

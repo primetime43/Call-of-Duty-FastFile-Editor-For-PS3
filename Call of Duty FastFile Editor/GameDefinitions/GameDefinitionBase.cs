@@ -80,7 +80,8 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
             node.FileName = fileName;
 
             // Calculate filename byte length including null terminator
-            int nameByteCount = Encoding.UTF8.GetByteCount(fileName) + 1;
+            // Use Length, not UTF8.GetByteCount - we read byte-by-byte, each byte = one char
+            int nameByteCount = fileName.Length + 1;
             int fileDataOffset = fileNameOffset + nameByteCount;
 
             // Check if data fits in zone, or if we need to read truncated data
@@ -155,16 +156,23 @@ namespace Call_of_Duty_FastFile_Editor.GameDefinitions
 
             // Read localized value (null-terminated)
             string localizedValue = ReadNullTerminatedString(zoneData, currentOffset);
-            currentOffset += Encoding.UTF8.GetByteCount(localizedValue) + 1;
+            // Use Length, not UTF8.GetByteCount - we read byte-by-byte, each byte = one char
+            currentOffset += localizedValue.Length + 1;
+
+            // Track where key starts for in-place patching
+            int keyStartOffset = currentOffset;
 
             // Read key/reference (null-terminated)
             string key = ReadNullTerminatedString(zoneData, currentOffset);
-            currentOffset += Encoding.UTF8.GetByteCount(key) + 1;
+            currentOffset += key.Length + 1;
 
             var entry = new LocalizedEntry
             {
                 Key = key,
-                LocalizedText = localizedValue
+                LocalizedText = localizedValue,
+                StartOfFileHeader = offset,
+                EndOfFileHeader = currentOffset,
+                KeyStartOffset = keyStartOffset
             };
 
             Debug.WriteLine($"[{ShortName}] Found localize: key='{key}'");

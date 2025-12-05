@@ -366,6 +366,10 @@ namespace Call_of_Duty_FastFile_Editor
                 // Count changes
                 int rawFileChangeCount = 0;
                 int menuChangeCount = 0;
+                int localizeChangeCount = 0;
+
+                // Debug: trace through save conditions
+                System.Diagnostics.Debug.WriteLine($"[SAVE] _hasUnsavedChanges={_hasUnsavedChanges}, _localizedEntries={_localizedEntries?.Count ?? -1}, _originalLocalizeCount={_originalLocalizeCount}");
 
                 // Apply raw file changes in place (patch directly into zone data)
                 if (_rawFileNodes != null)
@@ -425,8 +429,39 @@ namespace Call_of_Duty_FastFile_Editor
                     }
                 }
 
+                // Apply localize changes in place (if the form-level dirty flag indicates changes)
+                System.Diagnostics.Debug.WriteLine($"[SAVE] Checking localize save: _hasUnsavedChanges={_hasUnsavedChanges}, entries={_localizedEntries?.Count ?? -1}");
+                if (_hasUnsavedChanges && _localizedEntries != null && _localizedEntries.Count > 0)
+                {
+                    bool canPatch = CanPatchLocalizeInPlace();
+                    System.Diagnostics.Debug.WriteLine($"[SAVE] CanPatchLocalizeInPlace={canPatch}");
+                    // Try to patch localize entries in place
+                    if (canPatch)
+                    {
+                        if (PatchLocalizeEntriesInPlace())
+                        {
+                            localizeChangeCount = _localizedEntries.Count; // Count all as changed (we don't track individual entries)
+                        }
+                    }
+                    else if (_hasUnsupportedAssets)
+                    {
+                        // Can't patch in place and has unsupported assets - warn user
+                        var unsupportedTypes = ZoneFileBuilder.GetUnsupportedAssetInfo(
+                            _openedFastFile.OpenedFastFileZone, _openedFastFile);
+                        var typeList = string.Join(", ", unsupportedTypes.Distinct().Take(5));
+
+                        MessageBox.Show(
+                            $"Localize changes cannot be saved in place (text size increased or entries added).\n\n" +
+                            $"This zone contains unsupported asset types ({typeList}).\n" +
+                            $"Use 'Save & Close' to rebuild the zone (will lose unsupported assets).",
+                            "Localize Changes",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                    }
+                }
+
                 // Check if there were any changes
-                if (rawFileChangeCount == 0 && menuChangeCount == 0)
+                if (rawFileChangeCount == 0 && menuChangeCount == 0 && localizeChangeCount == 0)
                 {
                     MessageBox.Show("No changes to save.", "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
@@ -442,12 +477,16 @@ namespace Call_of_Duty_FastFile_Editor
                 var changes = new List<string>();
                 if (rawFileChangeCount > 0) changes.Add($"{rawFileChangeCount} raw file(s)");
                 if (menuChangeCount > 0) changes.Add($"{menuChangeCount} menu(s)");
+                if (localizeChangeCount > 0) changes.Add("localize entries");
 
                 MessageBox.Show($"Fast File saved to:\n\n{_openedFastFile.FfFilePath}\n\n" +
                                 $"Patched {string.Join(" and ", changes)} in place. All assets preserved.",
                                 "Saved",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Asterisk);
+
+                // Reset dirty flag after successful save
+                _hasUnsavedChanges = false;
 
                 // Remove asterisk from title
                 if (this.Text.EndsWith("*"))
@@ -1512,8 +1551,10 @@ namespace Call_of_Duty_FastFile_Editor
                     string savedPath = _openedFastFile.FfFilePath;
 
                     // If no changes were made, just close without saving
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] SaveCloseFastFileAndCleanUp: _hasUnsavedChanges = {_hasUnsavedChanges}");
                     if (!_hasUnsavedChanges)
                     {
+                        System.Diagnostics.Debug.WriteLine("[DEBUG] No unsaved changes, closing without saving");
                         if (deleteZoneFile)
                         {
                             try { File.Delete(_openedFastFile.ZoneFilePath); }
@@ -1631,27 +1672,46 @@ namespace Call_of_Duty_FastFile_Editor
         private bool CanPatchLocalizeInPlace()
         {
             if (_localizedEntries == null || _openedFastFile?.OpenedFastFileZone?.Data == null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CanPatch] null check failed: entries={_localizedEntries != null}, zoneData={_openedFastFile?.OpenedFastFileZone?.Data != null}");
                 return false;
+            }
 
             // If new entries were added, can't patch in place
             if (_localizedEntries.Count > _originalLocalizeCount)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CanPatch] new entries added: current={_localizedEntries.Count}, original={_originalLocalizeCount}");
                 return false;
+            }
 
             // Check each entry - if any has increased in size, can't patch
             foreach (var entry in _localizedEntries)
             {
                 // New entries (StartOfFileHeader == 0) can't be patched
                 if (entry.StartOfFileHeader == 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[CanPatch] entry has StartOfFileHeader=0: {entry.Key}");
                     return false;
+                }
 
-                // Calculate original size vs new size
-                int originalTotalSize = entry.EndOfFileHeader - entry.StartOfFileHeader - 8; // minus 8-byte marker
-                int newTotalSize = (entry.TextBytes?.Length ?? 0) + 1 + (entry.KeyBytes?.Length ?? 0) + 1; // +1 for each null terminator
+                // For Case B entries (empty text), there's no text field - nothing to check
+                int textLen = entry.TextBytes?.Length ?? 0;
+                if (textLen == 0)
+                    continue; // Case B entries don't need size check - key stays in place
 
-                if (newTotalSize > originalTotalSize)
+                // For Case A entries: check if new text + null fits before the key
+                // Available space for text = KeyStartOffset - (StartOfFileHeader + 8)
+                int textAreaSize = entry.KeyStartOffset - entry.StartOfFileHeader - 8;
+                int newTextSize = textLen + 1; // text + null terminator
+
+                if (newTextSize > textAreaSize)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[CanPatch] text too large: {entry.Key}, available={textAreaSize}, new={newTextSize}");
                     return false;
+                }
             }
 
+            System.Diagnostics.Debug.WriteLine($"[CanPatch] all checks passed, returning true");
             return true;
         }
 
@@ -1672,33 +1732,30 @@ namespace Call_of_Duty_FastFile_Editor
                     continue; // Skip new entries (shouldn't happen if CanPatchLocalizeInPlace was checked)
 
                 int textStart = entry.StartOfFileHeader + 8; // After the FF marker
-                int originalTotalSize = entry.EndOfFileHeader - textStart;
-
-                // Build the new content: [TextBytes\0][KeyBytes\0] padded with nulls
                 byte[] textBytes = entry.TextBytes ?? Array.Empty<byte>();
-                byte[] keyBytes = entry.KeyBytes ?? Array.Empty<byte>();
-                int newContentSize = textBytes.Length + 1 + keyBytes.Length + 1;
 
-                // Write text bytes
+                // Case B (empty text): Key stays at its original position, nothing to patch
+                if (textBytes.Length == 0)
+                    continue;
+
+                // Case A (has text): Write new text, pad with nulls until key position
+                // The key stays at its original position (KeyStartOffset) - we don't touch it
                 int pos = textStart;
+
+                // Write new text bytes
                 for (int i = 0; i < textBytes.Length && pos < zoneData.Length; i++, pos++)
                     zoneData[pos] = textBytes[i];
 
-                // Write text null terminator
+                // Pad with spaces from end of new text up to where the key starts (minus 1 for null terminator)
+                // Using spaces (0x20) instead of nulls to avoid parser issues
+                while (pos < entry.KeyStartOffset - 1 && pos < zoneData.Length)
+                    zoneData[pos++] = 0x20; // Space character
+
+                // Write text null terminator right before the key
                 if (pos < zoneData.Length)
                     zoneData[pos++] = 0x00;
 
-                // Write key bytes
-                for (int i = 0; i < keyBytes.Length && pos < zoneData.Length; i++, pos++)
-                    zoneData[pos] = keyBytes[i];
-
-                // Write key null terminator
-                if (pos < zoneData.Length)
-                    zoneData[pos++] = 0x00;
-
-                // Pad remaining space with nulls (to maintain original size)
-                while (pos < entry.EndOfFileHeader && pos < zoneData.Length)
-                    zoneData[pos++] = 0x00;
+                // Key remains untouched at its original position
             }
 
             // Write the patched zone data back to file
@@ -1919,6 +1976,7 @@ namespace Call_of_Duty_FastFile_Editor
             _processResult.LocalizedEntries = _localizedEntries;
             localizeToolsMenuItem.Enabled = _localizedEntries.Count > 0;
             _hasUnsavedChanges = true; // Mark as modified
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Localize entry modified: {entry.Key}, _hasUnsavedChanges = {_hasUnsavedChanges}");
         }
 
         private static string? PromptForLocalizeEdit(string key, string currentText)
