@@ -7,6 +7,8 @@ using Call_of_Duty_FastFile_Editor.UI;
 using Call_of_Duty_FastFile_Editor.ZoneParsers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using static Call_of_Duty_FastFile_Editor.Service.GitHubReleaseChecker;
@@ -24,6 +26,18 @@ namespace Call_of_Duty_FastFile_Editor
         private List<RawFileNode> _rawFileNodes;
 
         private List<LocalizedEntry> _localizedEntries;
+
+        /// <summary>
+        /// Tracks whether the zone contains unsupported asset types.
+        /// If true, full zone rebuild would lose these assets.
+        /// </summary>
+        private bool _hasUnsupportedAssets;
+
+        /// <summary>
+        /// Original count of localize entries when file was loaded.
+        /// Used to detect if new entries have been added.
+        /// </summary>
+        private int _originalLocalizeCount;
 
         /// <summary>
         /// List of menu lists extracted from the zone file.
@@ -79,6 +93,7 @@ namespace Call_of_Duty_FastFile_Editor
             _rawFileService = rawFileService;
             textEditorControlEx1.SyntaxHighlighting = "C#";
             this.SetProgramTitle();
+            localizeListView.DoubleClick += localizeListView_DoubleClick;
 
             // Universal toolstrip menu item
             copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
@@ -126,6 +141,10 @@ namespace Call_of_Duty_FastFile_Editor
             _localizedEntries = loadLocalizedEntries ? _processResult.LocalizedEntries : new List<LocalizedEntry>();
             _menuLists = _processResult.MenuLists ?? new List<MenuList>();
             _techSets = _processResult.TechSets ?? new List<TechSetAsset>();
+
+            // Track unsupported assets and original counts for safe save detection
+            _hasUnsupportedAssets = !ZoneFileBuilder.ContainsOnlySupportedAssets(zone, _openedFastFile);
+            _originalLocalizeCount = _localizedEntries?.Count ?? 0;
 
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
@@ -181,6 +200,7 @@ namespace Call_of_Duty_FastFile_Editor
             renameRawFileToolStripMenuItem.Enabled = true;
             saveFastFileToolStripMenuItem.Enabled = true;
             saveFastFileAsToolStripMenuItem.Enabled = true;
+            localizeToolsMenuItem.Enabled = _localizedEntries != null && _localizedEntries.Count > 0;
         }
 
         /// <summary>
@@ -996,6 +1016,10 @@ namespace Call_of_Duty_FastFile_Editor
                 return;
             }
 
+            // Re-add the tab page if it was previously removed
+            if (!mainTabControl.TabPages.Contains(localizeTabPage))
+                mainTabControl.TabPages.Add(localizeTabPage);
+
             // Clear any existing items and columns.
             localizeListView.Items.Clear();
             localizeListView.Columns.Clear();
@@ -1480,10 +1504,64 @@ namespace Call_of_Duty_FastFile_Editor
                     // Store the path before we null it out
                     string savedPath = _openedFastFile.FfFilePath;
 
-                    // Always save before closing
+                    bool useInPlacePatching = false;
+                    bool proceedWithSave = true;
+
+                    // Determine save strategy based on unsupported assets and changes
+                    if (_hasUnsupportedAssets)
+                    {
+                        if (CanPatchLocalizeInPlace())
+                        {
+                            // Safe to patch in place - preserves unsupported assets
+                            useInPlacePatching = true;
+                        }
+                        else
+                        {
+                            // Need full rebuild but will lose unsupported assets - warn user
+                            var unsupportedTypes = ZoneFileBuilder.GetUnsupportedAssetInfo(
+                                _openedFastFile.OpenedFastFileZone, _openedFastFile);
+                            var typeList = string.Join(", ", unsupportedTypes.Distinct().Take(5));
+                            if (unsupportedTypes.Count > 5) typeList += ", ...";
+
+                            var result = MessageBox.Show(
+                                $"This zone contains unsupported asset types ({typeList}).\n\n" +
+                                $"Your changes require a full zone rebuild, which will REMOVE these unsupported assets.\n\n" +
+                                $"Do you want to continue saving?",
+                                "Warning: Unsupported Assets Will Be Lost",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Warning);
+
+                            proceedWithSave = (result == DialogResult.Yes);
+                        }
+                    }
+
+                    if (!proceedWithSave)
+                        return;
+
+                    // Apply changes to zone file
+                    bool saveSuccess;
+                    if (useInPlacePatching)
+                    {
+                        // Patch localize entries in place (preserves unsupported assets)
+                        saveSuccess = PatchLocalizeEntriesInPlace();
+                    }
+                    else
+                    {
+                        // Full zone rebuild
+                        saveSuccess = RebuildZoneWithCurrentData();
+                    }
+
+                    if (!saveSuccess)
+                    {
+                        MessageBox.Show("Failed to save zone file changes; FastFile was not saved.", "Save Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // Recompress zone -> ff
                     _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
 
-                    // We no longer have a form‑level dirty flag to clear
+                    // We no longer have a form-level dirty flag to clear
                     ResetAllViews();
 
                     if (deleteZoneFile)
@@ -1493,7 +1571,8 @@ namespace Call_of_Duty_FastFile_Editor
                     }
 
                     _openedFastFile = null;
-                    MessageBox.Show($"Fast File Saved & Closed.\n\nSaved to:\n{savedPath}", "Close Complete",
+                    string patchNote = useInPlacePatching ? " (in-place patch)" : "";
+                    MessageBox.Show($"Fast File Saved & Closed{patchNote}.\n\nSaved to:\n{savedPath}", "Close Complete",
                                     MessageBoxButtons.OK,
                                     MessageBoxIcon.Information);
                 }
@@ -1507,6 +1586,122 @@ namespace Call_of_Duty_FastFile_Editor
             }
         }
 
+        private bool RebuildZoneWithCurrentData()
+        {
+            if (_openedFastFile == null || _rawFileNodes == null || _rawFileNodes.Count == 0)
+                return false;
+
+            var newZoneData = ZoneFileBuilder.BuildFreshZone(
+                _rawFileNodes,
+                _localizedEntries ?? new List<LocalizedEntry>(),
+                _openedFastFile,
+                Path.GetFileNameWithoutExtension(_openedFastFile.FastFileName));
+
+            if (newZoneData == null)
+                return false;
+
+            File.WriteAllBytes(_openedFastFile.ZoneFilePath, newZoneData);
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if all localize edits can be patched in place (no size increases, no new entries).
+        /// </summary>
+        private bool CanPatchLocalizeInPlace()
+        {
+            if (_localizedEntries == null || _openedFastFile?.OpenedFastFileZone?.Data == null)
+                return false;
+
+            // If new entries were added, can't patch in place
+            if (_localizedEntries.Count > _originalLocalizeCount)
+                return false;
+
+            // Check each entry - if any has increased in size, can't patch
+            foreach (var entry in _localizedEntries)
+            {
+                // New entries (StartOfFileHeader == 0) can't be patched
+                if (entry.StartOfFileHeader == 0)
+                    return false;
+
+                // Calculate original size vs new size
+                int originalTotalSize = entry.EndOfFileHeader - entry.StartOfFileHeader - 8; // minus 8-byte marker
+                int newTotalSize = (entry.TextBytes?.Length ?? 0) + 1 + (entry.KeyBytes?.Length ?? 0) + 1; // +1 for each null terminator
+
+                if (newTotalSize > originalTotalSize)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Patches localize entries in place within the existing zone data.
+        /// Only works when new data fits within original space.
+        /// </summary>
+        private bool PatchLocalizeEntriesInPlace()
+        {
+            if (_openedFastFile?.OpenedFastFileZone?.Data == null || _localizedEntries == null)
+                return false;
+
+            byte[] zoneData = _openedFastFile.OpenedFastFileZone.Data;
+
+            foreach (var entry in _localizedEntries)
+            {
+                if (entry.StartOfFileHeader == 0)
+                    continue; // Skip new entries (shouldn't happen if CanPatchLocalizeInPlace was checked)
+
+                int textStart = entry.StartOfFileHeader + 8; // After the FF marker
+                int originalTotalSize = entry.EndOfFileHeader - textStart;
+
+                // Build the new content: [TextBytes\0][KeyBytes\0] padded with nulls
+                byte[] textBytes = entry.TextBytes ?? Array.Empty<byte>();
+                byte[] keyBytes = entry.KeyBytes ?? Array.Empty<byte>();
+                int newContentSize = textBytes.Length + 1 + keyBytes.Length + 1;
+
+                // Write text bytes
+                int pos = textStart;
+                for (int i = 0; i < textBytes.Length && pos < zoneData.Length; i++, pos++)
+                    zoneData[pos] = textBytes[i];
+
+                // Write text null terminator
+                if (pos < zoneData.Length)
+                    zoneData[pos++] = 0x00;
+
+                // Write key bytes
+                for (int i = 0; i < keyBytes.Length && pos < zoneData.Length; i++, pos++)
+                    zoneData[pos] = keyBytes[i];
+
+                // Write key null terminator
+                if (pos < zoneData.Length)
+                    zoneData[pos++] = 0x00;
+
+                // Pad remaining space with nulls (to maintain original size)
+                while (pos < entry.EndOfFileHeader && pos < zoneData.Length)
+                    zoneData[pos++] = 0x00;
+            }
+
+            // Write the patched zone data back to file
+            File.WriteAllBytes(_openedFastFile.ZoneFilePath, zoneData);
+            return true;
+        }
+
+        /// <summary>
+        /// Determines if a full zone rebuild is needed (vs in-place patching).
+        /// </summary>
+        private bool NeedsFullRebuild()
+        {
+            // If no unsupported assets, always safe to rebuild
+            if (!_hasUnsupportedAssets)
+                return true; // Use rebuild (it's safe)
+
+            // If can patch in place, don't need rebuild
+            if (CanPatchLocalizeInPlace())
+                return false;
+
+            // Need rebuild but have unsupported assets - caller should warn
+            return true;
+        }
+
         /// <summary>
         /// Opens a Form to search for text throughout all of the raw files
         /// </summary>
@@ -1516,6 +1711,278 @@ namespace Call_of_Duty_FastFile_Editor
                 new RawFileSearcherForm(_rawFileNodes).Show();
             else
                 MessageBox.Show("No raw files found to search through.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private void exportLocalizeToTxtMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_localizedEntries == null || _localizedEntries.Count == 0)
+            {
+                MessageBox.Show("No localize entries are loaded.", "Export Localize", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string defaultName = _openedFastFile != null
+                ? $"{Path.GetFileNameWithoutExtension(_openedFastFile.FastFileName)}_localize.txt"
+                : "localize.txt";
+
+            using SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+                FileName = defaultName
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            var lines = new List<string>
+            {
+                "# Format: key<TAB>text (one entry per line)",
+                "# Escape sequences: \\t = tab, \\n = newline, \\r = carriage return, \\\\ = backslash"
+            };
+
+            foreach (var entry in _localizedEntries)
+            {
+                string key = EscapeLocalizeValue(entry.Key ?? string.Empty);
+                string text = EscapeLocalizeValue(entry.LocalizedText ?? string.Empty);
+                lines.Add($"{key}\t{text}");
+            }
+
+            File.WriteAllLines(dialog.FileName, lines, Encoding.UTF8);
+            MessageBox.Show($"Exported {_localizedEntries.Count} entries to:\n{dialog.FileName}", "Export Localize", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void importLocalizeFromTxtMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_processResult == null)
+            {
+                MessageBox.Show("No FastFile is currently loaded.", "Import Localize", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            if (_localizedEntries == null)
+                _localizedEntries = new List<LocalizedEntry>();
+
+            var lines = File.ReadAllLines(dialog.FileName, Encoding.UTF8);
+            var existingKeys = new HashSet<string>(
+                _localizedEntries.Where(e => !string.IsNullOrWhiteSpace(e.Key)).Select(e => e.Key),
+                StringComparer.OrdinalIgnoreCase);
+
+            // First pass: count how many new entries would be added
+            int wouldAdd = 0;
+            foreach (var rawLine in lines)
+            {
+                if (string.IsNullOrWhiteSpace(rawLine)) continue;
+                var trimmed = rawLine.TrimStart();
+                if (trimmed.StartsWith("#")) continue;
+                var parts = rawLine.Split('\t', 2);
+                if (parts.Length < 2) continue;
+                string key = UnescapeLocalizeValue(parts[0].Trim());
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                if (!existingKeys.Contains(key)) wouldAdd++;
+            }
+
+            // Warn if adding new entries to a zone with unsupported assets
+            if (wouldAdd > 0 && _hasUnsupportedAssets)
+            {
+                var unsupportedTypes = ZoneFileBuilder.GetUnsupportedAssetInfo(
+                    _openedFastFile.OpenedFastFileZone, _openedFastFile);
+                var typeList = string.Join(", ", unsupportedTypes.Distinct().Take(5));
+                if (unsupportedTypes.Count > 5) typeList += ", ...";
+
+                var result = MessageBox.Show(
+                    $"This import would add {wouldAdd} new localize entries.\n\n" +
+                    $"WARNING: This zone contains unsupported asset types ({typeList}).\n" +
+                    $"Saving after this import will require a zone rebuild, which will REMOVE these unsupported assets.\n\n" +
+                    $"Do you want to continue?",
+                    "Warning: Unsupported Assets",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (result != DialogResult.Yes)
+                    return;
+            }
+
+            var map = _localizedEntries
+                .Where(e => !string.IsNullOrWhiteSpace(e.Key))
+                .ToDictionary(e => e.Key, StringComparer.OrdinalIgnoreCase);
+
+            int updated = 0, added = 0, skipped = 0;
+
+            foreach (var rawLine in lines)
+            {
+                if (string.IsNullOrWhiteSpace(rawLine))
+                    continue;
+
+                var trimmed = rawLine.TrimStart();
+                if (trimmed.StartsWith("#"))
+                    continue;
+
+                var parts = rawLine.Split('\t', 2);
+                if (parts.Length < 2)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                string key = UnescapeLocalizeValue(parts[0].Trim());
+                string text = UnescapeLocalizeValue(parts[1]);
+
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                if (map.TryGetValue(key, out var existing))
+                {
+                    existing.LocalizedText = text;
+                    updated++;
+                }
+                else
+                {
+                    var newEntry = new LocalizedEntry
+                    {
+                        Key = key,
+                        LocalizedText = text,
+                        StartOfFileHeader = 0,
+                        EndOfFileHeader = 0,
+                        StartOfFileData = 0,
+                        EndOfFileData = 0
+                    };
+                    _localizedEntries.Add(newEntry);
+                    map[key] = newEntry;
+                    added++;
+                }
+            }
+
+            _processResult.LocalizedEntries = _localizedEntries;
+            PopulateLocalizeAssets();
+            localizeToolsMenuItem.Enabled = _localizedEntries.Count > 0;
+
+            MessageBox.Show($"Import complete.\nUpdated: {updated}\nAdded: {added}\nSkipped: {skipped}", "Import Localize", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void localizeListView_DoubleClick(object sender, EventArgs e)
+        {
+            if (_localizedEntries == null || _localizedEntries.Count == 0)
+                return;
+            if (localizeListView.SelectedItems.Count == 0)
+                return;
+
+            int index = localizeListView.SelectedItems[0].Index;
+            if (index < 0 || index >= _localizedEntries.Count)
+                return;
+
+            var entry = _localizedEntries[index];
+            string currentKey = entry.Key ?? "(no key)";
+            string currentText = entry.LocalizedText ?? string.Empty;
+
+            string? newText = PromptForLocalizeEdit(currentKey, currentText);
+            if (newText == null)
+                return;
+
+            entry.LocalizedText = newText;
+            UpdateLocalizeListViewRow(index, entry);
+            _processResult.LocalizedEntries = _localizedEntries;
+            localizeToolsMenuItem.Enabled = _localizedEntries.Count > 0;
+        }
+
+        private static string? PromptForLocalizeEdit(string key, string currentText)
+        {
+            using var form = new Form
+            {
+                Text = $"Edit Localize: {key}",
+                StartPosition = FormStartPosition.CenterParent,
+                MinimizeBox = false,
+                MaximizeBox = false,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                ClientSize = new Size(640, 360)
+            };
+
+            var label = new Label
+            {
+                Text = $"Key: {key}",
+                AutoSize = true,
+                Location = new Point(10, 10)
+            };
+
+            var textbox = new TextBox
+            {
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical,
+                Location = new Point(10, 35),
+                Size = new Size(620, 270),
+                Text = currentText
+            };
+
+            var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(455, 320), Width = 80 };
+            var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(550, 320), Width = 80 };
+
+            form.Controls.Add(label);
+            form.Controls.Add(textbox);
+            form.Controls.Add(ok);
+            form.Controls.Add(cancel);
+            form.AcceptButton = ok;
+            form.CancelButton = cancel;
+
+            return form.ShowDialog() == DialogResult.OK ? textbox.Text : null;
+        }
+
+        private void UpdateLocalizeListViewRow(int index, LocalizedEntry entry)
+        {
+            if (index < 0 || index >= localizeListView.Items.Count)
+                return;
+
+            var item = localizeListView.Items[index];
+            if (item.SubItems.Count < 5)
+                return;
+
+            item.SubItems[0].Text = entry.Key ?? "-";
+            item.SubItems[4].Text = entry.LocalizedText ?? string.Empty;
+        }
+
+        private static string EscapeLocalizeValue(string value)
+        {
+            return value.Replace("\\", "\\\\")
+                        .Replace("\t", "\\t")
+                        .Replace("\r", "\\r")
+                        .Replace("\n", "\\n");
+        }
+
+        private static string UnescapeLocalizeValue(string value)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                if (c == '\\' && i + 1 < value.Length)
+                {
+                    char next = value[++i];
+                    switch (next)
+                    {
+                        case 't': sb.Append('\t'); break;
+                        case 'n': sb.Append('\n'); break;
+                        case 'r': sb.Append('\r'); break;
+                        case '\\': sb.Append('\\'); break;
+                        default:
+                            sb.Append('\\').Append(next);
+                            break;
+                    }
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
         }
 
         /// <summary>

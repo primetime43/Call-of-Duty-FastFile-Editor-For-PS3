@@ -135,21 +135,21 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 // Position after the 8-byte marker
                 ms.Position = offset + 8;
 
-                string localizedText;
-                string key;
+                byte[] textBytes;
+                byte[] keyBytes;
 
                 if (textPointerIsFF)
                 {
                     // Case A: Both pointers are FF - read text then key
-                    localizedText = ReadNullTerminatedString(br);
-                    if (localizedText == null)
+                    textBytes = ReadNullTerminatedBytes(br);
+                    if (textBytes == null)
                     {
                         Debug.WriteLine($"[LocalizeAssetParser] Failed to read localized text at 0x{ms.Position:X}");
                         return (null, (int)ms.Position);
                     }
 
-                    key = ReadNullTerminatedString(br);
-                    if (key == null)
+                    keyBytes = ReadNullTerminatedBytes(br);
+                    if (keyBytes == null)
                     {
                         Debug.WriteLine($"[LocalizeAssetParser] Failed to read key after text at 0x{ms.Position:X}");
                         return (null, (int)ms.Position);
@@ -158,18 +158,18 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 else
                 {
                     // Case B: Only key pointer is FF - text is empty, read only key
-                    localizedText = string.Empty;
-                    key = ReadNullTerminatedString(br);
-                    if (key == null)
+                    textBytes = Array.Empty<byte>();
+                    keyBytes = ReadNullTerminatedBytes(br);
+                    if (keyBytes == null)
                     {
                         Debug.WriteLine($"[LocalizeAssetParser] Failed to read key at 0x{ms.Position:X}");
                         return (null, (int)ms.Position);
                     }
-                    Debug.WriteLine($"[LocalizeAssetParser] Key-only entry (empty text): {key}");
+                    Debug.WriteLine($"[LocalizeAssetParser] Key-only entry (empty text)");
                 }
 
                 // Validate key is not empty
-                if (string.IsNullOrEmpty(key))
+                if (keyBytes.Length == 0)
                 {
                     Debug.WriteLine($"[LocalizeAssetParser] Empty key at 0x{offset:X}");
                     return (null, (int)ms.Position);
@@ -179,13 +179,13 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
 
                 LocalizedEntry entry = new LocalizedEntry
                 {
-                    Key = key,
-                    LocalizedText = localizedText,
+                    KeyBytes = keyBytes,
+                    TextBytes = textBytes,
                     StartOfFileHeader = offset, // Include the marker in the range
                     EndOfFileHeader = entryEnd
                 };
 
-                Debug.WriteLine($"[LocalizeAssetParser] Parsed: Key={key}, TextLen={localizedText.Length}, Range=0x{offset:X}-0x{entryEnd:X}");
+                Debug.WriteLine($"[LocalizeAssetParser] Parsed: Key={entry.Key}, TextLen={textBytes.Length}, Range=0x{offset:X}-0x{entryEnd:X}");
                 return (entry, entryEnd);
             }
         }
@@ -239,41 +239,44 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 {
                     ms.Position = pos + 8; // Skip the 8-byte marker
 
-                    string localizedText;
-                    string key;
+                    byte[] textBytes;
+                    byte[] keyBytes;
 
                     if (valuePointerIsFF)
                     {
                         // Both value and name are inline
-                        localizedText = ReadNullTerminatedString(br);
-                        if (localizedText == null)
+                        textBytes = ReadNullTerminatedBytes(br);
+                        if (textBytes == null)
                             continue; // Invalid, try next position
 
-                        key = ReadNullTerminatedString(br);
-                        if (key == null)
+                        keyBytes = ReadNullTerminatedBytes(br);
+                        if (keyBytes == null)
                             continue; // Invalid, try next position
                     }
                     else
                     {
                         // Only name is inline, value is empty/external
-                        localizedText = string.Empty;
-                        key = ReadNullTerminatedString(br);
-                        if (key == null)
+                        textBytes = Array.Empty<byte>();
+                        keyBytes = ReadNullTerminatedBytes(br);
+                        if (keyBytes == null)
                             continue; // Invalid, try next position
                     }
 
+                    // Create entry to get the Key string for validation
+                    var tempEntry = new LocalizedEntry { KeyBytes = keyBytes, TextBytes = textBytes };
+
                     // Validate the key looks like a proper localization key
-                    if (!IsValidLocalizeKey(key))
+                    if (!IsValidLocalizeKey(tempEntry.Key))
                     {
-                        Debug.WriteLine($"[LocalizeAssetParser] Invalid key format at 0x{pos:X}: '{key}' - skipping");
+                        Debug.WriteLine($"[LocalizeAssetParser] Invalid key format at 0x{pos:X}: '{tempEntry.Key}' - skipping");
                         continue; // Not a valid localization key, try next position
                     }
 
                     int entryEnd = (int)ms.Position;
                     LocalizedEntry entry = new LocalizedEntry
                     {
-                        Key = key,
-                        LocalizedText = localizedText,
+                        KeyBytes = keyBytes,
+                        TextBytes = textBytes,
                         StartOfFileHeader = pos,
                         EndOfFileHeader = entryEnd
                     };
@@ -344,6 +347,32 @@ namespace Call_of_Duty_FastFile_Editor.ZoneParsers
                 return null;
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Reads null-terminated bytes from the current position of the BinaryReader.
+        /// Returns the raw bytes (without the null terminator), or null if unable to read.
+        /// </summary>
+        private static byte[] ReadNullTerminatedBytes(BinaryReader br)
+        {
+            var bytes = new List<byte>();
+            try
+            {
+                while (true)
+                {
+                    if (br.BaseStream.Position >= br.BaseStream.Length)
+                        return null;
+                    byte b = br.ReadByte();
+                    if (b == 0x00)
+                        break;
+                    bytes.Add(b);
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return null;
+            }
+            return bytes.ToArray();
         }
     }
 }

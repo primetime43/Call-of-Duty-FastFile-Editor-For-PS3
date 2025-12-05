@@ -472,12 +472,12 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 // Marker: FF FF FF FF FF FF FF FF
                 section.AddRange(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF });
 
-                // Localized value (null-terminated)
-                section.AddRange(Encoding.Default.GetBytes(entry.LocalizedText ?? ""));
+                // Localized value (null-terminated) - use raw bytes directly
+                section.AddRange(entry.TextBytes ?? Array.Empty<byte>());
                 section.Add(0x00);
 
-                // Reference key (null-terminated)
-                section.AddRange(Encoding.Default.GetBytes(entry.Key ?? ""));
+                // Reference key (null-terminated) - use raw bytes directly
+                section.AddRange(entry.KeyBytes ?? Array.Empty<byte>());
                 section.Add(0x00);
             }
 
