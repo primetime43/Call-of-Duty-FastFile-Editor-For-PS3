@@ -39,6 +39,11 @@ namespace Call_of_Duty_FastFile_Editor
         private bool _hasUnsavedChanges;
 
         /// <summary>
+        /// Forces a full zone rebuild on save (set after import or when changes can't be patched in place).
+        /// </summary>
+        private bool _localizeNeedsRebuild;
+
+        /// <summary>
         /// Original count of localize entries when file was loaded.
         /// Used to detect if new entries have been added.
         /// </summary>
@@ -151,6 +156,7 @@ namespace Call_of_Duty_FastFile_Editor
             _hasUnsupportedAssets = !ZoneFileBuilder.ContainsOnlySupportedAssets(zone, _openedFastFile);
             _originalLocalizeCount = _localizedEntries?.Count ?? 0;
             _hasUnsavedChanges = false; // Reset - no changes made yet
+            _localizeNeedsRebuild = false; // Reset - no rebuild needed yet
 
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
@@ -430,10 +436,11 @@ namespace Call_of_Duty_FastFile_Editor
                 }
 
                 // Apply localize changes in place (if the form-level dirty flag indicates changes)
-                System.Diagnostics.Debug.WriteLine($"[SAVE] Checking localize save: _hasUnsavedChanges={_hasUnsavedChanges}, entries={_localizedEntries?.Count ?? -1}");
+                System.Diagnostics.Debug.WriteLine($"[SAVE] Checking localize save: _hasUnsavedChanges={_hasUnsavedChanges}, _localizeNeedsRebuild={_localizeNeedsRebuild}, entries={_localizedEntries?.Count ?? -1}");
                 if (_hasUnsavedChanges && _localizedEntries != null && _localizedEntries.Count > 0)
                 {
-                    bool canPatch = CanPatchLocalizeInPlace();
+                    // If import was done, force rebuild; otherwise check if we can patch in place
+                    bool canPatch = !_localizeNeedsRebuild && CanPatchLocalizeInPlace();
                     System.Diagnostics.Debug.WriteLine($"[SAVE] CanPatchLocalizeInPlace={canPatch}");
                     // Try to patch localize entries in place
                     if (canPatch)
@@ -506,8 +513,9 @@ namespace Call_of_Duty_FastFile_Editor
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Asterisk);
 
-                // Reset dirty flag after successful save
+                // Reset dirty flags after successful save
                 _hasUnsavedChanges = false;
+                _localizeNeedsRebuild = false;
 
                 // Remove asterisk from title
                 if (this.Text.EndsWith("*"))
@@ -1985,7 +1993,10 @@ namespace Call_of_Duty_FastFile_Editor
 
             // Mark as modified if any entries were changed
             if (updated > 0 || added > 0)
+            {
                 _hasUnsavedChanges = true;
+                _localizeNeedsRebuild = true; // Force full zone rebuild after import
+            }
 
             MessageBox.Show($"Import complete.\nUpdated: {updated}\nAdded: {added}\nSkipped: {skipped}", "Import Localize", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
