@@ -34,6 +34,11 @@ namespace Call_of_Duty_FastFile_Editor
         private bool _hasUnsupportedAssets;
 
         /// <summary>
+        /// Tracks whether any modifications have been made that require saving.
+        /// </summary>
+        private bool _hasUnsavedChanges;
+
+        /// <summary>
         /// Original count of localize entries when file was loaded.
         /// Used to detect if new entries have been added.
         /// </summary>
@@ -145,6 +150,7 @@ namespace Call_of_Duty_FastFile_Editor
             // Track unsupported assets and original counts for safe save detection
             _hasUnsupportedAssets = !ZoneFileBuilder.ContainsOnlySupportedAssets(zone, _openedFastFile);
             _originalLocalizeCount = _localizedEntries?.Count ?? 0;
+            _hasUnsavedChanges = false; // Reset - no changes made yet
 
             // also store updated records
             _zoneAssetRecords = _processResult.UpdatedRecords;
@@ -315,6 +321,7 @@ namespace Call_of_Duty_FastFile_Editor
                 selectedNode.RawFileContent = textEditorControlEx1.Text;
                 // Mark the file as having unsaved changes (dirty)
                 selectedNode.HasUnsavedChanges = true;
+                _hasUnsavedChanges = true; // Mark form-level dirty flag
 
                 // The "current size" is simply the length of the editor text
                 int currentSize = textEditorControlEx1.Text.Length;
@@ -1504,6 +1511,19 @@ namespace Call_of_Duty_FastFile_Editor
                     // Store the path before we null it out
                     string savedPath = _openedFastFile.FfFilePath;
 
+                    // If no changes were made, just close without saving
+                    if (!_hasUnsavedChanges)
+                    {
+                        if (deleteZoneFile)
+                        {
+                            try { File.Delete(_openedFastFile.ZoneFilePath); }
+                            catch { }
+                        }
+                        ResetAllViews();
+                        _openedFastFile = null;
+                        return;
+                    }
+
                     bool useInPlacePatching = false;
                     bool proceedWithSave = true;
 
@@ -1561,7 +1581,8 @@ namespace Call_of_Duty_FastFile_Editor
                     // Recompress zone -> ff
                     _fastFileHandler?.Recompress(_openedFastFile.FfFilePath, _openedFastFile.ZoneFilePath, _openedFastFile);
 
-                    // We no longer have a form-level dirty flag to clear
+                    // Clear the dirty flag after successful save
+                    _hasUnsavedChanges = false;
                     ResetAllViews();
 
                     if (deleteZoneFile)
@@ -1867,6 +1888,10 @@ namespace Call_of_Duty_FastFile_Editor
             PopulateLocalizeAssets();
             localizeToolsMenuItem.Enabled = _localizedEntries.Count > 0;
 
+            // Mark as modified if any entries were changed
+            if (updated > 0 || added > 0)
+                _hasUnsavedChanges = true;
+
             MessageBox.Show($"Import complete.\nUpdated: {updated}\nAdded: {added}\nSkipped: {skipped}", "Import Localize", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -1893,6 +1918,7 @@ namespace Call_of_Duty_FastFile_Editor
             UpdateLocalizeListViewRow(index, entry);
             _processResult.LocalizedEntries = _localizedEntries;
             localizeToolsMenuItem.Enabled = _localizedEntries.Count > 0;
+            _hasUnsavedChanges = true; // Mark as modified
         }
 
         private static string? PromptForLocalizeEdit(string key, string currentText)
