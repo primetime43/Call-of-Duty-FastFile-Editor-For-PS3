@@ -13,7 +13,7 @@ namespace Call_of_Duty_FastFile_Editor.Models
         public string FilePath { get; private set; }
 
         /// <summary>All bytes of the .zone file.</summary>
-        public byte[] Data { get; private set; }
+        public byte[] Data { get; internal set; }
 
         /// <summary>
         /// Constructs the wrapper; actual loading is done in Load().

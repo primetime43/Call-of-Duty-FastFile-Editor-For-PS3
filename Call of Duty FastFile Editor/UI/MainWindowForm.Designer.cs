@@ -50,6 +50,9 @@ namespace Call_of_Duty_FastFile_Editor
             searchRawFileTxtMenuItem = new ToolStripMenuItem();
             injectFileToolStripMenuItem = new ToolStripMenuItem();
             extractAllRawFilesToolStripMenuItem = new ToolStripMenuItem();
+            localizeToolsMenuItem = new ToolStripMenuItem();
+            exportLocalizeToTxtMenuItem = new ToolStripMenuItem();
+            importLocalizeFromTxtMenuItem = new ToolStripMenuItem();
             toolStripMenuItem2 = new ToolStripMenuItem();
             toolStripSeparator2 = new ToolStripSeparator();
             keepZoneFileToolStripMenuItem = new ToolStripMenuItem();
@@ -288,7 +291,7 @@ namespace Call_of_Duty_FastFile_Editor
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { rawFileToolsMenuItem, injectFileToolStripMenuItem, extractAllRawFilesToolStripMenuItem, toolStripMenuItem2, toolStripSeparator2, keepZoneFileToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { rawFileToolsMenuItem, injectFileToolStripMenuItem, extractAllRawFilesToolStripMenuItem, localizeToolsMenuItem, toolStripMenuItem2, toolStripSeparator2, keepZoneFileToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(56, 24);
             toolsToolStripMenuItem.Text = "Tools";
@@ -330,12 +333,35 @@ namespace Call_of_Duty_FastFile_Editor
             injectFileToolStripMenuItem.Click += injectFileToolStripMenuItem_Click;
             // 
             // extractAllRawFilesToolStripMenuItem
-            //
+            // 
             extractAllRawFilesToolStripMenuItem.Name = "extractAllRawFilesToolStripMenuItem";
             extractAllRawFilesToolStripMenuItem.Size = new Size(210, 24);
             extractAllRawFilesToolStripMenuItem.Text = "Extract All Raw Files (Content Only)";
             extractAllRawFilesToolStripMenuItem.ToolTipText = "Extracts file content without zone headers. Files can be edited and re-injected.";
             extractAllRawFilesToolStripMenuItem.Click += extractAllRawFilesToolStripMenuItem_Click;
+            // 
+            // localizeToolsMenuItem
+            // 
+            localizeToolsMenuItem.DropDownItems.AddRange(new ToolStripItem[] { exportLocalizeToTxtMenuItem, importLocalizeFromTxtMenuItem });
+            localizeToolsMenuItem.Enabled = false;
+            localizeToolsMenuItem.Name = "localizeToolsMenuItem";
+            localizeToolsMenuItem.Size = new Size(210, 24);
+            localizeToolsMenuItem.Text = "Localize Tools";
+            localizeToolsMenuItem.ToolTipText = "Export or import localize strings as .txt";
+            // 
+            // exportLocalizeToTxtMenuItem
+            // 
+            exportLocalizeToTxtMenuItem.Name = "exportLocalizeToTxtMenuItem";
+            exportLocalizeToTxtMenuItem.Size = new Size(274, 24);
+            exportLocalizeToTxtMenuItem.Text = "Export Localize to .txt";
+            exportLocalizeToTxtMenuItem.Click += exportLocalizeToTxtMenuItem_Click;
+            // 
+            // importLocalizeFromTxtMenuItem
+            // 
+            importLocalizeFromTxtMenuItem.Name = "importLocalizeFromTxtMenuItem";
+            importLocalizeFromTxtMenuItem.Size = new Size(274, 24);
+            importLocalizeFromTxtMenuItem.Text = "Import Localize from .txt";
+            importLocalizeFromTxtMenuItem.Click += importLocalizeFromTxtMenuItem_Click;
             // 
             // toolStripMenuItem2
             // 
@@ -760,6 +786,9 @@ namespace Call_of_Duty_FastFile_Editor
         private ToolStripMenuItem checkSyntaxToolStripMenuItem;
         private ToolStripMenuItem searchRawFileTxtMenuItem;
         private ToolStripMenuItem injectFileToolStripMenuItem;
+        private ToolStripMenuItem localizeToolsMenuItem;
+        private ToolStripMenuItem exportLocalizeToTxtMenuItem;
+        private ToolStripMenuItem importLocalizeFromTxtMenuItem;
         private ContextMenuStrip contextMenuStripRawFiles;
         private ToolStripMenuItem exportFileMenuItem;
         private ToolStripMenuItem exportContentOnlyMenuItem;
