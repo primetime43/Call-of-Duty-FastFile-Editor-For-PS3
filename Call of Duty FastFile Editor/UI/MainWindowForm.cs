@@ -443,20 +443,41 @@ namespace Call_of_Duty_FastFile_Editor
                             localizeChangeCount = _localizedEntries.Count; // Count all as changed (we don't track individual entries)
                         }
                     }
-                    else if (_hasUnsupportedAssets)
+                    else
                     {
-                        // Can't patch in place and has unsupported assets - warn user
-                        var unsupportedTypes = ZoneFileBuilder.GetUnsupportedAssetInfo(
-                            _openedFastFile.OpenedFastFileZone, _openedFastFile);
-                        var typeList = string.Join(", ", unsupportedTypes.Distinct().Take(5));
+                        // Can't patch in place - need to rebuild zone
+                        if (_hasUnsupportedAssets)
+                        {
+                            // Warn about unsupported assets that will be lost
+                            var unsupportedTypes = ZoneFileBuilder.GetUnsupportedAssetInfo(
+                                _openedFastFile.OpenedFastFileZone, _openedFastFile);
+                            var typeList = string.Join(", ", unsupportedTypes.Distinct().Take(5));
 
-                        MessageBox.Show(
-                            $"Localize changes cannot be saved in place (text size increased or entries added).\n\n" +
-                            $"This zone contains unsupported asset types ({typeList}).\n" +
-                            $"Use 'Save & Close' to rebuild the zone (will lose unsupported assets).",
-                            "Localize Changes",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning);
+                            var result = MessageBox.Show(
+                                $"Localize text size increased - zone must be rebuilt.\n\n" +
+                                $"This zone contains unsupported asset types ({typeList}).\n" +
+                                $"These assets will be LOST if you continue.\n\n" +
+                                $"Do you want to rebuild the zone anyway?",
+                                "Rebuild Zone",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Warning);
+
+                            if (result != DialogResult.Yes)
+                                return;
+                        }
+
+                        // Rebuild the zone with updated localize entries
+                        if (RebuildZoneWithCurrentData())
+                        {
+                            localizeChangeCount = _localizedEntries.Count;
+                            System.Diagnostics.Debug.WriteLine($"[SAVE] Zone rebuilt successfully with localize changes");
+                        }
+                        else
+                        {
+                            MessageBox.Show("Failed to rebuild zone with localize changes.",
+                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
                     }
                 }
 
@@ -1650,18 +1671,35 @@ namespace Call_of_Duty_FastFile_Editor
 
         private bool RebuildZoneWithCurrentData()
         {
-            if (_openedFastFile == null || _rawFileNodes == null || _rawFileNodes.Count == 0)
+            if (_openedFastFile == null)
                 return false;
 
+            // Allow rebuilding with just localize entries (raw files can be empty)
+            var rawFiles = _rawFileNodes ?? new List<RawFileNode>();
+            var localizeEntries = _localizedEntries ?? new List<LocalizedEntry>();
+
+            // Need at least some content to rebuild
+            if (rawFiles.Count == 0 && localizeEntries.Count == 0)
+                return false;
+
+            // Debug: log what we're about to build
+            System.Diagnostics.Debug.WriteLine($"[RebuildZone] Building with {rawFiles.Count} rawfiles, {localizeEntries.Count} localize entries");
+            foreach (var le in localizeEntries.Take(5))
+            {
+                System.Diagnostics.Debug.WriteLine($"[RebuildZone]   Entry: {le.Key}, TextLen={le.TextBytes?.Length ?? -1}, Text='{le.LocalizedText?.Substring(0, Math.Min(30, le.LocalizedText?.Length ?? 0))}'");
+            }
+
             var newZoneData = ZoneFileBuilder.BuildFreshZone(
-                _rawFileNodes,
-                _localizedEntries ?? new List<LocalizedEntry>(),
+                rawFiles,
+                localizeEntries,
                 _openedFastFile,
                 Path.GetFileNameWithoutExtension(_openedFastFile.FastFileName));
 
             if (newZoneData == null)
                 return false;
 
+            // Update the in-memory zone data so subsequent save logic uses the new data
+            _openedFastFile.OpenedFastFileZone.Data = newZoneData;
             File.WriteAllBytes(_openedFastFile.ZoneFilePath, newZoneData);
             return true;
         }
@@ -1976,7 +2014,10 @@ namespace Call_of_Duty_FastFile_Editor
             _processResult.LocalizedEntries = _localizedEntries;
             localizeToolsMenuItem.Enabled = _localizedEntries.Count > 0;
             _hasUnsavedChanges = true; // Mark as modified
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] Localize entry modified: {entry.Key}, _hasUnsavedChanges = {_hasUnsavedChanges}");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Localize entry modified: {entry.Key}");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG]   NewText='{newText}'");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG]   TextBytes.Length={entry.TextBytes?.Length ?? -1}");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG]   LocalizedText='{entry.LocalizedText}'");
         }
 
         private static string? PromptForLocalizeEdit(string key, string currentText)

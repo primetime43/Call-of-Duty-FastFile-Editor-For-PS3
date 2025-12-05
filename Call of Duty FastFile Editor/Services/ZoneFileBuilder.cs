@@ -276,11 +276,17 @@ namespace Call_of_Duty_FastFile_Editor.Services
             FastFile fastFile,
             string zoneName = "patch_mp")
         {
-            if (rawFileNodes == null || rawFileNodes.Count == 0)
+            // Need at least some content to build a zone
+            if ((rawFileNodes == null || rawFileNodes.Count == 0) &&
+                (localizedEntries == null || localizedEntries.Count == 0))
             {
-                Debug.WriteLine("[ZoneFileBuilder] Cannot build: no raw files provided.");
+                Debug.WriteLine("[ZoneFileBuilder] Cannot build: no raw files or localized entries provided.");
                 return null;
             }
+
+            // Ensure lists are not null
+            rawFileNodes ??= new List<RawFileNode>();
+            localizedEntries ??= new List<LocalizedEntry>();
 
             try
             {
@@ -473,11 +479,16 @@ namespace Call_of_Duty_FastFile_Editor.Services
                 section.AddRange(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF });
 
                 // Localized value (null-terminated) - use raw bytes directly
-                section.AddRange(entry.TextBytes ?? Array.Empty<byte>());
+                var textBytes = entry.TextBytes ?? Array.Empty<byte>();
+                var keyBytes = entry.KeyBytes ?? Array.Empty<byte>();
+
+                Debug.WriteLine($"[BuildLocalizedSection] Key={entry.Key}, TextLen={textBytes.Length}, Text='{entry.LocalizedText?.Substring(0, Math.Min(50, entry.LocalizedText?.Length ?? 0))}'");
+
+                section.AddRange(textBytes);
                 section.Add(0x00);
 
                 // Reference key (null-terminated) - use raw bytes directly
-                section.AddRange(entry.KeyBytes ?? Array.Empty<byte>());
+                section.AddRange(keyBytes);
                 section.Add(0x00);
             }
 
